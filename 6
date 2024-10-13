@@ -1,0 +1,561 @@
+const cast
+__________
+
+a) ref semantiği ile
+b) pointer semantiği ile kullanılabilir
+
+kullanım amacı tipik olarak const nesne adresinden const olmayan nesne adresine dönüşüm.
+
+ya da referans semantiğinde.
+
+bu dönüşümler zaten static cast ile yapılamıyor, sentaks hatası verir.
+
+örnek:
+	int x{};
+
+	const int* p = &x;
+	
+	int* ptr;
+	
+	ptr = p; // fakat böyle bir örtülü dönüşüm yok. bunu gerçekten yapmak istiyorsak const cast operatörünü kullanmalıyız.
+
+	böyle yaparız -> ptr = const_cast<int*>(p);
+
+ya da diğer örnek referans semantiği ile;
+
+	int x{};
+	const int& cr = x;
+	
+	const_cast<int&>(cr);
+
+fakat ortada adres semantiği yoksa const cast kullanamayız.
+örneğin böyle bir şey yok;
+
+	const int x{343};
+
+	const_cast<int> -> şuan bile editör hatalı olarak işaretler.
+
+
+* constluğu ikiye ayırmalıyız. birisi -> contractual constness diğeri -> physical constness
+
+contractual constness
+_____________________
+
+int x{1231};
+
+x const bir nesne değil.
+
+int x{1231};
+const int* p = &x;
+*p // compile time ifadesi olarak bakarsak const bir nesnedir. ancak özünde x const değil. bu contractual constness. 
+
+diyorum ki p vasıtası ile x e eriştiğimde onu const bir nesne olarak ele alıcam.
+
+dolayısıyla benim const cast yapmam herhangi bir şekilde tanımsız davranış oluşturmaz çünkü zaten p nin gösterdiği nesne aslında const değil.
+
+	int* ptr = const_cast<int*>(p);
+
+ancak şöyle olursa;
+
+const int x = 12321;
+
+const int* p = &x;
+
+int* ptr = const_cast<int*>(p);  
+
+*p // şimdi artık *p sadece contractual const değil aynı zamanda physical const.
+
+yani şimdi p yi gidip de (x in adresi) low level const olmayan bir pointer a atadığımız da o zaman bu yanlış, yapmamamız gerekiyor.
+
+aslında dilin kuralları const olmayan nesne adresi türünden const olan nesne adresi türüne de dönüşümde const casting kullanılmasına olanak veriyor.
+
+özellikle generic kodlarda karşımıza çıkabilir.
+
+	int x = 123;
+	
+	auto p = const_cast<const int*>(&x); // type deduction ile p nin türü const int* olacak. bu dönüşüm zaten örtülü olarak yapılıyor.
+
+T* dan const T*' a zaten örtülü(implicit) dönüşüm var.
+
+
+reinterpret_cast
+________________
+
+çok daha riskli, çok daha dikkatli olarak kullanmamız gerekiyor. legal olması doğru kullanıldığı anlamına gelmez.
+kullanıldığı yerler;
+
+a)bir nesne adresini farklı türden bir nesne adresi gibi kullanmak ( bunun aynı zamanda doğru olması lazım )
+b)bazen de tamsayı değerlerini örneğin adres değerleri olarak kullanmak. burada artık diğer type cast operatörlerinin kullanımı legal deil.
+
+	int x{12312};
+	
+	char* p = &x; // bu legal değil çünkü türler farklı. C olsa (char*) type cast yazabiliriz. C++ da tercih edilmez.
+	
+	char* p = reinterpret_cast<char*>(&x); // C++ da böyle yaparız.
+
+veya bir başka örnek;
+
+	int* p = 0x1AC4; // C++ da bu yasak.
+
+	int* p = reinterpret_cast<int*>(0x1AC4); // şuan legal
+
+
+***yani özetle farklı adres türleri arasında ya da bazen bir tamsayı ifadenin adres olarak kullanılması gerektiğinde kullanılır.
+
+
+
+sık yapılan bir sentaks hatası:
+
+	const int x = 56;
+	
+	reinterpret_cast<char*>(&x); // sentaks hatası. çünkü burada 2 ayrı dönüşüm var.
+
+	2 ayrı dönüşümün gerektiği yerde tek bir dönüşüm yapamayız. dolayısıyla şöyle yapabiliriz;
+
+	reinterpret_cast<char*>(const_cast<int*>(&x));
+	  artık bu ifade int*
+
+	
+hatta şöyle bile yapabiliriz:
+
+
+	const_cast<char*>(reinterpret_cast<const char*>(&x));
+
+
+en iyi explicit dönüşüm hiç yapılmayan dönüşümdür. tabi ki belirli yerlerde explicit dönüşüm yapmak gerekiyor fakat onların dışında. ancak oralarda 
+çok daha dikkatli olmak gerekiyor.
+
+
+functional type cast
+____________________
+
+modern c++ ile gelmemiş daha önceden beri c++ da var, c de yok.
+
+	double dval = 7.232;
+
+	int(dval); // bu kod legal. normalde operand dval olmalı, int parantez içinde olmalı.
+
+dikkat. fonksiyonel biçim kullanıldığında bazı durumlarda birden fazla anahtar sözcük varsa o sentaks hatası oluşturur.
+
+	double dval = 6.234;
+	
+	auto x = long long(dval); // burada sentaks hatası. tür eş ismi kullanmak gerekebilir.	
+
+
+
+** Tür dönüştürme operatörleri modern c++ ile ilgili değil. ondan öncede bunlar vardı.
+
+
+constexpr keyword
+_________________
+
+Modern C++' ın getirdiği bir anahtar sözcük. C' de yok C++ da var.
+Modern C++ da bu bir specifier.
+Modern C++ da anahtar sözcüklerinin kategorileri var.
+
+Dile ilk defa bir araç eklendiğinde ilk başlarda biraz kısıtlı olarak kullanım sunarlar. biraz da emniyet amaçlı. standartlar çıktıkça kısıtlar azalır.
+Bu araç da aynen böyle. 
+
+Derleme zamanında değeri compiler tarafından belli olan, garanti olan ifadeler diyebiliriz.
+
+C için konuşalım:
+
+	int foo();
+
+	const int x = 10;
+	const int y = foo();
+
+x // bu ifade bir constant expresion
+
+y // fakat bu ifade bir constant expression değil.
+
+
+aynı zamanda x ' in decltype' ı const int yukarda.
+
+
+	constexpr int x = 45; // x' in decltype ı nedir? constexpr değil çünkü constexpr bir type değil. -> cevap: yine const int
+
+aslında bu değişken constexpr const int x = 45; olarak tanımlanmış durumda.
+
+Peki bu şekilde neden değişken tanımlarız, böyle bir tanımlama ne ifade ediyor?
+-> eğer böyle bir değişken tanımlarsak bu ifadenin constant expression olma garantisi var.
+const için böyle bir garanti yoktu. yukarıda örneği var.
+
+yani artık x ona ne ile ilk değer verdiğimizden bağımsız olarak constant expression olarak kullanılma garantisi içeriyor.
+
+ve artık şöyle oluyor;
+
+	int foo();
+
+	constexpr int x = foo(); // hata
+
+çünkü derleyici compile time da artık bu x' e ilk değer veren ifadenin constant expression olup olmadığını sınamak/kontrol etmek zorunda.
+
+
+Artık elimizde isimlendirilmiş ve doğrudan derleyicinin bildiği gördüğü, dolayısıyla bir scope' u olan fakat aynı zamanda sabit ifadesi gereken yerde
+kullanılabilme garantisi olan bir değişkenimiz var. Adeta C de ki sembolik sabitler gibi kullanılabilirler.
+
+a) constexpr const' u zaten içerir, kendisi bir tür değil. sadece tanımlanan değişkenin sabit ifadesi gereken yerlerde kullanılabileceğini, 
+böyle bir garanti olduğunu gösteriyor. Oysa sadece const' un böyle bir garantisi yok. Dolayısıyla constexpr anahtar sözcüğü ile tanımladığımız değişkenlere
+ilk değer veren ifadelerin de sabit ifadesi olması gerekiyor.
+
+	int x = 45;
+	int y = 13;
+	
+	constexpr int* p = &x; // bildirim legal, constexpr const u da satın alıyor fakat o const böyle -> constexpr int* const p
+	dolayısıyla p const pointer to int
+	
+	p = &y; // p const pointer to int olduğu için bu ifade geçerli değil
+	*p = 11; // fakat bu geçerli çünkü low level const yok.
+
+	constexpr const int* p = &x; // şuan hem low level const hem de const pointer to int. şuan yukardaki iki ifade de geçerli değil.
+dk 1.24
+
+
+	constexpr int a[] = {1,2,3,4,5};
+
+	constexpr auto i1 = a[2];
+
+
+constexpr nin fonksiyonları nitelemesi
+______________________________________
+
+bir fonksiyonu constexpr niteleyicisi ile tanımlarsak "constexpr function" deniyor. Bu ne C de var ne de modern C++ da olan bir durum.
+Bu araç çok önemli ve dili boost eden bir araç.
+
+constexpr int func(int x)
+{
+	return x * x + 5;
+}
+
+bu bir constexpr function' dur.
+
+Nedir bu constexpr function?
+____________________________
+C++ 11  ile dile geldi ve çok kısıtlamalara sahipti, bugüne göre gülünç kısıtlamalar. Hatta one liner olmak zorundaydı.
+Fakat günümüzde hele hele 23 std ile birlikte neredeyse hiçbir kısıtlama kalmadı, normal bir fonksiyon için neler yapabiliyorsak bunlarda da yapabiliyoruz
+fakat neredeyse (almost).
+Kısıtlamalardan biri literal type ile ilgili. Bir constexpr fonksiyonunda fonksiyonun parametre değişkeni ya da değişkenleri, fonksiyonun geri dönüş değeri
+türü, fonksiyonun içinde tanımlanan yerel değişkenler "literal type" olmak zorunda. Aynı şekilde fonksiyon içinde statik ömürlü yerel değişken kullanamayız
+gibi kısıtlamalar var fakat bunlar çok çok azaldı.
+
+* constexpr fonksiyonuna gönderilen argümanlar const olmak zorunda değil.
+* Fonksiyonun constexpr olması şöyle bir garanti içerir;
+* Kural diyor ki eğer constexpr bir fonksiyona yapılan çağrı ifadesinde tüm argümanlar sabit ifadesiyse ve fonksiyon çağrı ifadesine constant expression
+gereken bir bağlamda kullanırsan, bu durumda çağrılan fonksiyonun geri dönüş değeri compile time ' da elde edilmek zorunda runtime da değil.
+
+	constexpr int func(int x)
+	{
+	    return x * x + 5;
+	}
+
+	int i= 45;
+
+	int a[func(12)]; // sanki böyle tanımlanmış gibi ==> int a[149]
+
+	
+* Çok yanlış anlaşılan tipik bir noktaya dikkat edelim, bu mecburiyet constexpr fonksiyona yapılan çağrının constant expression gereken yerde kullanılması
+durumunda böyle bir garanti var.
+
+* Özetle eğer constant expression kullanılmasının söz konusu olduğu bir yerde constexpr fonksiyonun parametrelerine constant expression göndererek çağrı
+yapılırsa compile time' da hesaplanmak zorunda. Bu önemli bir garanti. Özellikle generic programlama paradigmasında çok önemli bir hale geliyor.
+
+* constexpr fonksiyonlar implicity inline' dır. Bu da şu demek, bu fonksiyon inline olduğu için başlık dosyasına tanımını koyabiliriz. ODR çiğnenmez.
+
+* bazı değerlerin compile time' da hesaplanması verimi de arttırıyor. Öyle yerler var ki constexpr fonksiyonları kullanarak, kullanmasak runtime da hesaplanacak
+bazı değerlerin doğrudan derleme zamanında hesaplanması, runtime de yapılacak olan gereksiz işlemlerin yapılmaması demek.
+
+* NOT : Sabit ifadesi ile çağırmak mecburi değil, yukardaki durumda ki gibi kullanmak için çağırabiliriz.
+
+örn:
+	constexpr bool isprime(int x)
+	{
+	//...
+	if(//..)
+            return true;
+
+	return false;
+	
+	}
+
+int main(){
+
+	int x = 10;
+
+	auto b = isprime(x); // burada bir hata yok.
+
+	constexpr auto b = isprime(x); // bu ifade constexpr değil, o yüzden hata var. eğer gönderdiğimiz argüman constexpr olsa o zaman sentaks hatası olmaz.
+
+}
+
+
+constexpr ÖZET
+______________
+
+* Bir specifier' dır. Bir fonksiyonu veya bir değişkeni niteliyor. 
+* Bir fonksiyonu nitelediğinde böyle fonksiyonlara "constexpr function" diyoruz.
+* Kullandığımız standardın ne olduğuna bağlı olarak giderek azalan kısıtlamalar var.
+* constexpr bir fonksiyonun tüm parametrelerine contstant expression lar ile çağrı yaparsak, fonksiyon çağrısını sabit ifadesi gereken bir bağlamda
+kullanırsak artık fonksiyon çağrısından elde edilen değer compile time da hesaplanmak zorunda. Özellikle generic programlama paradigması için
+büyük önem taşır.
+
+
+Literals
+
+Kodda doğrudan sayısal büyüklük olarak yer alan token'lara constant diyoruz. Fakat C ve C++ dilleri farklı bir terminoloji kullanıyor.
+C "character constant" kullanırken C++ "character literal" terimini kullanıyor.
+
+Digit Seperator
+_______________
+
+Örneğin büyük sayılar yazarken okuması zor oluyor bunun için bu aracı kullanırız. Yazma ve okuma kolaylığı sağlar.
+
+	auto x = 129'301'298;
+
+	auto x = 0x1AC4'2345;
+
+
+
+Attribute (Öznitelik)
+_________
+Modern C++' da dile eklenen ve her yeni standartla sayısı arttırılan araç seti.
+Özel bir sentaks ile oluşturulan yapılar.
+Attribute' lar ne olduklarına bağlı olarak, bazı yerlerde derleyiciyi uyarı mesajı teşvik ediyor. Bazı yerlerde tam tersi derleyicinin uyarı
+mesajı vermesini engelliyor.
+Bazı Attribute' lar derleyiciye kodla ilgili bilgi verip, derleyicinin daha etkin bir kod oluşturmasını sağlıyor. Yani daha etkin bir kod oluşturmasını
+sağlıyor.
+
+C++ 11 de eklendi fakat diğer standartlarda hep yeni attribute' lar eklendi.
+
+
+	[[nodiscard]]
+
+
+Örneğin;
+
+	int func(int);
+
+	int main(){
+	
+	func(12); // to discard the return value
+	
+	}
+
+
+
+
+Pure function' larda (yani fonksiyonun geri dönüş değeri zaten fonksiyonun varlık nedeni ise) fonksiyonun geri dönüş değerini kullanmazsak 
+lojik hata olur ancak derleyiciden hata mesajı almayız.
+ 
+Örneğin;
+	bool isPrime(int); 
+	
+	diye bir fonksiyonumuz olsun. Bu fonksiyon geri dönüş değeri olarak aldığı argümanın asal olup olmadığını döndürüyor.
+	
+	Bu fonksiyonun geri dönüş değerini kullanmasak lojik olarak hata olur, çünkü o zaman neden çağırdık? Fakat sadece lojik hata olduğu
+	için derleyici bize hata mesajı vermez.
+	
+	Bizde bu durumda [[nodiscard]] attribute' unu kullanabiliriz. Derleyiciye demiş oluruz ki ;
+	-Ben bu fonksiyona çağrı yaptığımda eğer bu fonksiyonun geri dönüş değerini kullanmazsam bana uyarı mesajı ver.
+	Derleyiciyi buna teşvik etmiş oluyor yani.
+
+
+
+
+FUNCTION OVERLOADING
+____________________
+
+* C de birden fazla fonksiyonun ismi aynı olamaz, farklı olmak zorunda. Fakat "function overloading" aracı belirli koşullar altında 
+fonksiyonların aynı ismi farklı kodlara sahip olmasına, farklı fonksiyonlar olmasına rağmen aynı ismi paylaşmasını mümkün kılan araçtır.
+
+Bunların hepsi C' de mutlak değer fonksiyonları fakat parametreleri ve geri dönüş değerleri farklı.
+abs() - int
+fabs() - double
+labs() - long
+
+Programcı böyle bir modülü/kütüphaneyi öğrenmek istediğinde bu isimleri ayrı ayrı öğrenmek zorunda. Örneğin double ile mutlak değer alırken fabs
+int ile alırken abs(), long ile mutlak değer alırken labs() ile almak zorunda. 
+
+Fakat C++ ve birçok programlama dilinde biz bunlara aynı ismi verdiğimizde ortak bir abstraction(soyutlama) yapmış oluyoruz.
+Örneğin programcı neyin mutlak değerini almak isterse istesin sadece abs() fonksiyonunu çağırıyor. Aslında yine ayrı fonksiyonlar var fakat
+hepsinin ismi aynı. Derleyici compile time' da hangi fonksiyona çağrı yapıldığını anlıyor ve o fonksiyonu çağırıyor.
+
+------------------------------
+*function overload resolution*
+------------------------------
+
+Örneğin programlama dillerinde genelde to_string() isimli bir fonksiyon oluyor. Aldığı argümanı String' e çeviriyor. Fakat int' i string' e 
+çevirecek fonksiyon ayrı, double' ı string' e çevirecek fonksiyon ayrı vs.Yani n tane ayrı to_string() fonksiyonu var. Ancak biz fonksiyona
+çağrı yaparken n tane ayrı fonksiyon ismini aklımızda tutmak yerine sadece to_string() fonksiyonuna çağrı yapıyoruz ve derleyici compile time' da
+dilin kurallarını uygulayarak n tane fonksiyon içerisinden hangisinin çağrıldığını "function overload resolution" sürecinde anlıyor ve fonksiyon
+çağrısını o fonksiyona bağlıyor.
+
+Buradan çıkan sonuçlar: Ne işe yaradı?
+-Programcının işini kolaylaştırır,
+-Daha yüksek düzeyde abstraction(soyutlama) sağlar.
+-Compile Time' a yönelik bir araç. Runtime ile hiç bir alakası yok.
+
+------------------------------
+
+NOT*
+
+Bir fonksiyon çağrısının hangi fonksiyon ile ilişkilendirileceği/bağlanacağı (bind)
+	programlama dillerinde 		
+		
+		a)derleme zamanında anlaşılıyor olabilir.
+
+		  buna popüler olarak static binding(earyl binding) deniyor.
+
+		b)programın çalışma zamanında anlaşılıyor olabilir.
+
+		  derleyici koda bakarak hangi fonksiyonun çağrıldığını anlamıyor, programın çalışma zamanında bu anlaşılıyorsa buna da 
+		  dynamic binding(late binding) deniyor.
+
+
+
+------------------------------
+
+örneğin mülakatta soruluyor
+
+	-function overloading var mı yok mu? başka bir soru -> cevabı ya var, ya yok.
+
+Ama bununla tipik alttaki karıştırılıyor.
+
+	-function overloading var ve bir fonksiyon çağrısı yapılmış, o fonksiyon çağrısı ile biz birden fazla aynı isimli fonksiyondan hangisini
+	 çağırmış oluyoruz. bunun bilinmesi bunun anlaşılması.
+	 yani örneğin int parametreli foo() mu çağrılıyor, double parametreli foo() mu çağrılıyor? yoksa belki sentaks hatası mı oluyor?
+
+------------------------------
+
+Function Overload
+
+overload -> hem verb(fiil) hem de noun(isim) olarak kullanılıyor. Yani hem bu mekanizmaya function overloading deniyor, fakat function
+overloading' e konu, aynı isimleri paylaşan fonksiyonlardan her birine de o fonksiyonun overload' u deniyor.
+Örneğin programcı diyor ki sort() fonksiyonunun 3 tane overload' u var.
+
+
+Function Overloading' in Söz Konusu Olabilmesi İçin Gerekli Şartlar
+-------------------------------------------------------------------
+
+1-) Fonksiyonların isimleri aynı olmalı.
+2-) Scope' larının aynı olması gerekiyor. Farklı scope' lar da ki aynı fonksiyonlar birbirini overload etmez olsa olsa gizler.(name hiding)
+
+Örneğin: 
+	
+	int foo(int);
+	
+	int main(){
+	
+	int foo(double);
+	
+	}
+
+burada function overloading yok çünkü fonksiyonların kapsamları(scope) aynı değil.
+
+3-) Aynı scope'ta aynı isme sahip fonksiyon bildirimlerinde, fonksiyonların signature'ları(imzaları) farklı olacak.
+
+Signature(imza) derken aslında şunu kast ediyoruz: geri dönüş değeri türü söz konusu olmadan parametrik yapının kalan kısmı.
+
+Örneğin:
+
+	int foo(int,int); // bu fonksiyonun imzası;
+			  -Fonksiyonun 2 tane parametre değişkenine sahip olması
+		          -Birinci parametrenin int, ikinci parametrenin int olması.
+			  -Fonksiyonun geri dönüş türü imzaya dahil değil.
+
+ÖZET
+----
+Aynı isimde, aynı scope'ta fakat imzaları farklı olan fonksiyonlar birbirlerini overload ediyorlar.
+Onlar aynı isimli fonksiyonların overload'ları.
+----
+
+
+* Özellikle function overloading oluşturmayan durumları iyi anlamamız gerekiyor. 
+
+Eğer aynı isimli fonksiyonlar varsa ve function overloading söz konusu değilse ve bunlar aynı scope'ta değilse 2 tane ihtimal var:
+
+a-) Sentaks hatası
+b-) Redeclaration
+
+
+
+Redeclaration
+-------------
+* En çok karıştırılan nokta ise Redeclaration ve Function Overloading'in birbiriyle karıştırılması.
+
+-Eğer fonksiyonların imzaları da, geri dönüş değeri türleri de aynıysa bu function overloading değil. Buna Redeclaration deniyor. Yani bildirilmiş
+bir fonksiyonu yeniden bildirmek.
+
+Örneğin:
+		int foo(int);
+		int foo(int);
+				burada function redeclaration var.
+
+-Eğer imzaları aynı, geri dönüş değeri türleri farklıysa bu da sentaks hatasıdır.
+
+		int foo(int);
+		double foo(int);
+
+
+
+Önemli Kısım
+------------
+
+1-) Burada Redeclaration mu var yoksa sentaks hatası mı?
+	
+	int foo(int);
+	int foo(const int);
+
+	Cevap : Redeclaration
+
+Eğer ortada bir pointer'ı niteleyen yani low-level pointer söz konusu değilse const anahtar sözcüğünün parametrede kullanılması imzada bir farklılık
+oluşturmuyor.
+
+	void foo(int *p);
+	void foo(int* const p);
+	
+	Cevap: Redeclaration
+
+Const anahtar sözcüğü * atomundan sonra. Dolayısıyla burada parametre değişkeninin kendisi const. Yani pointer'ın kendisi const.
+Ancak şimdi function overloading olur:
+
+	void foo(int* p);
+	void foo(const int* p);
+
+	Cevap : Function Overloading
+
+
+2-) Kaç tane overload var?
+
+	void func(char);
+	void func(signed char);
+	void func(unsigned char);
+
+	Cevap : 3
+
+*** Char, signed char ve unsigned char türleri distinct type'lardır.(ayrı türlerdir) Her biri farklı bir türdür.
+
+
+3-) Redeclaration mu sentaks hatası mı?
+
+	typedef int Word;
+
+	void foo(int);
+	void foo(Word);
+
+	Cevap : Redeclaration
+
+Bir type-alias kullanmamız ayrı bir tür oluşturmuyor, dolayısıyla redeclaration.
+
+
+
+4-) 
+	
+	void foo(int32_t);
+	void foo(int);
+
+	Cevap : Derleyiciye bağlı.
+
+Çünkü int32_t türü opsiyonel, derleyiciye bağlıdır. Hatta tanımlı olmayabilir bile, opsiyonel.
+
+
