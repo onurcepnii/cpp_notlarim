@@ -1,0 +1,694 @@
+ÖZET
+____
+Function Overloading' in olması için 
+-Fonksiyonların isimleri ve scopeları aynı olacak fakat signature'ları farklı olacak.
+
+*Farklı scopelardaki fonksiyonların isimleri birbirini name hiding eder.
+*Aynı scope da imzaları aynı ve geri dönüş türleri de aynıysa Redeclaration'dur.
+*Aynı scope da isimleri aynı, imzaları aynı fakat geri dönüş değeri türleri farklıysa bu sentaks hatasıdır.
+
+** Fonksiyon bildirimlerinde eğer fonksiyonun parametre değişkeninin kendisi const ise, const olmaması ile imza açısından bir fark yok.
+
+	void func(int* p)
+	void func(int* const) -> Redeclaration
+
+FAKAT DİKKAT!!
+
+	void func(int* p);
+	void func(const int*); -> bu şekilde olursa bunlar farklı! Function Overloading
+
+
+SORU-> Function Overloading var mı yok mu?
+
+	void foo(int p[])
+	void foo(int *p)
+
+	CEVAP: Yok. Redeclaration var.
+
+** Fonksiyonun değişkeninin pointer olması iki ayrı sentaksla belirleniyor. int p[] de int* demek. Sanki diziymiş gibi yazmak da aynı anlamda yani.
+
+
+SORU-> Kaç tane Overloading var ya da sentaks hatası mı?
+
+	void foo(int p[7])
+	void foo(int p[8])
+	void foo(int p[9])
+	
+	CEVAP: 1 tane overload var. Derleyici köşeli parantez içine yazılan sabiti dikkate almaz. Yani aslında bunların hepsi int* p ' ye denk.
+
+
+SORU-> Kaç tane Overload vardır?
+
+	void foo(int (*)[10])
+	void foo(int (*)[12])
+	void foo(int (*)[16])
+
+	CEVAP: 3 tane overload var. Çünkü bunlar farklı türler.
+
+
+
+SORU-> Redeclaration mu yoksa Function Overloading mi?
+
+	void foo(int(int))
+	void foo(int(*)int))
+
+	CEVAP : Overload yok. Function Redeclaration. Birisi function type, birisi function pointer type. 
+	
+	Fonksiyonun parametresi dizi olamaz. Decay olacak.Yani bu ikisinin bildirimi aynı, Redeclaration oluyor.
+
+
+SORU-> Kaç tane overload var?
+
+	void foo(int)
+	void foo(int*)
+	void foo(int&)
+	void foo(int&&)
+
+	CEVAP: 4
+
+
+CONST OVERLOADING
+_________________
+
+Standardın da kullandığı bir overload çeşiti.
+
+	void foo(T *)
+	void foo(T const *) // low-level const
+
+Burada overloading var.
+
+_________________
+
+
+
+FUNCTION OVERLOAD RESOLUTION
+____________________________
+
+**
+ Function overloading varsa ve fonksiyona çağrı yapılmışsa, derleyici hangi fonksiyonun çağırıldığını nasıl anlayacak?
+
+Eğer ortada function overloading varsa derleyici bu fonksiyonlardan hangisinin çağırıldığını anlamak için function overload resolution sürecini yürütür.
+
+	a) Sentaks hatasıyla sonuçlanır. (error)
+	b) Sentaks hatası olmaz. (valid)
+
+Eğer sentaks hatası olmazsa derleyici dilin kurallarına göre hangi fonksiyonun çağırıldığını anlamış ve fonksiyon çağrısını o fonksiyona bağlamış demektir.
+
+
+* Function Overload Resolution' da 2 ayrı nedenle sentaks hatası olur:
+
+	error nedenleri:
+	1) n tane overload olmasına karşın, overloadlardan hiçbiri fonksiyon çağrısı ile uyumlu değilse.
+	2) ambiguity -> iki ya da daha fazla sayıda overload arasında dilin kuralları bunlardan birinin seçilmesini sağlayacak bir kural sunmuyor.
+
+
+
+*** Function Overload Resolution belirli adımlardan oluşur.
+
+* 1.Aşamada derleyici fonksiyonun çağırıldığı noktada visible ve o isimli fonksiyonların bir listesini çıkartır. Listesini çıkartırken bunları herhangi
+bir şekilde bu çağırılırsa legal mi değil mi diye bir ayrıma tabi tutmaz. Yani kaç tane overload var onu tespit eder. 
+Giren fonksiyonların oluşturduğu kümeye : Function Overload Set de denir.
+
+
+	enum Color {Blue, Black, Red};
+
+	void foo(Color);
+	void foo(int);
+	void foo(int, int);
+	void foo(double);
+	void foo(double,double);
+	void foo(int *);
+
+	int main()
+	{
+		//foo(12)    	derleyici bu scope ta görülebilir aynı isimli farklı imzalara sahip fonksiyonların listesini çıkarır.
+	}
+
+	Burada 6 tane overload fonksiyon listeye ekledi.
+
+	1.Aşamadan geçen fonksiyonlara candidate(aday) functions deniyor. Örneğin şuan 6 tane aday fonksiyon var.
+
+	1.Aşamada hiç aday fonksiyonun olmaması demek zaten isim aramada hata olması demek.
+
+	Eğer 2 ya da daha fazla aday fonksiyon varsa 2.Aşamaya geçilir.
+
+
+* 2.Aşamada derleyici fonksiyon çağrısında kullanılan argüman ya da argümanlarla dilin kurallarına göre legal olarak çağrılabilen fonksiyonları ayıracak.
+Bu fonksiyonlara da viable functions denir.
+
+Viable fonksiyon şudur-> bu fonksiyon tek başına olsaydı, bu fonksiyon çağrısı geçerli olur muydu? Cevap evet ise bu viable function'dur.
+Dilin kurallarına göre argüman olan ifade türünden fonksiyonun parametre değişkenine örtüşü dönüşüm gerçekleşebilecek. Veri kaybı önemli değil, öyle bir
+dönüşüm mevcut olmalı dilin kurallarında. Örnek:
+
+	enum Color{Blue, Black, Red};
+	void foo(Color);
+
+	int main(){
+	foo(12);  // örneğin bu fonksiyon viable değil. Çünkü int türünden enum türüne örtülü dönüşüm yok.
+	}
+	
+Eğer 2.Aşamada bir tane bile viable fonksiyon olmasa sentaks hatası olur. Eğer 1 tane viable fonksiyon varsa function overload resolution süreci biter.
+Fakat eğer 2 ya da daha fazla viable fonksiyon varsa orada işler karışıyor.. 
+
+* 3.Aşama
+Argümanlardan parametre değişkenlerine yapılan dönüşümlerin adeta belirli kaliteleri var. Bu kalite bundan iyi bu kalite bundan kötü gibi. Eğer iki ya da 
+daha fazla aday arasında böyle bir kalite farkı varsa kaliteli olan seçilir. Bu kaliteyi belirleyen ise dilin kuralları.
+
+Viable fonksiyonlar arasında seçim yapılırken;
+
+- Her zaman rakiplerine kaybeden Variadic parametreye sahip olan fonksiyonlar. Yani en kötü kalite Variadic.
+
+Örneğin:
+	void func(...);
+	void func(double);
+	void func(int, int); //viable değil
+
+	int main()
+	{
+		func(12); // örneğin buradaki viable fonksiyonların birisi variadic diğeri double. Tabi ki double seçilir.	
+	}
+
+...
+
+
+------------------------
+
+USER-DEFINED CONVERSIONS
+
+------------------------
+
+
+struct Nec { int x, y, z; };
+
+int main()
+{
+struct Nec mynec = { 2, 6, 7};
+
+mynec = 456;
+
+} 
+
+C' de bu hatalı. Çünkü int türünden bir yapı türüne örtülü dönüşüm yok. C++' da da böyle. C' de bu hiçbir zaman legal olamaz fakat C++ da böyle değil..
+C++'da standart olarak geçerli olmayan bazı dönüşümler, o dönüşümü yapabilecek bir fonksiyonun bildirilmesi durumunda legal oluyor. 
+Yani bazı araçlar kullanarak normalde dilin kurallarınca olmayan bir dönüşümü, derleyici bizim tanımladığımız bir fonksiyona çağrı yaparak tür dönüşümü sağlar.
+Bu durumda tür dönüşümü dilin kurallarınca olduğu için değil, biz o dönüşümün yapılması için bir fonksiyon oluşturduğumuz için olur. Yani o fonksiyon olmazsa
+tür dönüşümü olmaz.
+
+Özetle -> Eğer dönüşüm normalde dilin kurallarına göre yoksa, fakat siz bu dönüşümü sağlayan bir fonksiyon bildirdiğimiz için derleyici o fonksiyona çağrı
+yaparak o dönüşümü gerçekleştiriyorsa böyle dönüşümlere --> User-Defined Conversion denir. Bu C'de yok, C++ da var.
+
+Örnek:
+
+struct Nec {
+	int x{};
+	Nec();
+	Nec(int); // bu fonksiyonun bildirilmesi bu kodu legal kılıyor. normalde bu bildirim olmasa mynec = 5; hata verir.
+
+};
+
+int main()
+{
+	Nec mynec;
+	
+	mynec = 5; 
+}
+
+Bu tipik bir user-defined conversion' dur.
+------------------------
+
+
+...devam
+
+- User-Defined Conversion ile viable hale gelmişse Variadic dönüşüme karşı kazanır. Fakat Variadic olmayan bütün dönüşümlere kaybeder. 
+Yani en kötünün biraz iyisi.
+
+variadic conversion
+	user-defined version
+		standard conversion
+
+Standard Conversion
+___________________
+
+User-defined conversion değilse fakat geçerli bir dönüşüm varsa buna "Standard Conversion" deniyor. 
+Standard Conversion olması narrowing conversion olup olmaması ile ilgili değil.
+
+long 	double ==> char    dönüşüm var. standard conversion. variadic ve user-defined conversion'a karşı kazanır.
+enum 	==> int   	   dönüşüm var. standard conversion. Ancak int türünden enum türüne dönüşüm yok, dikkat!
+int*	void*		   dönüşüm var. standard conversion. Fakat int* türünden double* türüne dönüşüm yok!
+void* 	int*		   böyle bir dönüşüm yok.
+
+Sorular:
+--------
+
+int*	bool	dönüşüm var. Null Pointer ise false, değilse true olur.
+	 
+
+
+
+3.Aşamada eğer birden fazla standard conversion varsa..
+	
+	void foo(double);
+	void foo(int);
+	void foo(unsigned int);
+
+	foo(); // float, unsigned int, int, char vs. 'la çağırsak bu yukarıdaki 3 örneğin hepsi de viable, 3'ü de standard conversion
+		// peki bu durumda karar neye göre verilecek?
+
+*** Eğer 1'den fazla Standard Conversion varsa, bu durumda best viable function nasıl bulunacak?
+
+Derleyici yine argümandan parametre değişkenine dönüşümünü kategorize ediyor. Fakat buradaki kategorizasyon biraz daha farklı.
+
+*En iyi seviyeye "Exact Match" deniyor.
+*İkinci kaliteye, "Promotion" deniyor.
+*Conversion. Yani exact match olmayan, promotion olmayan.
+
+*Hiç exact match yoksa, hiç promotion yoksa fakat birden fazla conversion varsa bu durumda ne olur? => Ambiguity error.
+
+Sıralama:
+
+Exact Match
+	Promotion
+		Conversion
+
+
+
+Exact Match
+___________
+Argüman ile parametrenin türünün tamamen aynı olması.
+Fakat şu durumlarda exact match kabul edilir:
+1-) Array Decay
+  Örnek:
+	void foo(int*);
+	
+	int main(){
+		int ar[5]{};
+		foo(ar); // Array Decay olur, &ar[0]. Yani bu şekilde sadece dizi ismi yazarsak da exact match kabul edilir.
+	}
+
+2-) Const olmayan nesne adresinden const olan nesne adresine dönüşüm.( T* 'dan const T*' a örtülü dönüşüm var hatırla. Bu exact match sayılır.)
+3-) Fonksiyon türünden fonksiyon adresi türüne dönüşüm. Function Decay
+  Örnek:
+	void foo(int(*)(int));
+	int func(int);
+
+	int main(){
+		foo(func); // burada direk &func göndermek yerine func gönderdik, bu şekilde Function Decay olur zaten. Bu da exact match kabul ediliyor. 
+	}
+
+*Aslında şurada da bir dönüşüm var; L value to R value.
+
+	void foo(int);
+
+	int main(){
+		int x{35};
+		foo(x); // Burada L value gönderiyoruz ve R value'ye dönüştürülüyor. Buda exact match sayılıyor.R value veya L value ile çağırsak da exact.
+	}
+
+
+
+Promotion
+_________
+Integral Promotion ve float'dan double'a dönüşüm.
+
+float ==> double (sadece ve sadece böyle promotion sayılır, tersi veya başka şekilleri değil!)
+
+	void foo(double);
+	void foo(long double);
+	void foo(int);
+
+	int main(){
+		foo(3.4f);
+
+
+	}
+Yukarıdaki örnekte argüman olarak float bir değer gönderilmiş. Float'dan double'a dönüşüm var, long double'a var fakat float'dan int'e promotion var.
+O halde promotion kazanacak.
+
+	void foo(int);
+	void foo(float);
+
+	int main(){
+		foo('A'); // gönderilen argüman char, char'dan int'e promotion var. char'dan float'a conversion var. O halde conversion kazanır.
+	}
+
+
+SORULAR:
+------------
+void foo(unsigned int);
+void foo(long double);
+
+int main(){
+	foo(12);
+}
+
+CEVAP: Ambiguity. Çünkü burada 2 tane conversion var. O halde ambiguity olur.
+------------
+
+void foo(char);
+void foo(long double);
+
+int main(){
+	foo(3.4);
+}
+
+CEVAP: Ambiguity. 2 tane Overload var. 2'si de viable. Double'dan char'a conversion, double'dan long double'a yine conversion olmuş oluyor. Sentaks hatası.
+------------
+
+void foo(char);
+void foo(long double);
+void foo(double);
+void foo(int);
+
+int main(){
+	foo(3.4F);
+}
+
+CEVAP: Double parametreli foo fonksiyonu kazanır. Çünkü promotion var. float ==> double (promotion kabul ediliyor. Sadece bu şekilde olursa.)
+------------
+
+void foo(unsigned int);
+void foo(long double);
+
+int main(){
+	foo(12); // Argümanın türü int. int'den unsigned int'e conversion var, int'den long double'a conversion var. O halde ambiguity.
+}
+
+CEVAP: Ambiguity.
+------------
+
+
+ÖZEL BAZI DURUMLAR ( Function Overload Resolution )
+___________________________________________________
+
+Const Overloading:
+------------------
+Hem pointer hem de referans semantiği ile gerçekleştirilebilir.
+
+ptr semantiği:
+void foo(T *);
+void foo(const T *);
+
+referans semantiği:
+void bar(T &);
+void bar(const int &);
+
+Örnek:
+	void foo(int *) {}	// const int* dan int*a dönüşüm yok. bu çağırılmaz alttaki çağırılır. Eğer foo'nun gönderdiği argüman const olmasa ikisi de viable.
+	void foo(const int*) {}
+
+	int main(){
+
+	const int x{12};
+
+	foo(&x);
+
+	}
+
+Örnek:
+	void foo(int *) {}	// bu fonksiyon çağırılır.
+	void foo(const int*) {}
+
+	int main(){
+
+	int x{12};
+
+	foo(&x);
+
+	}
+
+Ne işe yarıyor bu?
+
+-Öyle durumlar var ki const olan nesneler ve const olmayan nesneler için ayrı implementasyonlar istiyoruz. Yani aynı fonksiyonun kodlarının farklı olmasını
+istiyoruz. Dolayısıyla bunu yapmanın en kolay yolu iki tane overload koymak, birinin parametresi T* diğerinin parametresi const T*. Bir fonksiyon const
+olan nesneler için kullanılacak implementasyon, diğeri const olmayan nesneler için kullanılacak implementasyon.
+
+ 
+Diğer Durumlar:
+
+Eğer overload fonksiyonlardan biri call by value biri call by reference ise, yine bu durum function overloadingdir. Eğer bu fonksiyona L value ile çağrı yaparsak
+call by value veya call by reference arasında bir seçme kriteri yok. Ancak bu fonksiyonu R value expression ile çağırsaydık, zaten call by reference olan
+fonksiyon viable olmaz ve call by value fonksiyonu çağırılır.
+
+	void func(int);
+	void func(int&);
+
+	int x{};
+	func(10);// Rvalue, ilk fonksiyon çağırılır.
+	func(x);// L value, ikinci fonksiyon çağırılır.
+
+SORU-1:
+
+	void func(int, int = 0);
+	void func(int);
+
+CEVAP: Var.
+
+SORU-2:
+	void func(int, int = 0);
+	void func(int);
+	
+	func(12);
+
+Hangi fonksiyon çağırılır? Default argüman olması durumu etkilemez, olumsuz bir sıralama durumu oluşturmaz.
+CEVAP: Ambiguity.
+
+
+
+SORU-3
+
+	void func(int *);
+	void func(int);	
+
+	func(0); 
+
+0'ın Null Pointer'a dönüştürülmesi standard conversion fakat 0'ın int'e aktarılması exact match. Yani bu durumda alttaki kazanır.
+Tehlikeli bir senaryo. nullptr'ı neden kullanmamız gerektiğini burada da anlıyoruz. Neden?
+Çünkü nullptr_t türünden pointer türlerine dönüşüm var fakat pointer olmayan türlere örtülü dönüşüm yok. O yüzden 0 yazmak yerine nullptr sabiti kullan.
+nullptr sabitinin dile eklenme nedenlerinden birisi de budur.
+
+SORU-4
+
+	void func(int*);
+	void func(double);
+
+	func(0);
+
+CEVAP: Ambiguity. 0'ın int*'a dönüşmesi de standard conversion, double'a dönüşmesi de. O halde Ambiguity olur.
+
+
+*** SORU-5 - Bu bir istisna
+
+	void func(void *);
+	void func(bool);
+
+	int x = 10;
+	func(&x);
+
+CEVAP: void* olan çağırılır.
+
+ÖNEMLİ NOT
+----------
+Normalde iki tane standard conversion var. Ambiguity olması lazım fakat bu istisna. Parametresi void* olanın bool parametreye üstünlüğü var.
+
+
+
+
+
+***
+	void func(int&);
+	void func(int&&);
+	
+	int x{};
+
+	func(12); // 2.fonksiyona bağlanır
+	func(x);  // 1.fonksiyona bağlanır
+
+Bu ikisi iki ayrı overload. Üstteki L value reference parametreli, alttaki R value reference parametreli. Farklı türler. L value reference L value'ye bağlanır,
+R value reference R value'ye bağlanır.
+
+
+***ÖNEMLİ
+
+	void func(const T&); // const L value reference
+	void func(T&&);      // R value reference
+
+	int x{};
+
+	func(12);// böyle bir çağrıda her iki fonksiyon da viable. Tercih sağ taraf referanslı parametrenin çağırılması yönünde.Alttaki
+	func(x); // eğer l value ile çağırırsak, alltaki fonksiyon viable olmayacak, üstteki viable. Üstteki çağırılacak.
+
+
+Hatırlatma:  const L value referansa hem R value hem L value bağlanabilir.
+----------
+
+***
+	void func(const int&);
+	void func(int&&);
+	void func(int&);
+
+	int x{};
+	const int cx{ 213 };
+	
+	func(x);
+
+2. fonksiyon viable değil. const olmayan ile çağırdığımız için de const olmayan fonksiyon çağırılır. Eğer const L value ile çağırırsak const olan 3.fonksiyon
+çağırılacak. -> func(cx);
+Fakat bu fonksiyonu R value ile çağırırsak, bu sefer de parametresi L value referansı olan viable olmayacak. Üstteki ve en alttaki kalacak. Bu ikisi arasında
+ki overload resolution kurallarına göre de sağ taraf referans parametrenin üstünlüğü olacak.
+
+__________
+ÇOK ÖNEMLİ (Mülakatlarda da çıkar)
+__________
+
+void foo(int&&)
+{
+	std::cout << "foo(int&&)\n";
+}
+
+void foo(const int&)
+{
+	std::cout << "foo(const int&r)\n";
+}
+
+void func(int&& r)
+{
+	foo(r);
+}
+
+int main()
+{
+	func(123);
+}
+
+Ekranda ne yazar? -> foo(const int&r)
+
+Data type ile value category farklı şeyler. r'nin data type'ının R value referansı olması farklı, r'nin oluşturduğu ifadenin L value expression olması farklı.
+r'nin oluşturduğu ifade hangi value category'sinde? -> bir değişkenin ismi olduğu için L value expression. Bu nedenle alttaki fonksiyon çağırılır.
+Çünkü gönderilen argüman R value değil, L value kategorisinde.
+
+İsim şeklindeki ifadeler her zaman L value expressiondur.
+
+
+std::move() Fonksiyonu
+______________________
+
+expr ifadesinin value kategorisi L value diyelim.
+
+expr	L value
+
+Fakat hem bu ifadeyi kullanmak istiyor hem de bu ifadeyi R value kategorisinde kullanmak istiyorsak bunu yapmanın yolları var.
+Birincisi static_cast kullanmak ve hedef tür olarak R value referans türü kullanmak. Örneğin int&&.
+
+Örnek:
+
+	void foo(const int&);
+	void foo(int&&);
+	
+	int x{};
+	foo(static_cast<int&&>(x); // ikinci fonksiyon çağırılır.
+	foo(x); // ilk fonksiyon çağırılır.
+
+Fakat böyle yazmak yerine aslında std::move() fonksiyonunu kullanabiliriz. Tabi ki bu da yanlış bir yazım değil.
+
+	foo(std::move(x)); // move fonksiyonunun geri dönüş değeri sağ taraf referans türü. Sağ taraf referans türüne dönen fonksiyonlara çağrı ifadesi X value'dir.
+			   // dolayısıyla X value olması demek R value olması demektir. Bu şekilde compile time'da R value olarak ele alınmasını sağladık.
+
+
+**ÖNEMLİ
+
+void foo(T &&t)
+{
+	bar(std::move(t)); //aslında bu foo fonksiyonuna R value expr argüman olarak geliyor. Fakat eğer gelen argümanı tekrar R value olarak göndermek istersek
+		      // yine R value expression oluşturmamız lazım. O halde move fonksiyonunu kullanırız.
+}
+
+void foo(const T &t)
+{
+	bar(t); // Doğrudan argümanı kullanıyoruz ve bu şekilde L value olarak gönderiyoruz.
+		
+}
+
+
+**ASLA
+    ,eğer legacy bir kod değilse, bir fonksiyona nullptr yerine 0 ile çağrı yapmayın. Bu artık geçmişte kaldı. Artık nullptr sabiti kullanacağız.
+
+nullptr'nin de bir türü vardır. Türü --> nullptr_t
+
+	void func(std::nullptr_t);
+	void func(int*);
+	
+	int x = 10;
+	
+	func(&x); //yanlış. nullptr_t türüne pointer türlerinden dönüşüm yok.
+	func(nullptr); // ilk fonksiyon çağırılır.
+	
+
+Eğer nullptr gönderildiğinde ayrı bir overload'un çalışmasını istiyorsanız, nullptr_t parametreli bir overload koyun. nullptr ile çağırıldığında seçilecek
+overload bu olacak exact match olduğu için. Bu imkanı sağlıyor.
+
+
+*** ÖNEMLİ KURAL
+
+	void func(int, double, long)
+	void func(char, int, double)
+	void func(long, long, char)
+
+bu fonksiyonların hepsi viable diyelim. Birden fazla parametre olması durumda, viable fonksiyonların sayısı 2 veya daha fazla ise ambiguity olmaması için,
+bir fonksiyonun seçilmesi için, en az bir parametrede diğerlerine üstünlük sağlayacak ancak diğer parametrelerde diğerlerinden kötü olmayacak. Eğer bu şartı
+sağlayan bir fonksiyon varsa kesin o seçilecek. Bu şartı sağlayan bir fonksiyon yoksa ambiguity olacak.
+
+
+	func(12, ); // örneğin burada 1.fonksiyonda exact match var. 2 ve 3'ün seçilme durumu yok. 1. parametrede üstünlük sağlıyor. Birincinin seçilmesi
+			için diğer argümanlarda daha kötü olmaması gerekiyor.
+	func(12, 12u); // şuan 1, 2 ve 3. fonksiyonların hepsinde 2.parametrede 12u conversion var.
+	func(12, 12u, 5); // sentaks hatası olmayacak ve 1. çağırılacak.
+
+	Fakat 3. parametreye böyle çağrı yapsak hangisi seçilirdi?
+	func(12, 12u, 5.f); // ambiguity olurdu. sentaks hatası. 1. ve 2. arasında ambiguity olur.
+
+	func(12u, 12u, 5.f); // 2.çağırılacak.
+
+
+**ÖNEMLİ**
+
+void foo(int&);
+void foo(int&&);
+
+int ival{2};
+foo(static_cast<int>(ival)); // int&& olan 2. fonksiyon çağırılır. Neden? Çünkü hedef tür sol taraf referans türü olmadığı için bu ifade R value expr.
+foo(static_cast<int&>(ival));//ifadenin value cateogry'si L value olduğu için ilk fonksiyonu çağırır.
+
+foo(ival++);//R value expr. oluşturur. 1.fonksiyon çağırılır
+foo(++ival);//L value expr. oluşturur. 2.fonksiyon çağırılır
+
+
+----------------
+
+void foo(char&);
+void foo(char&&);
+
+char c{};
+
+foo(c); // L value expr. -> ilk fonksiyon çağırılır
+foo(+c);// R value expr. -> ikinci fonksiyon çağırılır
+
++x bir R value expr. oluşturur.
+Aynı zamanda char ile + operatörü kullanırsak integral promotion uygulanır ve int türüne dönüştürülür.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
