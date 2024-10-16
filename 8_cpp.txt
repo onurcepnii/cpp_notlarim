@@ -1,0 +1,539 @@
+Data type ile value category farklı kavramlardır.
+
+Yanlış Kullanımlar:
+-------------------
+1)
+int x; // burada x'in value kategorisi ne diye soruyor. cevap x'in value kategorisi olmaz çünkü value category bir ifadeyi niteler.
+
+2)Data type ile value cat. farklı kavramlar.
+
+int &r; // data type'ı int&
+r;	// ifade içinde kullanıldığında bu ifadenin l val , r value veya x value olması başka.
+
+Örneğin decltype(r) başka, r'nin ifade olarak kullanıldığında ki value kategorisi başka.
+
+int &&r; 
+r;	// ortada bir isim varsa, o ismin oluşturduğu ifade her zaman L value expression'dur.
+
+Şu örneği hatırlayalım:
+
+void foo(int&&)
+{
+	std::cout << "int&&\n";
+}
+
+void foo(int&)
+{
+	std::cout << "int&\n";
+}
+
+void call_foo(int&& r)
+{
+	foo(r); // r'nin türü int&& olsa da burada l value formatında(isim) olarak gönderiyoruz. O yüzden int& olan fonksiyon çağırılr.
+}
+
+int main()
+{
+	call_foo(12);
+}
+
+OUTPUT --> int&
+
+Extern C Bildirimi
+__________________
+
+C derleyicileri de C++ derleyicileri de oluşturduğu obje dosyada bir inline expansion söz konusu değilse, çağrılan fonksiyona ilişkin linkera yönelik bir external reference yazıyor. Yani derleyici ile linker arasında kararlaştırılmış çağrılan fonksiyonu temsil eden bir referans.
+
+Linker da obje bu obje dosyalar arasındaki bağlantıyı, derleyicinin obje dosyalara yazdığı bu external reference'ları takip ederek birleştirme işlemini yapıyor. Fakat ortada şöyle bir fark var. C'de function overloading yok. Fakat C++'da function overloading var.
+
+C'de function overloading olmadığı için derleyiciler obje dosyaya çağrılan fonksiyona ilişkin bir referans isim yazdıklarında, bu ismi sadece fonksiyonun ismi ile decorate ediyorlar.
+
+Örneğin C'de böyle decorate ediyorsa;
+
+@sum
+
+C++ da sadece fonksiyon ismiyle decorate etse function overload olması durumunda iki ayrı aynı isimli fonksiyon nasıl ayırt edilecek? Dolayısıyla C++ derleyicisinin referans isim olarak obje dosyaya yazması farklı bir decoration gerektiriyor.Onun da şöyle olduğunu düşünelim;
+
+@sum_i_i // diyelim ki bu aradaki kararlaştırmaya göre (int,int) parametreli fonksiyona ait isimlendirme olsun.
+
+@sum_d_d // buna da diyelim ki (double,double) parametreli sum fonksiyonunun ismi böyle kararlaştırılmış olsun.
+
+
+C++ kodumuza C ile yazılmış bazı kütüphaneleri, kodları include etmemiz gerekebilir. Örneğin yukarıdaki durum gibi sum isimi fonksiyonlarımız olsun. Bir tanesi include ettiğimiz, C'de derlenmiş C kodumuz olsun. Diğer sum fonksiyonları ana C++ kodumuzda birkaç overload ile tanımlanmış olsun. Bu durumda derleyici bu fonksiyonun C'de derlenmiş bir fonksiyon olduğunu bilmediği için derleyici doğal olarak bunu da bir C++ fonksiyonu gibi ele alır. Ve sum çağırısında linker a referans yazarken C++ tarzı dekore eder. Böylece link aşamasına geldiğinde linker bulamıyor. Çünkü gerçekte olan sum fonksiyonu C'ye göre decorate ediyor.
+
+Bu durumu aşmanın yolu var. Derleyiciye öyle bir bildirim yapacağız ki: "bak derleyici bu bir c fonksiyonu bu c'de derlenmiş. Dolayısıyla sen bu fonksiyona çağrı yaparken bunu C tarzı decorate edeceksin. C++ tarzı decorate edersen linker bulamayacak." işte bu tarz yapılan bildirime Extern C Bildirimi denir. Tabi ki C++'da böyle bir bildirim yapabiliyoruz.
+
+
+	extern "C" int sum(int,int);
+
+Yani derleyiciye demiş oluyoruz ki, bu fonksiyon C'de yazılmış o yüzden bunu C'ye göre decorate et.
+
+
+Şöyle bir durum daha var. Diyelim ki bir başlık dosyamız var ve bunu hem C'de hem de C++'da kullanılmasını istiyoruz. Fakat bu sefer bu extern "C" ile bildirsek C++ da olur ama C'de böyle bir kullanım yok.
+
+Koşullu derleme ile bu sorunu çözebiliriz.
+
+Extern C yazıp bir block oluşturursak ve bu blok içine n tane fonksiyon bildirimini koyarsak, bu durumda bu fonksiyonların her biri için extern "C" bildirimi yapmış oluruz.
+
+	extern "C" {
+		int foo(int,int);
+		int bar(int,int);
+		int baz(int,int);
+	}
+
+
+Şimdi koşullu derleme ile buradaki bildirimleri hem C derleyicisine hem de C++ derleyicisine vermek istiyoruz. Fakat C++ derleyicisinin bildirilen fonksiyonları extern "C" bildirimi ile görmesini istiyoruz.
+
+#ifdef __cplusplus 
+
+	extern "C" {
+
+#endif
+	int foo(int,int);
+	int bar(int,int);
+	int baz(int,int);
+	
+#ifdef __cplusplus
+}
+#endif
+
+bu şekilde bu sorunu halletmiş oluruz. Eğer bu başlık dosyasını C++ için include edersek extern "C" bloğu içinde tanımlanmış olacak. C'de ise extern "C" olmadan tanımlanacak.
+
+
+
+CLASSES ( SINIFLAR )
+____________________
+
+Soru 1: Class demek Object Oriented Programming mi demek?
+Cevap: Hayır.
+
+*C++ Nesne Yönelimli Programlama dili değil. Fakat ona da destek veriyor. Multi-Paradigm programlama dili.
+
+Data Abstraction Tanımı
+-----------------------
+Problem domainindeki varlıkların yazılımsal olarak temsil edilmesi. C++ bu konuda çok güçlü. C' de bu az. Dilin sentaksı açısından baktığımız zaman bizim temel aracımız sınıflar. Yani sınıflar her şeyden önce data abstraction aracı.
+
+C'de ki struct C++'da sınıftır. Yani ister class ister struct keyword kullan, oluşturulan türler class type olacaktır.
+-----------------------
+
+*Her definition bir declaration, her declaration bir definition değil.
+Programcılar buna non-defining declaration der. Aynı zamanda teknik olarak forward declaration denir. Standard da bunu tercih eder.
+
+class Nec; // non-defining declaration, forward declaration
+
+
+class Nec { // class tag -> Nec	
+
+};
+
+// C'de struct olarak bunu böyle oluştursak sentaks hatası olur çünkü hiçbir member a sahip değil. Fakat C++'da legal ve hatta buna empty class deniyor.
+
+Küme parantezinin içi bildirime açık kod alanı. İngilizce karşılık olarak = Declarative Region
+
+Burada bildirilen varlıklara "class members" denir. Bu memberlar farklı kategorilerde olabiliyor. 3 tane member kategorisi var. Bunlar;
+
+	1-) Data Member
+	2-) Member Function
+	3-) Type Member - Member Type - Nested Type ( bu üç isimlendirme de 	kullanılır, hepsi aynı)
+
+class Nec {
+	int mx; // data member
+	void foo(int); // member function
+};
+
+
+
+*Bilgi*
+-------
+Assembly düzeyinde member function, global function vs gibi bir ayrım yok. Yani fonksiyon fonksiyondur. Member fonksiyon gibi bir araç dil katmanında, sentaks katmanında bir araç. Dolayısıyla kod assembly kodu haline geldiğinde fonksiyon fonksiyondur.
+
+C'de olmayan fakat C++, Java gibi member function sentaksı aslında;
+
+a) Dilin diğer araçlarıyla daha iyi uyum sağlaması için,
+b) Yazılan ya da okunan kodun daha yüksek ifade gücüne sahip olması için,
+c) Kodun daha yalın olmasını sağlıyor.
+
+C'de böyle bir ayrım olmadığı için sadece function terimini kullanıyoruz. Fakat CPP'da normal fonksiyonlar ile sınıfın içerisinde bildirilen fonksiyonları konuşurken hangisinden bahsettiğimizi daha iyi ifade edebilmemiz için ayrı isimlendirebiliriz. C'de de olan bildiğimiz normal fonksiyonları global function, free function, stand-alone function olarak isimlendirebiliriz.
+-------
+
+Eğer sınıfın içinde bir türün bildirimini ya da tanımını yapıyorsak o türler global isim alanında tanımlanan türlerden biraz daha farklı özelliklere sahip. Bunlara da Nested Type, Type Member, Member Type diyebiliriz.
+
+
+class Nec {
+	int mx; // data member
+	void foo(int); // member function
+	
+	enum Color{Blue, Black, Red}; // Nested type
+	class Nested; // Nested Type
+	using Dollar = double; // Nested Type, Scope'u bu sınıf.
+};
+
+
+
+Nested type bir enumaration type da olabilir.
+
+
+Nested Type türleri bütün türleri kapsıyor yeter ki sınıfın içinde bildirilsin.
+
+
+Sınıf aynı zamanda bir scope belirtir. C++'da scope kategorilerini tekrar hatırlayalım;
+
+-namespace scope
+-block scope
+-class scope
+-function prototype scope
+-function scope
+
+
+CLASS SCOPE
+-----------
+Eğer bir isim, bir istisna dışında, bir sınıf tanımı içinde bildirilmişse bu scope kategorisine class scope denir.
+
+Öyle isim kullanımları var ki bu kullanımlara ilişkin isimler bir sınıf tanımında aranırlar. 3 tane senaryo var, bu senaryoların oluşturduğu kümeye qualified name deniyor.
+
+a) x.y => bir isim nokta operatörünün operandı olarak kullanılmışsa,(member selection operator)
+b) ptr->a => bir isim ok operatörünün sağ operandı olarak kullanılıyorsa,
+c) Nec::b => bir isim scope resolution operandının sağ operandı olarak kullanılıyorsa,
+
+bu isimler; 
+-nokta operatörünün kullanıldığı yerde x hangi sınıf türünden nesne ise, o sınıfın tanımında y ismi aranacak.
+-ptr hangi sınıf türünden bir adres ise o sınıfın tanımında a ismi aranacak.
+-Nec hangi sınıf ise b ismi o sınıf içinde aranacak.
+
+Class Scope ile isim arama arasındaki ilişkiyi iyi anlamak gerekiyor.
+
+Örnek:
+
+struct Nec{
+	int x;
+};
+
+int main(){
+	auto b = x;
+}
+
+
+Sentaks hatası olur.Neden? Çünkü x ismi unqualified. C'de ki isim arama kuralları C++'da da geçerli. Unqualified olduğu için class definition içerisinde aranmaz o yüzden bulunamaz, namelookup yapılamamış olur hata verir.
+
+Class definition içinde aranması için;
+
+	Nec::x; // scope resolution operator operandı olacak
+
+	Nec.y;  // bu şekilde nokta op. operandı olacak
+
+	Nec* necptr = &mynec;
+	necptr->x; // arrow op. operandı olacak
+
+
+name lookup
+	context control
+		access control
+
+Name Lookup context control'den bağımsız olarak yapılır. Örneğin;
+
+	func(2, 5);
+
+örneğin yukarıda func isimli bir fonksiyon aramaz. Func ismini arar. Mesela func isimli bir değişken bulursa name lookup sonlandırılır, context control'e geçilir. Context Control' de uygunluk kontrolleri yapılır.
+
+	func(2,5);
+	int func;
+
+Örneğin;
+
+	int func(int);
+
+	int main(){
+
+	int func = 4;
+
+	func(23);
+
+	}
+
+// burada örneğin int func = 4 bulur ve namelookup sonlandırılır. Context Control'e geçtiğinde ise hata verir. Yani aslında globalde tanımlanmış olan func fonksiyonunu, main kod bloğu içinde tanımlanmış olan func değişkeni gizler.(name-hiding)
+
+
+class MyClass{
+	int x;
+	void x(int);
+};
+
+Burada da sentaks hatası var, bir varlığa ait bir isim başka bir varlığa verilemez.
+
+-----------
+
+Data Members
+-non-static data members
+-static data members
+
+Member Functions
+-non-static member function
+-static member function
+
+Nested Type
+
+
+
+
+
+
+Data memberlar doğrudan sınıf nesnesinin içinde olan değişkenler. Tıpkı C'de ki yapıların elemanları gibi.
+
+class MyClass{
+
+	int x;
+
+};
+
+Şuan ki MyClass sınıfının storage = 4
+Örneğin char str[16]; diye bir member daha tanımlasak onun değeri de class'a eklenecek.
+
+Dolayısıyla sınıfların non-static veri elemanları sınıf nesnesinin kendisine ait.
+
+C++'da ki object terimi nesne yönelimli programlamadaki object değil.
+
+Nesne yönelimli programlama da object - instance terimleri class türünden nesnelerle ilişkilendiriliyor. O yüzden sınıfların non-static veri elemanlarına birçok programlama dilinde instance variable deniyor.
+
+Sınıfların non-static data memberları doğrudan sınıf nesnesine aitler.Dolayısıyla ne kadar non-static data member varsa o class'ın storage boyutunu büyütür.
+
+*Hiçbir data member'ı olmayan bir class tanımlaması geçerlidir. Fakat boyutu 0 değildir. Böyle bir sınıfın boyutu 1 bayt olacak çünkü bir adres oluşturulabilmesi için en az 1 bayta ihtiyaç var.
+
+	class MyClass{
+
+	};
+
+	int main()
+	{
+
+	MyClass m;
+	std::cout << "sizeof(MyClass) = " << sizeof(MyClass) << "\n";
+
+	}
+
+
+SORU
+----
+
+void func(int);
+
+class MyClass{
+	void func(double);
+};
+
+function overloading var mı? 
+Cevap: hayır, scope ları farklı.
+
+
+SORU
+----
+
+class MyClass{
+void func(double);
+void func(int);
+};
+
+Bu function overloading'tir.
+
+
+SORU
+----
+
+class MyClass{
+	void func(int,int);
+	void func(int,int);
+};
+
+Sentaks hatası, çünkü sınıfların member function ları için function overloading yok. Hatta bu redeclaration bile değil, member function lar için böyle bir durum söz konusu değil.
+
+
+*Sınıfların memberları sınıfın erişim ayrıcalıklı alanlarından birinde bildirilmek zorunda.
+
+3 tane erişim kontrolü sağlayan anahtar sözcük var, bunlara access specifier deniyor. Bu anahtar sözcükler;
+
+-public
+-protected
+-private
+
+*Sınıfın memberları bunlardan birisi olmak zorunda. Bunlar anahtar sözcük (keyword) fakat doğrudan memberi niteliyorlar.
+C++'da bu keywordler bölge niteliyor.Örneğin;
+
+class MyClass{
+
+public:
+	//
+
+private:
+	//
+
+protected:
+	//
+
+};
+
+*Bu anahtar sözcüklerden birini kullanmak zorunda de değiliz. Veya birden fazla kez de kullanabiliriz.
+
+Struct keyword ile class keyword arasındaki farklardan ilki:
+	Struct keyword ile bir class oluşturursak default erişim bölgesi public.
+	
+	struct Myclass{
+		int x;		//public
+		void foo();	//public
+	};
+
+Fakat class larda default erişim bölgesi private'dır.
+
+
+	class Myclass{
+		int x;		//private
+		void foo();	//private
+		};
+
+Zaten struct keywordünün kullanıldığı tipik senaryo:
+	class memberlarının hepsinin public olmasını istiyoruz. Class ile yapıp public: belirtmek yerine direk struct ile yapmak aynı şey.
+
+
+*Clientların doğrudan erişmesini istemediğimiz memberları private, doğrudan erişebilmesini istediğimiz memberları public bölümüne koyuyoruz. Nested type lar için de bu geçerli.
+
+
+SORU
+----
+
+class Myclass{
+
+public:
+	void foo(int);
+private:
+	void foo(double);
+
+};
+
+Bunlar function overload mu değil mi?
+Cevap: Function Overload.
+Sorunun Ana Fikri: public, private, protected bunlar scope değil. Yani private memberlar, public memberler vs. hepsi aynı class scope içindedir.
+
+----
+
+
+
+Member Functions
+----------------
+Bazı paradigmalara dil katmanında destek olmak için getirilen, sentaks düzeyinde dil katmanında bir araç.
+
+Client kodların member selection operatörleri ile isimlere eriştikleri, fonksiyon çağrısını böyle yaptıkları ama aslında o eylemi yapan sınıf nesnesinin adresini örtülü olarak alan fonksiyonlar.
+
+Bu ne demek?
+
+class Nec{
+public:
+	void foo();
+};
+
+
+Bu fonksiyonun görünürde 0 tane parametre değişkeni var. Fakat gerçekte 1 tane parametre değişkenine sahip. Nedir o parametre değişkeni?
+O sınıf türünden bir pointer. Yani aslında sınıfın non-static member fonksiyonları bir sınıf nesnesinin adresini isteyen, bir sınıf nesnesinin adresi ile çağırılan fonksiyonlar. Sadece sentaks düzeyinde o pointer parametreyi göstermiyoruz.
+
+Örneğin:
+
+	class Nec{
+	public:
+		void foo(); // aslında böyle -> void foo(Nec* p)
+
+	};
+
+	int main(){
+	
+	Nec mynec;
+	mynec.foo(); //	foo(&mynec); 
+
+	Nec* necptr = &mynec;
+	necptr->foo();
+	
+	}
+
+
+
+Sınıfların non-static member fonksiyonları, bildirimde kaç tane parametreleri varsa 1 fazla parametreleri var. O parametre sınıf türünden bir pointer. Yani örneğin;
+
+
+class Nec{
+public:
+	void foo();		// 1 parametresi var
+	void bar(int);		// 2 parametresi var
+	void baz(int,int);	// 3 parametresi var
+};
+
+Yani gizli olan parametresi var her birinin. O da sınıfın adresi.
+
+
+
+
+Peki bu member fonksiyonları nasıl tanımlayacağız?
+--------------------------------------------------
+
+//class definition
+
+class Person{
+	//...
+public:
+	void set_person_name(const char* p);
+};
+
+Header'a neleri koyuyoruz? -> Client kodların kullanacağı isimlere ilişkin varlıkları. Dolayısıyla sınıflar çok büyük çoğunlukla (ama her zaman değil) hizmet vermemize yönelik bir araç olduğu için, yani hizmet alan kodlar bizim sınıflarımızı kullanarak o hizmeti alacağı için, class definition çok büyük çoğunluklar başlık dosyalarında(header) olacak.
+
+
+//person.h
+
+class Person{
+	//...
+public:
+	void set_person_name(const char* p);
+	int mx;
+};
+
+Bu fonksiyonu inline yapmak istersek tanımı da header file'da olacak. Ya da eğer fonksiyonu inline fonksyion yapmak istemiyorsak fonksiyonun tanımı .cpp dosyasında olacak.
+
+//person.cpp
+
+void Person::set_person_name(const char* p) // qualified
+{
+
+	a //önce blokta aranacak, sonra kapsayan blokta. Ama bloklarda bulunamazsa class scope'ta aranacak.
+
+}
+
+Yani aslında global bir fonksiyon olsa;
+
+void set(Nec* p, int x, int y) // qualified
+{ // mx'in class içinde tanımlanmış bir int değişkeni olduğunu düşünelim.
+	p -> mx;
+}
+
+Ama biz zaten Person::set(int x, int y); olarak tanım yaptığımızda derleyici yukarıdakini otomatik olarak yapacak zaten arka planda.
+
+class'ta x isimli bir değişken tanımlandığını varsayalım.
+
+	void Nec::set(int x, int y)
+	{
+		x = x; // class değişkeni olan x değil, buradaki x. 
+	};
+
+
+Şimdi ise,
+
+	void Nec::set(int x, int y)
+	{
+		Nec::x = x; //qualified olduğu için direk Nec class içind e arayacak. Yani bu direk aslında derleyiciye x ismini Nec sınıfında aramasına yönelik talimat.
+		::x; // unary scope resolution op, global namespace de x'i arar.
+	};
+
+
+
+
+
+
+
+
+
+
+
+
