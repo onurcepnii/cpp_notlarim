@@ -1,0 +1,755 @@
+
+class Myclass{
+
+	public:
+		void func(int x);
+};
+
+int main(){
+
+	Myclass m;
+	m.func(24);
+	Myclass::func(235); // sentaks hatası var fakat name lookup'dan dolayı değil. Çünkü ortada obje yok.
+}
+
+
+
+
+Member Function Oluşturma
+_________________________
+
+myclass.h
+---------
+
+class Myclass{
+public:
+	void set(int x, int y);
+private:
+	int mx, my;
+
+};
+
+//Definiton myclass.cpp dosyasında.
+
+
+
+myclass.cpp
+-----------
+//sınıf üye fonksiyonu için namelookup kuralları ile global fonksiyon için olan namelookup kuralları farklı.
+
+void Myclass::set(int x, int y)
+{
+	a // bu blok içinde bulamazsa bakacağı yer class scope.
+	mx = x; // blok içinde arar ve bulamaz, class scope içinde aramaya geçer ve bulur. 
+}
+
+
+* Derleyici önce a ismini blok içinde arar ve eğer bulamazsa class scope içinde aramaya başlar.
+
+* Sınıfın üye fonksiyonu sınıfın private bölümüne erişebilir. Fakat bu fonksiyon hangi nesne için çağırılırsa o nesnenin private 
+elemanına erişebilir değil, her ne şekilde olursa olsun sınıfın private bölümüne erişebilir.
+
+
+
+Name Hidining'in Önüne Geçmek
+-----------------------------
+
+void Myclass::set(int x, int y)
+{
+
+int mx = 45;
+//name hiding / name masking / name shadowing
+
+mx = 123;		// blokta oluşturduğumuz mx'i değiştirir.
+Myclass::mx = 123;	// scope resolution operatoru ile class'ta ki mx'i değiştirir. 
+
+}
+
+
+---------------------------
+
+
+* Bir non-static member function başka bir non-static member function'ı çağırdığı zaman, aslında çağıran fonksiyon kendi aldığı örtülü adresi
+(Myclass::foo(Myclass* p,  int x, int y) çağırdığı fonksiyona geçiyor. Yani şöyle olmuş oluyor aslında: bar(p, x); bar(p, y);
+
+class Myclass{
+
+public:
+	void foo(int x, int y);
+	void bar(int x);
+
+private:
+	int mx, my;
+
+};
+
+
+void Myclass::foo(int x, int y)
+{
+	bar(x); // bar bir member function. fakat yine bir member function içinde çağırıldığı için namelookup kuralları gereği bar ismi ilk önce block
+		   scope içinde aranır. Eğer bulunamazsa class scope içinde aranır. Yani bu şekilde erişim sağlanmış olur. 
+	bar(y);
+
+}
+
+
+---------------------------
+
+
+	Myclass x;
+	
+	x.foo(1, 5);
+	x.Myclass::foo(3, 6);
+
+* İki şekilde de fonksiyon çağırılabilir, bir sentaks hatası oluşmaz. Fakat ikinci çağrıda Myclass:: niteleyicisi gereksiz fakat sentaks hatası da 
+oluşturmaz.
+
+
+---------------------------
+
+	Myclass x;
+	Myclass* p = &x;
+
+	p->bar(36);
+	p->Myclass::bar(78); //operatör önceliği açısından bakarsak scope resolution operator, member selection operatörlerinden daha yüksek önceliklidir.
+
+
+---------------------------
+
+* Sınıfın üye fonksiyonları birbirlerini overload edebilir.
+
+---------------
+
+class Myclass{
+public:
+	void bar(int x);
+	void bar(int x);
+private:
+	int mx, my; // non-static data member
+};
+
+* Sentaks hatası fakat redeclaration değil. Global fonksiyonlar için redeclaration fakat member functions için değil, sentaks hatası.
+
+---------------
+
+class Myclass{
+public:
+	void bar(int x);
+private:
+	int mx, my; // non-static data member
+	void bar(int x, int y);
+};
+
+* Yine function overloading çünkü aynı scope içindeler. private, public alanları ayrı bir scope teşkil etmez.
+
+---------------
+
+SORU
+_____
+
+
+class Myclass{
+public:
+	void bar(int x);		// 1
+	void bar(double , double);	// 2
+private:
+	int mx, my; // non-static data member
+
+};
+
+void bar(double);			// 3
+
+void Myclass::bar(int x)
+{
+	bar(2.3); // 1 numaralı fonksiyon çağırılır, implicit olarak narrowing conversion var. double to int, warning de verir ve değer kaybı yaşanabilir.
+
+}
+
+
+
+---------------
+
+SORU
+____
+
+
+class Myclass{
+public:
+	void bar(double x);	// 1
+	
+private:
+	void bar(int);		// 2
+	//..
+
+};
+
+Myclass m;
+
+m.bar(12);
+
+* Bu kod sentaks hatası. 
+Namelookup yapılır. 2 tane function overloading var ve uygun olan 2. fonksiyon olarak belirlenir. Fakat access control aşamasına gelindiğinde private 
+bölümünde olduğu için sentaks hatası verir.
+
+Yani burada erişim hatası olacak diye 1. fonksiyon çağırılmaz. Çünkü zaten private, public alanlar scope oluşturmuyor direk class scope'u dikkate alınıp
+function overloading yapılıyor. Hem de ilk namelookup yapılır, sonra context control yapılıp uygun overload seçilir, ardnından ise en son access control 
+yapılır. Bu adımlar bir daha tekrar etmez, tek bir sefer yapılır.
+
+------------------
+
+
+
+______
+
+ÖNEMLİ
+______
+
+Free function'larda fonksiyonun mutator veya accessor olduğunu altığı parametrenin constluğundan anlayabiliyoruz. Fakat member function'larda nasıl 
+anlayacağız?
+Çünkü member fonksiyonlar sınıf nesnesini implicit olarak alıyorlar. Yani eğer açık olsa böyle yapacaktık --> void foo(const Myclass *p) fakat parametre 
+gizli.
+Gizli parametrenin low level const pointer olup olmadığını doğrudan gösteremiyoruz.
+
+Buradaki sentaks ise şöyle;
+
+class Myclass{
+
+public:
+	void foo()const;	// const member function
+	void bar();		// non-const member function
+
+
+};
+
+
+
+*** Sınıfa non-static member fonksiyon verirken ilk düşünmek gereken soru şudur: "Bu fonksiyon sınıf nesnesini değiştirmeye yönelik mi? Sınıf nesnesinin 
+set edilmesine yönelik mi?" Cevap evet ise non-const üye fonksiyonu olacak.
+Ancak sınıf nesnesini değiştirmeye yönelik değil de değerini kullanmaya yönelik ise bu fonksiyonu const member function yapacağız.
+
+
+*** non-static fonksiyonun const üye fonksiyon olup olmaması sınıf nesnesinin veri elemanlarıyla doğrudan ilişkisi yok. Sınıf nesnesinin problem 
+domainindeki anlamı ile ilgisi var.
+Bu ne demek? : Önemli olan nesnenin state'inin değişip değişmemesi. Zaten daha sınıf nesnesinin veri elemanlarını bile düşünmemiş oluyoruz.
+
+Örnek verelim:
+
+class Fighter{
+
+public:
+	std::string cry_name(); 
+
+}
+
+Örneğin diyelim ki burada cry_name() fonksiyonu problem domaininde savaşçının sadece bağırmasını vs. sağlıyorsa hiçbir etkisi yoksa tabiki const yapmalıyız.
+Fakat değişik bir senaryo olsaydı, mesela: savaşçıların n tane ismini bağırma hakkı olsaydı, isimlerini her söylediklerinde bağırdıklarında belirli
+puanlar düşseydi vs. bu sefer cry_name() fonksiyonu const olsun diyemeyiz. Yani sınıf elemanlarının değişip değişmemesi ile doğrudan bir bağlantısı yok.
+
+Özetle;
+Bir fonksiyonun const member olsun mu olmasın mı kararı, sınıfın veri elemanlarıyla ilgili değildir. Sınıf nesnesinin problem domainindeki karşılığı ile
+ilgilidir. Yani o operasyon, o eylem, o fonksiyon, o method eğer sınıf nesnesinin state'inde problem domaininde bir değişiklik yapıyorsa o zaman o fonksiyon
+const bir fonksiyon olmayacak. 
+
+class Nec{
+public:
+	void foo();		//non-const	aslında böyle --> void foo(Nec*)
+	void bar()const;	//const		aslında böyle --> void bar(const Nec*)
+private:
+	int mx;
+};
+
+void Nec::foo()
+{
+	mx = 5; // aslında böyle --> p->mx = 5;
+}
+
+void Nec::bar()const	// bar(const Nec* p) aslında böyle
+{
+	mx = 5; // hata olur. aslında zaten böyle yazılmış gibi -->  	p-> mx = 5; fakat p const! o yüzden hata.
+}
+
+** Sınıfın const member fonksiyonları, sınıfın non-static veri elemanlarını değiştiremezler. Değiştirmeleri sentaks hatası, çünkü gizli parametre
+değişkenleri const T*'dır.
+
+
+	class Nec{
+	public:
+		void foo();		//non-const	aslında böyle --> void foo(Nec*)
+		void bar()const;	//const		aslında böyle --> void bar(const Nec*)
+	private:
+		int mx;
+	};
+
+	void Nec::foo()
+	{
+		bar(); 	// sentaks hatası değil, legal. Çünkü burada dönüşüm T*'dan const T*'a.
+	}
+
+	void Nec::bar()const	// bar(const Nec* p) aslında böyle
+	{
+		foo(); // sentaks hatası. Derleyiciyi const T*'dan T*'a dönüşüm yapmaya zorlar bu da hata. Böyle bir dönüşüm yok.
+	}
+
+
+
+** const member fonksiyon, sınıfın const olmayan member fonksiyonunu çağıramaz. Sentaks olarak legal olmadığı gibi, semantik açıdan da doğru değil.
+
+Const olan bar() fonksiyonu diyor ki bana bana güvenebilirsin, ben hangi nesne için çağırıldıysam onu değiştirmeyeceğim. Bu sözü verdikten sonra tam tersi
+benim amacım nesneyi değiştirmek diyen bir fonksiyona çağrı yapması semantik olarak da doğru değil.
+
+** const member fonksiyon sınıfın veri elemanını değiştiremez.
+
+
+
+ÖNEMLİ
+------
+
+class Nec{
+public:
+	void bar()const;	//const
+private:
+	int *mp;
+};
+
+int g{};
+
+void Nec::bar()const
+{
+	*mp = 5; // sentaks hatası değil. Çünkü mp pointerinin değerini değiştirmedik. mp pointerinin gösterdiği nesnenin değerini değiştirdik.
+	mp = &g; // sentaks hatası. Çünkü mp pointerinin kendi değerini değiştirdik.
+}
+
+*** Burada sentaks ve semantiğin farkını görebiliyoruz. Örneğin eğer bu işlem nesnenin değerinin de değişmesine yer açıyorsa, örneğin nesnenin anlamını veren
+değer bu pointerin gösterdiği yerde saklıysa biz nesnenin değerini değiştirmiş olacağız ancak fonksiyon const bir fonksiyon olacak. Yani semantik olarak
+doğru değil. Fakat sentaks hatası yok.
+
+
+
+	class Person{
+
+		std::string get_name()const; // sınıf nesnesinin değerini değiştirmiyor, const olması gayet doğal
+	private:
+		int m_debug_count = 0; // her üye fonksiyon çağırıldığında bu değeri +1 arttıracak. Böylece herhangi bir noktada bir Person nesnesi için 
+				       // m_debug_count'ın değerini get ettiğimde o sınıf nesnesi için kaç kez üye fonksiyon çağırıldığını anlayacağız.
+				       // bu nesnenin sınıfın problem domainindeki anlamı ile doğrudan bir ilişkisi yok.
+				
+	};
+
+	std::string Person::get_name()const
+	{
+		++m_debug_count;	//semantik bir hata yok. sentaks hatası var.
+	}
+
+
+**Açıklama
+__________
+
+ Sentaks ile semantiğin yollarının ayrıştığı yer. Derleyici diyor ki "Yasak çünkü bu fonksiyonun parametresi const Person* ve sen low-level const
+pointerın gösterdiği nesneyi değiştiriyorsun. Ama semantik de diyor ki "Hayır, benim bunu değiştirebilmem gerekiyor. Çünkü bu veri elemanının değerinin
+değişmesi Person nesnesinin problem domainindeki anlamını değiştirmiyor.İsmi değişmiyor, yaşı, numarası, parasal varlığı vs. değişmiyor"
+
+İşte burada çok güzel bir araç var. Derleyiciye diyeceğiz ki "Derleyici bu elemanın sınıf nesnesinin problem domainindeki gözlenebilir davranışı ile 
+doğrudan bir ilişkisi yok. Bunu neden söylüyoruz? Çünkü şunu garanti altına almak için; Normalde const üye fonksiyon bunu değiştiremez ama ben sana bunu 
+söylüyorum const üye fonksiyonun bunu değiştirmesine izin ver. Bunu sentaks hatası olarak değerlendirme.
+
+Burada kullanılan keyword "mutable". Sınıfın veri elemanını mutable yapmak.
+
+** Bir veri elemanını mutable olarak bildirmek kodu okuyana ve derleyiciye; "bunun sınıf nesnesinin değerinin değişmesi ile alakası yok, yani bu non-static
+data member fakat sınıf nesnesinin problem domainindeki anlamı ile ilgisi yok" demiş oluyor. Bu sayede yukardaki sentaks hatası kalkıyor.
+
+* Sınıfın üye fonksiyonları ya const olacak ya non-const olacak. Const veya non-const olması tamamen sınıf nesnesinin değerinin değişmesiyle ya da değişmemesi
+ile ilgili. Değeri derken : sınıf nesnesinin değeri demek, her zaman sınıf nesnesinin veri elemanının değeri demek değil.
+
+
+	class Nec{
+	public:
+		void foo();
+		void bar()const;	
+	};
+
+	int main()
+	{
+		const Nec mynec;
+		
+		mynec.foo(); // sentaks hatası var, illegal. T*'dan const T*'a dönüşüm var.
+		mynec.bar(); // sentaks hatası yok, legal
+	}
+
+
+* Const bir nesne için sınıfın sadece const üye fonksiyonlarını çağırabiliriz. Non-const üye fonksiyonlarını çağıramayız.
+
+
+
+____________
+
+THIS KEYWORD ( This Pointer )
+____________
+
+this keywordü bu fonksiyon hangi nesne için çağırılıyorsa o nesnenin adresi değerini taşıyor. Yani biz bu keywordü kullandığımız zaman bu fonksiyon hangi
+nesne için çağırıldıysa onun adresini kullanmış oluyoruz.
+
+- Global bir fonksiyon içinde bu keyword kullanılması sentaks hatası, illegal.
+- Sınıfın statik bir üye fonksiyonu içinde bu keyword kullanılması sentaks hatası.
+
+Geçerli olarak kullanılabileceği tek durum;
+- Sınıfın non-static üye fonksiyonunun içi/tanımı.
+
+* this sınıf nesnesinin kendisini temsil etmez, adresini temsil eder.
+* Fonksiyon hangi nesne için çağırıldıysa, o nesnenin kendisini kullanmak istiyorsak dereferencing adresinin operandı yapacağız ==> *this
+
+Myclass m;
+
+this 	// m nesnesinin adresi
+*this	// m nesnesinin kendisi
+
+*** this keywordünün oluşturduğu ifade bir PR value expression. Yani atama operatörünün sol operandı yaparsak sentaks hatası olur. Adres operatörünün operandı
+yaparsak yine sentaks hatası olur. Bu da şu demek; fonksiyon içinde this pointerinin değerini kullanabiliriz fakat this pointerına bir nesneymiş gibi atama
+yapma girişiminde bulunursak bu bir L value expr. olmadığı için sentaks hatası olur.
+
+
+
+
+	void Myclass::func()
+	{
+		mx = 5;		// Bu fonksiyon(func) hangi nesne için çağırıldıysa o nesnenin mx değerini 5 yap.
+		foo();		// Bu fonksiyon(func) hangi nesne için çağırıldıysa o nesnenin nesnenin adresini derleyici örtülü olarak foo fonksiyonuna 
+																		geçecek.
+	}
+
+
+
+
+Peki bu kodları böyle yazmak yerine şöyle yazabilir miydik? 
+
+
+	void Myclass::func()
+	{
+	this->mx = 5;
+	this->foo();
+	}
+
+Cevap= Kesinlikle. Fakat bu sorunun cevabının evet olması böyle yazılmasının doğru olduğu anlamına gelmiyor. Bu durum gereksiz bir kod kalabalığı oluşturuyor.
+
+
+
+*** This keywordünün dilde olmasının temel nedeni;
+
+	void fg1(Myclass*);
+	void fg2(Myclass&);
+
+	void Myclass::func(int x)
+	{
+		fg1(this);
+		fg2(*this);
+	}
+
+	int main()
+	{
+		Myclass m;
+		m.func(12);
+	}
+
+
+Sınıfın üye fonksiyonu olan func() içinde, func() hangi nesne için çağırılmışsa o nesnenin adresi ile global fg1() fonksiyonuna çağrı yapmamız gerekiyorsa,
+ya da func() hangi nesne için çağırılmışsa aynı nesneyi referans semantiği ile fg2() fonksiyonuna argüman olarak göndermemiz gerekiyorsa bunu this keyword
+ile yaparız. Başka yolu yok.
+
+Fakat tek kullanıldığı senaryo bu değil. Bundan belki daha da fazla kullanılan başka senaryolar var.
+
+
+
+* Sınıfların bazı üye fonksiyonları yaptıkları işin neticesinde hangi nesne için çağırılmışlarsa o nesnenin adresini ya da nesnenin kendisini döndürüyorlar.
+
+
+	class Myclass{
+	public:
+		Myclass* foo();
+	
+
+	};
+
+
+	Myclass* Myclass::foo()
+	{
+	//..
+
+	return this;
+	}
+
+
+int main()
+{
+	Myclass m;
+	m.foo(); // hem bu fonksiyonun gerçekleştirdiği iş yapılacak hemde aynı zamanda fonksiyonun geri dönüş değeri m nesnesinin adresi olacak.
+
+
+
+}
+
+
+
+* Daha da sık kullanılan senaryo: fonksiyonun geri dönüş değerinin bir L Value reference olması ve fonksiyonun hangi nesne için çağırıldıysa onun kendisini
+döndürmesi.
+
+
+
+	class Myclass{
+	public:
+		Myclass* foo();
+		Myclass& bar();
+	
+	};
+
+
+	Myclass* Myclass::foo()
+	{
+	//..
+
+		return this;
+	}
+	Myclass& Myclass::bar()
+	{
+		return *this;	
+	}
+
+
+	int main()
+	{
+		Myclass m;
+		m.bar(); // böylece bar() fonksiyonuna bir çağrı yaptığımızda bu ifade yine m nesnesinin kendisi anlamına gelecek.
+
+
+}
+
+--------------------------------
+
+*** Yaygın Kullanım Örneği
+
+---------------------------------
+
+	class Myclass{
+	public:
+		Myclass& foo();
+		Myclass& bar();
+		Myclass& baz();	// bu fonksiyonlar hangi nesne için çağırıldıysa o nesnenin kendisini döndürüyor olsunlar.
+				// yani her birinin return statementi return *this; biçiminde olsun.
+	
+	};
+
+
+
+	int main()
+	{
+		Myclass m;
+		m.foo().bar().baz(); // bu şekilde bir kullanım sağlayabiliriz.
+		
+		// burada m.foo() nesnenin kendisini döndürüyor, döndürdüğü nesneyi .bar() ile ve aynı şekilde onun döndürdüğü nesneyi .baz() ile kullandık.
+
+		// Bu yapıya "Chaining" deniyor. Diğer bazı dillerde Fluent API diye geçiyor.
+
+}
+
+
+
+	cout << 5 << 1.2 << 223L; 	// burada operator overloading dediğimiz bir mekanizma çalışıyor. Hem function overloading hem de operator overloading
+					// var. Burada da return *this ile bu işlemleri yapıyor.İleride bunu göreceğiz.
+
+
+
+
+- this keywordu bir sınıfın non-static üye fonksiyonu içinde kullanılabilir. Bu fonksiyon hangi nesne için çağırılmışsa o nesnenin adresi anlamında.
+
+
+
+
+***
+Örnek Sentaks Hatası
+***
+
+
+	class Myclass{
+	public:
+		Myclass* foo()const // aslında böyle Myclass* foo( const Myclass* ) ==> low level const
+		{
+		//..
+		
+		return this; // sentaks hatası. çünkü this deyince parametredeki const Myclass* geliyor fakat fonksiyonun geri dönüş değeri türü Myclass*
+			     // yani const T*'dan T*'a dönüşüm gerektiriyor. Bu da sentaks hatasına neden oluyor.
+		}	     // const bir fonksiyon olmasa bu sentaks hatası olmaz. veya geri dönüş değeri const Myclass* olursa yine sentaks hatası yok.
+			     
+	}
+
+
+
+ Aynı durum referans semantiği için de geçerli.
+
+	class Myclass {
+		public:
+			Myclass& foo()const
+			{
+				//..
+				return *this; // sentaks hatası fonksiyon şöyle olmalı: const Myclass& foo()const
+			}
+
+	};
+
+
+
+-----------------
+
+Const üye fonksiyonlar ile ilgili önemli bir nokta;
+
+	void foo(Myclass*);			// 1
+	void foo(const Myclass*);		// 2
+
+	// function overloading var.
+
+	Myclass m;
+	const Myclass cm;
+
+	foo(&m);		// 1.fonksiyon çağırılır
+	foo(&cm);		// 2.fonksiyon çağırılır
+
+
+Aynı overload sınıfın member fonksiyonları için de geçerli.
+
+	class Myclass{
+	public:
+		void foo();
+		void foo()const;
+					// biri const olduğu için ikisinin imzası farklı yani overload söz konusu.
+	private:
+		int mx;
+	
+	};
+
+	int main()
+	{
+		Myclass m;
+		const Myclass cm;
+
+		m.foo();
+		cm.foo();
+	}
+
+----------------------------------------
+
+ Sınıfın üye fonksiyonunun, sınıfın tanımı içinde yapılmasıyla .cpp dosyasında yapılması aynı şey değildir. Global fonksiyonlarda olduğu gibi sınıfın üye
+fonksiyonlarında da ODR( One Definition Rule )'ı çiğnememiz gerekiyor. ODR'ı ihlal etmememiz için fonksiyonun inline olması gerekiyor.
+
+	class Myclass{
+	public:
+		void set(int x);
+	private:
+		int mx;
+
+	};
+
+
+Bir sınıfın üye fonksiyonunu tıpkı global fonksiyon gibi inline fonksiyon yapmanın birden fazla yolu var. Birincisi: Fonksiyonun tanımını başlık dosyası 
+içinde yapmak hem de bildirimde ya da tanımda veya her ikisinde inline keywordü olması gerekiyor.
+
+	class Myclass{
+	public:
+		inline void set(int x);
+	private:
+		int mx;
+
+	};
+
+
+	inline void Myclass::set(int x)
+	{
+		mx = x;
+	}
+
+
+Bu şekilde olursa ODR çiğnenmez. Fakat dilin kuralları diyor ki: Eğer sen fonksiyonun tanımını doğrudan class definition içinde yaparsan, inline keywordünü
+yazmasan dahi implicitly inline. 
+	
+	class Myclass{
+	public:
+		void set(int x)	// aslında gizli olarak inline var başında
+		{
+			mx = x;
+		}
+	private:
+		int mx;
+
+	};
+
+ Fonksiyonu inline yapmak için birkaç tane geçerli senaryolar şunlar olabilir;
+- Inline expansion yapmasını istiyorsak ve fayda sağlamayı umuyorsak zaten inline olmak zorunda.
+
+
+
+---------------------------------------------------------------
+
+
+
+
+
+
+Zor alanlar geliyor..
+
+
+
+
+
+______________________________________________
+
+Sınıf Nesnelerinin Hayata Başlaması
+Sınıf Nesnelerinin Hayatlarının Sonlanması
+______________________________________________
+
+Bir sınıf nesnesinin hayata başlamasını sağlayan, sınıf nesnesini kullanılabilir bir hale getiren sınıfın bir üye fonksiyonu. Bu fonksiyon için özel bir 
+terim kullanılıyor ==> constructor
+
+Sınıf nesnesinin hayatının bitmesini sağlayan fonksiyon ise ==> destructor
+
+* Constructor ve Destructor fonksiyonlar sınıfın non-static member(üye) fonksiyonlarıdır. 
+
+* Bir üye fonksiyonunun constructor olduğunu derleyici isminden anlar. Sınıfın ismi ile aynı olmak zorunda.
+
+* Constructor için geri dönüş değeri kavramı yoktur. Geri dönüş değeri void olması ile bu aynı şey değil. Geri dönüş değeri kavramı yok direk.
+
+	class String{
+	public:
+		String(); // constructor
+	};
+
+
+* Constructor'ın const üye fonksiyon olması yasak.
+
+* Constructor overload edilebilen bir fonksiyon, yani bir sınıfın birden fazla constructor'ı olabilir.
+
+* Sınıfın constructorları sınıfın public fonksiyonu olmak zorunda değil, private fonksiyonu da olabilir.
+
+* Constructor sınıfın üye fonksiyonu, dolayısıyla tanımı diğer üye fonksiyonlarda olduğu gibi .cpp dosyasında ya da başlık dosyasında inline olarak yapılabilir.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
