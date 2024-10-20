@@ -1,0 +1,1285 @@
+* C'de global düzeyde tanımlanan nesneler static keywordü olmadığında dış bağlantıda olur. Fakat C++'da const anahtar sözcüğü ile tanımlanan nesneler sanki C'de static keyword kullanılmış
+gibi internal linkage'da olur.
+
+* C++'da enum türlerinden tamsayı türlerine dönüşüm var.
+
+* C dilinde main fonksiyonunun geri dönüş değeri int olmak zorunda değil. Örneğin geri dönüş değeri olmayan void olarak da tanımlayabiliriz. Fakat C++' da int olmak zorunda.
+
+* C'de geri dönüş değeri olan bir fonksiyona return statement koyulmazsa bu bir hata olmaz fakat fonksiyon garbage value döndürür. C++'da ise geri dönüş değeri olan bir fonksiyonun
+return statement'a sahip olmaması doğrudan dilin kurallarına aykırı.
+
+* C'de main fonksiyonunun recursive (özyinelemeli) olarak çağırılması legal, C++'da bu durum sentaks hatası.
+
+
+
+_______________________________
+
+	Initialization
+_______________________________
+
+(T bir tür)
+
+Default Initialization
+----------------------
+
+T x;	==>	default init.
+
+C'de olduğu gibi otomatik ömürlü değişkenler default init. ile declare edildiklerinde indetermined value ile hayatlarına başlarlar.
+
+* İkna edici bir neden olmadığı sürece aritmetik türden değişkenleri, pointer değişkenleri bu şekilde init. etmemek lazım. Undefined Behaviour oluşturur. (Bu şekilde init. edilen değişkenlerin kullanımı)
+
+
+Copy Initialization
+-------------------
+
+T x = 10;
+
+
+Direct Initialization
+---------------------
+
+int x(8);
+
+T y(10);
+
+
+Uniform Initialization (Brace Init.)
+------------------------------------
+Bir değişkene küme parantezi ile ilk değer verdiğimizde buna popüler olarak "brace initialization" denir.
+
+Dile daha sonradan eklenen bir initialization biçimi. 
+
+Uniform Initialization ile ilk değer verdiğimizde eğer Narrowing Conversion (Daraltıcı Dönüşüm) oluyorsa sentaks hatası olur.
+
+	double dval = 4.5;
+
+	int y(dval);	//direct init.
+
+	int z{dval};	// sentaks hatası. çünkü double'dan int'e narrowing conversion.
+
+
+Yani ilk değer verirken narrowing conversion'a karşı ir koruma sağlar. Adı üzerinde uniform olması her yerde aynı sentaksı kullanır.
+
+Dilin kurallarına göre bazı bildirimler 2 anlama gelebiliyor. Hem bir fonksiyon bildirimi (function prototype) hem de aynı zamanda değişken tanımı.(variable definition)
+Eğer bir bildirim hem fonksiyon hem de bir değişken tanımlaması anlamına gelebiliyorsa burada fonksiyon bildiriminin önceliği vardır. O, fonksiyon bildirimi olarak kabul ediliyor.
+Bu kuralı işaretlemek için Scott Meyers'in uydurduğu terim ==> "Most Vexing Parse"
+
+Bazı durumlarda uniform init. moxt vexing parse oluşturmaz.
+
+
+Value Initialization
+--------------------
+
+int x{};
+
+int y;
+
+Burada x 0 ile initialize edilir, y ise indetermined value ile. Value initialization'un diğer ilk değer verme biçimlerinden farkı bunda ilk basamak olarak zero-init kullanılır.
+
+
+
+
+
+Unevaluated Context
+-------------------
+İşlem kodu üretilmeyen bağlam.
+Öyle yerler var ki derleyiciler bir ifade için işlem kodu üretmezler. Örneğin sizeof operatörünün operandı olan ifade.
+
+
+
+
+
+
+
+______________________________________
+
+	Reference Semantics
+______________________________________
+
+Pointerların yerine (çoğu zaman) kullanacağımız, daha yüksek bir abstraction (soyutlama) sağlayan referans semantiği.
+
+* Kullanabildiğin her yerde referans kullan, mecbur kalırsan pointer kullan.
+
+
+Value Category
+--------------
+
+Primary Value Category
+-L Value
+-PR Value
+-X Value
+Combined Value Category
+
+* İsimlerin oluşturduğu ifadeler L value. Bellekte bir yere sahip olan ve o yer vasıtasıyla erişebileceğimiz ifadeler. Adres operatörünün operandı olduğunda
+legal bir yapı oluşturan ifadeler.
+
+* PR Value ise ortada bir isim yok, değişkenlere ilk değer verecek ifadeler veya bir hesaplama sonucu bir değere karşılık gelen ifadeler.
+
+
+*Önemli Not*
+------------
+
+++x		bu ifadeler C'de R value iken C++'da L value kabul ediliyor.
+--x
+
+
+x,y		comma operator, C dilinde operandları L value olsa dahi L value değil. Ancak C++'da 2.operandı L value expr. ise virgül operatörü de 
+		L value	expr. oluşturuyor.
+
+
+
+Reference
+---------
+Referans adeta bir nesne için oluşturulmuş bir alias.
+
+	int& r = x;	// böyle bir tanımlama ile biz aslında şunu sağlamış oluyoruz: Artık r ismini kullandığımızda x değişkenini kullanmış oluyoruz.
+			// Yani artık r, x'İn bir aliası.
+
+
+	r = 12;		// x'e 12 assign ettik.
+
+
+Bu referans türüne L Value Reference denir.
+
+
+	int& r = x;
+
+	int& r1(x);
+
+	int& r2{x};
+
+
+
+Referansları bir değişkene/nesneye bağlamaya bind denir.
+
+
+	int& r = x;	// bind
+
+	r = y;		// burada r şimdi de y'nin yerine geçen isim, referans olsun anlamına gelmez.
+			// x'e y'yi atamak anlamına geliyor.
+
+
+
+* Referans değişkenler artık hangi nesneye bağlanmışsa scopeları boyunca o nesneye bağlı kalmak zorunda!
+
+İLK KURAL:
+	Referanslar default initialize edilemezler. ( Const değişkenlerde default initialize edilemezler )
+
+İKİNCİ KURAL:
+	L Value referansa R value expression ile ilk değer verilemez.
+	
+	int& r1 = x++; // sentaks hatası
+
+	int& r1 = ++x; // valid
+
+
+* int x = 5;
+  int& r1 = x;
+  int& r2 = r1;
+  int& r3 = r2;
+
+  bu 3 referans da x'i bind etti.
+
+  r1++;		//  ==> x++
+  r2++;		//  ==> x++
+  r3++;		//  ==> x++
+
+x'in değeri 8 oldu.
+
+* Pointer semantiğinden farklı olarak referanslar rebindly değil!
+
+* Referansı aslında int* const p = &x; (top level const) olarak düşünebiliriz. Hayatı boyunca tek nesneyi gösterecek, referans olacak.
+Fakat gösterdiği, referans olduğu nesnenin değeri değişebilir yani low level const değil.
+
+* Referanslar doğuştan consttur.(Fakat low level const değil, top level const)
+
+* L value referansın tanımının doğru olması için ona ilk değer veren nesnenin türünün referans türü ile uyumlu olması gerekir.
+	
+	int x = 10;
+	char& r = x;	//hata
+
+* void func( T &r )
+bu fonksiyona baktığımızda anlıyoruz ki bu fonksiyon bir mutator. Diyor ki sen bana bir nesne gönder ben gönderdiğin nesneyi değiştireceğim.
+Çünkü referans semantiği kullanıyor.
+
+* Dikkat!
+
+int x = 5;		// C'de stdout'a ne yazacağını sadece bu koda bakarak biliriz. Çünkü bu kodda foo() fonksiyonu call by value.
+foo(x);			// Yani zaten x'in değerini değiştiremez, fonksiyon tanımına bakmamıza gerek bile yok. Fakat C++'da referans
+printf("%d",x);		// semantiği kullanıldığı için fonksiyon tanımına gerçekten bakmamız gerekir.
+
+
+
+
+** ÖNEMLİ
+---------
+			// bu fonksiyonlara yapılan çağrı ifadesi
+	T foo();	==>  R Value
+	T& foo();	==>  L Value
+
+
+int g = 50;
+
+int& foo()
+{
+	//code
+	return g;
+}
+
+int main()
+{
+foo() = 876;	// foo() ifadesi L value olup g nesnesine karşılık geldiği için g'ye 876 değerini assign etmiş olduk.
+
+foo()++; 	// foo() ifadesi g nesnesine karşılık geldiği için g'yi bir arttırır. Yani foo() ifadesi L value oluşturmuş oldu.
+
+int& r = foo();	// r referansını g'ye bind ettik.
+}
+
+
+
+
+ÇIKARIM:
+--------
+
+T& func(/*   */);	// fonksiyonun geri dönüş değeri L Value böyle bir fonksiyon bildirimi gördüğümüzde anlıyoruz ki bu fonksiyon
+
+			// bir nesne döndürüyor. Biz bu fonksiyona çağrı yaparak bir nesnenin kendisine erişmiş oluyoruz. Bunun C'de ki
+			// karşılığı adres döndüren fonksiyon. Aynı zamanda bu fonksiyona yapılan çağrı bir L Value'dir.
+
+
+
+
+Value Category
+______________
+
+* Değişken isimlerinin oluşturduğu ifadeler her zaman L value'dir.
+* Aritmetik operatörlerin oluşturduğu ifadeler her zaman R value'dir. (Karşılaştırma operatörleri dahil)
+* Adres operatörü ile oluşturulan ifadeler her zaman PR Value'dir.
+* Geri dönüş değeri türü referans türü olmayan fonksiyonlara yapılan çağrı ifadeleri her zaman PR Value'dir.
+* nullptr sabiti ==> PR Value
+* String literalleri L Value
+* Index operatörü ile oluşturulan ifadeler yine L value'dir.
+
+
+
+Pointer Semantiği ile Referans Semantiği Farkları
+-------------------------------------------------
+* Elemanları pointer olan bir dizi olabilir fakat elemanları referans olan bir dizi olamaz.
+* Pointer hep aynı nesneyi göstermek zorunda değildir fakat referans hayatı boyunca aynı nesneyi gösterir. Rebindly değildirler.
+* Pointer değişkenler default initialize edilebilirler(İyi bir fikir olmasa da). Referans değişkenler default initialize edilemezler.
+* Bir pointer başka bir pointer adresini gösterebilir (pointer to pointer). Fakat reference to reference yok.
+* Pointerların özel değeri -> hiçbir nesnenin adresi olmayan bir pointer olabilir. Bu pointer Null Pointer. Fakat null reference diye bir kavram yok.
+* void *ptr; void pointer var fakat void reference yok.
+
+
+
+R Value Reference
+-----------------
+Modern C++ ile dile eklendi. Zaten Modern C++ öncesinde L value referans diye bir terim yoktu. Sadece tek bir referans kategorisi vardı.
+
+Modern C++ ile dilin getirdiği minor ve major eklemeler var.
+
+	1) Move Semantics (Taşıma Semantiği)
+	2) Lambda Expression
+	3) Perfect Forwarding ( Generic programlama tarafında çok önemli bir araç)
+	4) R Value Reference
+
+Yani R Value reference sentaksa yönelik bir araç sadece. Önemli olan ne amaçla kullanıldığı;
+	a) Move Semantcs'in implementasyonunda kullanılıyor
+	b) Perfect Forwarding denilen mekanizmada kullanılıyor
+Yani bu iki araçta da bağlayıcı olarak R value reference kullanılıyor.
+
+
+
+	int &&r1  ==>  R Value Reference
+	int &r2   ==>  L Value Reference
+
+* L value referans L value expression'a bağlanır.
+* R value referans R value expression'a bağlanır.
+* Birbirlerine bağlanamazlar, yani R-L L-R olamaz. Fakat bir istisna var. Const L value hem R value'ye hem L value'ye bağlanabilir.
+
+	int& r = 5; // error
+	int&& r = 5 // valid
+
+ÖZETLE
+-_-_-_
+
+	T& r1  		==> L value expr. bağlanır.
+	
+	const T &r2	==> L ve R (ikisine de) value expr. bağlanır.
+
+	T &&r3		==> R value expr. bağlanır.
+
+
+
+__________________________________
+
+	Default Argument
+__________________________________
+
+
+C'de yok fakat C++'da var. Örneğin 3 tane parametresi olan bir fonksiyona 3'ten daha az argümanla çağrı yapma imkanı tanıyor.
+
+	int foo(int,int,int=10);
+	
+	foo(2,5,1) ==> varsayılan argüman kullanılmadı
+
+	foo(1,2);  ==> 3.parametre varsayılan argüman kullanır -> 10
+
+
+Bir fonksiyonun birden fazla parametresi için default argument kullanabiliriz. Fakat dikkat etmemiz gereken bazı kurallar var.
+
+	-Bir fonksiyonun herhangi bir parametresi varsayılan argüman alıyorsa sağındaki tüm parametrelerin de varsayılan argüman alması gerekiyor.(Wrapper function yazarak bunun
+	önüne geçebiliyoruz.)
+	
+		int foo(int, int=20, int) => sentaks hatası
+		int foo(int, int=10, int=2) => valid
+
+
+	-Pointer ve referans parametreler de varsayılan argüman alabilir.
+
+		int x = 10; //global variable
+
+		void foo(int& = x) // default arg. olarak global değişken olan x'i aldı.
+
+	-Default argument olarak herhangi bir ifade olabilir.
+		
+		int x = 10;
+		void foo(int y = x + 5); // Eğer argüman gönderilmeden çağırılmışsa default argument olarak x+5 alacak.
+
+	- int foo(int = 2, int = 5);
+	  int bar( int x = foo());
+	  
+	 	 default argument olarak bar(foo(2,5)) almış olur.
+
+	- void foo(const char* p = nullptr)
+		bu fonksiyonun parametresin ya bir argüman göndereceğiz, argüman göndermediğimiz zaman nullpointer ile çağırmış oluruz.
+
+
+	- Daha önce bildirilen bir fonksiyonu redeclaration yaparak default argument ekleyebiliriz.
+	
+
+	- void foo(int x, int y = x) // geçerli değil
+
+
+	- Bazı fonksiyon bildirimlerinde varsayılan argüman kullanılmasının nedeni sadece implementasyonun default argument kullanmış mı
+	  kullanmamış mı onu anlamasını sağlamak.
+		
+		void print_date(int day = -1, int mon = -1, int year = -1);
+
+		örneğin bu bildirimde eğer kullanıcı bu parametrelerden birini es geçerse default olarak -1 gönderilecek. Bu sayede fonksiyon
+		aldığı argümanları sınayarak örneğin -1 gönderilen argümanların yerine o günün tarihine ait değeri girecek. Bu şekilde bir kullanım
+		mevcut.
+
+
+
+
+
+____________________________________
+
+	Auto Type Deduction
+____________________________________
+
+
+Typeholder olarak görev yapıyor. Derleyici yapacağı çıkarımla Auto'nun yerinde bir türün kullanıldığını anlayacak.
+
+* Kritik Kısım: Tür çıkarımı tanımlanan değişken için mi yapılır yoksa auto keywordü karşılığı mı?
+- auto için yapılıyor.
+
+Yani örneğin auto için tür çıkarımı aşağıdaki gibi int olursa;
+	
+	int a = 10;
+	auto &x = a;
+
+burada int türden değişken tanımlanmaz. int& türden tanımlanmış olur. auto için yapılan tür çıkarımı aslında int. 
+
+
+Önemli Not
+----------
+Value category ifadeyi niteleyen bir terim. Bir değişkenin value kategorisi diye bir şey olmaz. İfadelerin value kategorisi olur.
+	
+	int x = 5;  // sadece x'in data type'ından bahsedebiliriz burada
+
+Örneğin x değişkeninin value kategorisi L-Value demek yanlış olur. Çünkü x bir ifade değil burada. Fakat şöyle yazarsak;
+	
+	x;	==> Şuan bu bir ifadedir ve value kategorisinden bahsedebiliriz.
+
+
+
+
+** Önemli Kural **
+------------------
+Bir değişkenin türü referans türü olabilir fakat bir ifadenin türü referans türü olamaz.
+
+	int a = 5;	a'nın data type ==> int
+	int& r = a;	r'nin data type ==> int&
+
+	    a		a ifadesinin data type int
+	    r		r ifadesinin data type int ( int& değil, çünkü bir ifadenin türü referans türü olamaz. )
+
+
+* auto ile tanımlanan değişken default olarak initialize edilemez.
+
+	auto x;	// invalid
+
+* ilk değer veren ifadenin türü neyse auto'ya karşılık gelen tür odur.
+	
+	auto x = 10;  // int = auto
+
+
+
+
+
+
+
+3 Farklı Durumda Yapılan Çıkarımlar ( auto keyword )
+----------------------------------------------------
+
+ 1) auto x = expr;
+ 2) auto &x = expr;
+ 3) auto &&x = expr;
+
+bu 3 durumda yapılan çıkarımlarda farklılıklar var. 
+
+
+
+1) auto x = expr
+________________
+
+Bu durumda auto'nun karşılığı olan tür, doğrudan ilk değer veren ifadenin türü.
+	
+	auto x = 10; // yani burada ilk değer veren ifade 10 ifadesi. 10 ifadesinin türü auto için çıkarım yapılacak tür
+
+	char c = 5;
+	auto a = c;	// burada ilk değer veren ifade c ifadesi, onun türü de char. o halde auto için yapılacak tür çıkarımı ==> char
+
+dikkat*
+	auto a = +c;	// burada ilk değer veren ifade +c ifadesi. Bu ifadede + operatörünün operandı olan c char türünde. Aritmetik bir işlem
+			// olduğu için integral promotion uygulanır ve bu ifadenin türü int olur. O halde auto için yapılan tür çıkarımı int.
+
+
+*** Eğer ilk değer veren ifade const bir nesneye ilişkinse constluk düşer.
+
+	const int x = 10;
+	     auto y = x; // ilk değer veren ifade x, ve bu ifadenin türü const int. Fakat bu durumda constluk düşer ve auto için yapılan tür çıkarımı
+			 // int olarak yapılır.
+
+* int x = 10;
+  int& r = x;
+  auto y = r; // ilk değer veren ifade r ifadesi. r ifadesinin türü int (dikkat r değişkeninin türü değil, ifadenin türü). O halde auto için yapılan
+	      // tür çıkarımı int olacak.
+
+
+* Hem const hem referans olursa da kural yine aynı.
+
+	int x = 132;
+	const int& r = x;
+	auto y = r;		// ilk değer veren ifade r ifadesi, bu ifadenin türü const int. Fakat bu durumda constluk düşüyor. O halde auto için
+				// yapılan tür çıkarımı int.
+
+
+* int ar[5] {};
+  auto x = ar;	// array decay uygulanır. &ar[0] olur.
+		// ilk değer veren ifade(&ar[0])nin türü adres türü yani int*. O halde auto için yapılacak tür çıkarımı int* olacak.
+
+**dikkat**
+	
+  const int ar[5] {};
+  auto x = ar;		// burada yapılan tür çıkarımı const int* olacak.
+
+Hani constluk düşüyordu?
+-Buradaki constluk kendisinin constluğu değil, low-level constluk. Low-level yani pointer to const int.
+
+* auto p = "kaveh";	// C++ dilinde statik tür sisteminde string literalleri elemanları const char olan dizilerdir.
+			// Yani ilk değer veren ifadenin türü ==> const char[6]
+			// burada yine array decay uygulanacak ve p const char* olacak. Yani auto için yapılan tür çıkarımı const char*
+
+* int foo(int);
+  auto x = foo;	// burada ilk değer veren ifade foo ifadesi. Function call parantezleri ile yazılmamış o halde Function Decay olacak.
+		// yani &foo'ya dönüşecek. &foo ifadesinin türü ise int(*)int'dir. Yani bir fonksiyonu tutan pointer/adres türü.
+
+
+
+******************************
+ÖZET 
+
+    auto x = expr    İfadelerinde tür çıkarımı ilk değer veren ifadenin türüne göre yapılır.  
+		     Tür çıkarımı yapılan ifadede constluk varsa eğer düşer. Fakat bu constluğun nesneye ait olması yani top-level constluk olması gerekir. 
+		     Eğer low-level constluk varsa bu durumda constluk düşmez.
+		     Array Decay, Pointer Decay uygulanır.
+			 
+******************************
+	
+
+
+
+2) auto &x = expr
+_________________
+
+* expr her zaman L-Value reference olmalı. Yoksa sentaks hatası olur.
+
+	int x = 10;	
+	auto &r = x;	// x'in türü ne? - int. O halde auto için yapılan tür çıkarımı int olacak.
+			// ifade şöyle ilk değer verilmiş gibi olur ==> int& r = x;
+	
+	auto &r = 10;	// hata. ilk değer veren ifadenin value kategorisi L-Value olmalı.
+
+* Constluk düşmez. Zaten düşse saçma olur.
+
+	const int x = 5;
+	auto &r = x;		// x ifadesinin türü const int. constluk düşmeden auto için tür çıkarımı yapılır ==> const int
+				// yani böyle olmuş olur ==> const int &r = x;
+
+** int ar[5] = {1,2,3,4,5};
+   auto &x = ar;		// array decay uygulanır. &ar[0] olur. bu ifadenin türü adresi türüdür.
+				// bu ifade için yapılan tür çıkarımı ==> int(&)[5]. Yani şöyle olmuş olur ==> int(&r)[5] = ar;
+
+
+
+---------------------------------------------------------------------------------------------------
+
+ÖNEMLİ NOT:
+
+	auto &r = expr;		tipi tür çıkarımında function ve array decay uygulanmaz.
+
+---------------------------------------------------------------------------------------------------
+
+
+*** auto x = "onur";		// Tür çıkarımı const char* olarak yapılacak
+    auto &y = "onur";		// Array decay uygulanmaz. const char(&y)[5] = "onur";
+
+				// fonksiyon ismiyle ilk değer verildiği zaman bu durumda yine decay gerçekleşmeyecek.
+
+***
+  çok önemli
+	
+  int foo(int);
+  
+  foo'nun türü ne? - int(int)
+ 
+  foo eğer bir ifadede kullanılır ve function decay olursa foo'nun türü int(*)int'e dönüşür. yani int(int) türünden fonksiyon tutan adres türü.
+
+  auto r = foo;	// referans deklaratörü olmadığı için function decay uygulanır. auto yerine gelen tür fonk. türü değil adres türü olacak.
+  
+  int(*r)(int) = foo;
+
+  auto yerine gelen tür fonksiyon türü olursa ==> int(int) türü olur. Ancak fonksiyon decay olduğu için auto yerine gelen tür ==> int(*)int olur.	
+
+
+***	int foo(int);
+	auto &r = foo;	// bu durumda foo için function decay uygulanmaz. foo ifadesinin türü int(int) olur.
+			// bu durumda auto için yapılan tür çıkarımı int(int).
+
+ 	yani yerine koyarsak ==> int(&r)(int) = foo; Bu durumda r demek foo demek olmuş olur **
+	
+	r(20); 		// bu ifadede r aslıda foo demek. O halde bu ifade şuna eşit ==> foo(20);
+
+
+
+* Auto'nun tek başına bulunma zorunluluğu yok. Başına const, constexpr, static vs. gelebilir.
+
+	const auto &r = foo;
+	static auto &r = foo;
+
+
+
+******************************
+ÖZET 
+
+    auto &x = expr      Tür çıkarım yine aynı şekilde yapılır fakat constluk düşmez.
+			Array Decay ve Function Decay uygulanmaz.
+			
+
+******************************
+
+
+
+
+
+3) auto &&r = expr | Forwarding Reference / Universal Reference
+_______________________________________________________________
+
+* Herhangi bir türden, herhangi bir value kategoriden bir ifade ile ilk değer verilebilir. Yani herşeye bağlanır.
+* İlk değer veren ifadenin ne olduğuna bağlı olarak r için elde edilecek nihai tür ya L-Value referans türü ya da R-Value referans türü olacak.
+
+Kurallar
+--------
+
+* Eğer ilk değer veren ifade(initializer) L Value ise, r L value referansı olacak.
+
+	const int x = 10;	
+	auto &&r = x;		// Initializer ifadesi x'in value kategorisi L value. O halde universal referansımız L value referansa dönüşecek.
+
+
+* Eğer initializer ifadesi R-Value ise, r referansı R-Value referansı olacak.
+
+	int x = 10;
+	auto &&r = x + 4; // initializer ifadesi( x + 4 )nin value kategorisi R value. O halde universal referansımız R value referansa dönüşecek.
+
+
+***
+  DİKKAT == bu iki kuralda da r'nin value kategorisinden bahsediliyor, auto için yapılan çıkarımdan değil!
+
+
+
+Şimdi gelelim auto için yapılan tür çıkarımına.
+
+Universal Reference kullanıldığında auto için yapılan çıkarım, yani autonun yerine ne geleceği ilk değer veren ifadenin value kategorisine bağlı.
+
+
+
+* İlk değer veren ifadenin value kategorisi L-Value ise auto için yapılan çıkarım L-Value referans türü olacak.
+
+	L-Value auto ==> T&
+
+* İlk değer veren ifade R-Value ise auto için yapılan çıkarım T olacak.
+	
+	R-Value auto ==> T
+
+Örnek:
+------
+int x = 10;					int x = 10;
+auto &&r = x;					auto &&r = 20;
+	
+auto için yapılan çıkarım ne?			
+						
+cevap : int&					cevap : int
+
+
+Yani R-Value ile ilk değer verirsek auto için yapılan çıkarım int olduğu için r R-Value referansı olacak.
+
+
+Reference Collapsing
+--------------------
+
+Dilin içinde öyle yerler var ki, referansa referans türü oluşuyor. Fakat referansa referans türü dilin kurallarına göre olmadığı için o bir referans
+türüne bağlanıyor.
+
+* Eğer sol taraf referansına sol taraf referansı oluşursa;
+	
+	T&	&	T&
+			-> sol taraf referansına bağlanır.
+
+* Eğer sağ taraf referansına sol taraf referansı oluşursa yine sol taraf referansına bağlanır.
+	
+	T&	&&	T&
+
+* Sol taraf referansına sağ taraf referansı oluşursa yine sol taraf referansına bağlanır.
+
+	T&&	&	T&
+
+* Ama sağ taraf referansına sağ taraf referansı oluşursa sağ taraf referansı oluşuyor.
+
+	T&&	&&	T&&
+
+
+ ----------------------------------------
+|	Reference Collapsing Table	 |
+ ----------------------------------------
+|					 |
+|	T&	&	==>	T&	 |
+|	T&	&&	==>	T&	 |	
+|	T&	&	==>	T&	 |
+|	T&&	&&	==>	T&&    --|--> Sadece burada T&& oluşuyor.	
+|					 |
+|					 |
+ ----------------------------------------
+
+
+
+
+
+
+__________________________
+
+	Decltype
+__________________________
+
+Her zaman bir tür elde ederiz. decltype kullanmak için bir değişken tanımlamamız gerekmiyor.
+Tür gereken, bir type yazabildiğimiz her yerde decltype ile çıkarım tapılan türü kullanabiliriz. Yani decltype'ın kullanıldığı yapı
+doğrudan bir türe karşılık geliyor.
+
+Örneğin decltype ile olan bir ifade int, int*, int&, const int vs. olabilir.
+
+	decltype(10)
+	decltype(x)
+	decltype(x + 5)
+	decltype(x.y)
+
+
+Decltype'a ilişkin 2 ayrı kural seti var.
+
+
+1.KURAL SETİ
+------------
+Bir operatör gibi düşünürsek, decltype'ın operandı isim formunda olacak. Yani bir identifier olacak.
+
+	decltype(x)
+	decltype(y)
+
+	bunlar da isim formatında;
+
+	decltype(a.y)
+	decltype(p->m)
+
+* Bu kural setindeki kural şu; aldığı identifier hangi türden declare edilmişse o tür elde edilir.
+	
+	int ar[4]{};
+	
+	decltype(ar);		==> int[4] türü
+	decltype(ar) x;		==> int x[4] türü demek
+	
+	int x{2432};
+	int &r = x;
+	decltype(x);	==> int&, çünkü int& ile initialize edilmiş. Yoksa x ifadesi int& türünde değil, zaten bir ifade referans türünde olamaz hatırla!
+	int &&r = x;
+	decltype(x);	==> int&&
+	
+	
+Structların memberleri için de geçerli.
+
+	Struct Nec{
+
+	int x;
+	double *p;
+	
+	};
+
+	Nec mynec;
+	
+	decltype(mynec.p);	==> double* türü
+	decltype(mynec.x); 	==> int türü
+
+	Nec* necptr = &mynec;
+	decltype(necptr->p); 	==> double türü
+
+
+
+
+
+2.KURAL SETİ
+------------
+Decltype'ın operandının bir expression olması durumunda yani isim formunda olmayan bir ifade olması durumunda uygulanan kural seti.
+
+	decltype(10);
+	decltype(x + 3);
+
+DİKKAT:
+   decltype içine yazılan x ile (x) farklılık oluşturur ve ikiside farklı kural setine tabidir. 
+
+	decltype(x)	==> identifier olduğu için ilk kural seti
+	decltype((x))	==> bu şekilde bir ifade olarak ele alınır yani ikinci kural setine tabidir.
+
+
+
+decltype(expr)
+
+Elde edilen türün hangi tür olduğu, bu ifadenin primary value kategorisine bağlıdır.
+
+Expression'un value kategorisi;
+
+	PR ise elde edilen tür	T
+	L  ise elde edilen tür  T&
+	x  ise elde edilen tür  T&&
+
+
+
+Örnekler
+--------
+
+	decltype(4)	==> PR Value olduğu için int
+	int x = 56;
+	dectype(+x);	==> PR Value, int
+	decltype(x++);	==> PR Value, int
+	decltype(++x);	==> L Value, int&
+
+___________________________
+
+
+	int x = 56;
+	int* ptr = &x;
+	decltype(*ptr)		==>	L Value, int&
+
+
+	int a[5]{};
+	decltype(a[3])		==>	L value, int&
+
+
+
+Mülakat Sorusu
+--------------
+
+	int x = 10;
+	decltype(x);		==> int
+	decltype((x));		==> isim formundan ifade formuna geçti.
+
+NOT:
+	int foo();
+	int& bar();
+	int&& baz();
+
+	foo()	==> bu ifadenin value kategorisi PR Value
+	bar()	==> bu ifadenin value kategorisi L Value
+	baz()	==> bu ifadenin value kategorisi X Value
+
+* Eğer çağrılan fonksiyonun geri dönüş değeri L value referans türü ise fonksiyon çağrısının oluşturduğu
+ifadenin değer kategorisi L Value'dir.
+
+* Fonksiyonun geri dönüş değeri R Value referans türüyse fonksiyon çağrı ifadesi value category olarak X Value'dir.
+
+	decltype(foo())		==> PR Value, int
+	decltype(bar())		==> L Value, int&
+	decltype(baz())		==> sağ taraf referans türü, int&&
+
+	decltype(baz()) r = x;	// hata çünkü R Value referansa L value ifade ile ilk değer verildi.
+	decltype(baz()) r = x + 3; // burada R value ile init. ediyoruz. Hata yok
+
+
+
+NOT | Unevaluated Context
+-------------------------
+decltype'ın operandı olan ifade için işlem kodu üretilmez.
+
+	int x{44};
+	decltype(x++) y = 5;
+	cout<<"x = "<< x << '\n';
+
+Output: x = 44
+
+Yani burada işlem kodu üretilmez. Side effect uygulanmaz.
+
+	int* ptr = nullptr;
+	int x{};
+	decltype(*ptr) y = x;
+
+*ptr bir ifade, yani 2. kural seti uygulanacak. İfadenin türü int, value kategorisi L Value. Dolayısıyla
+int& türü elde edilir. 
+
+	int& y = x;	oldu yani.
+
+Bu işlem için işlem kodu üretilse, *ptr ile nullptr'ı derefence ettiğimiz için tanımsız davranış olur. Ancak işlem
+kodu üretilmediği için UB olmaz.
+
+
+
+
+
+
+_________________________________________
+
+	Scope ve NameLookup
+_________________________________________
+
+* Compile time'a ilişkin.
+* İsimlere ilişkin bir kavram. ( identifier )
+
+Bir ismin scope'u demek o ismin bilindiği, kullanılabildiği kod alanı demektir.
+Scope değişkenlerle ilgili bir kavram değil. İsimlerle ilgili bir kavram.
+Bu isim bir değişkene de ait olabilir, bir türe veya etikete de ait olabilir.
+
+
+Scopes in C++
+-------------
+C++'da 5 tane scope var.
+
+Namespace Scope
+Block Scope
+Class Scope
+Function Prototype Scope
+Function Scope
+
+
+Name Lookup ( İsim Arama )
+--------------------------
+Derleyici kodu anlamlandırmak için derleme işleminin belirli bir sürecinde koddaki isimlerin hangi varlıklara ilişkin olduğunu
+anlamak zorunda.
+
+Informal olarak; Derleyicinin bir isim için şu sorunun cevabını aradığı süreç ==> "Bu neyin ismi?"
+
+(1) Name Lookup
+	(2) Context Check
+		(3) Access Control
+
+Sıra böyle gidiyor. Önce isim aranır. Aranan isim bulunduktan sonra o ismin kullandığı ifade/yer/bağlam içinde dilin kurallarına göre legalitesi sorgulanıyor.
+Legalitede bir problem yoksa o ismin o kod tarafından kullanılma hakkı var mı veya yok mu ona yönelik kurallar kontrol ediliyor. ==> Access Control
+
+Örnek:
+	int x(int);			(1) Namelookup yapıldı ve hata yok, isim bulundu.
+	int main(){			(2) Context Check yapıldı fakat bu isim atama operatörü operandı olamaz. Sentaks hatası olacak.
+		x = 4;
+	}
+
+
+Namelookup
+a) başarılı olabilir
+	derleyicinin aranan ismin hangi varlığa ilişkin olduğunu anlaması demek.
+b) başarısız olabilir
+	derleyicinin aranan ismin hangi varlığa ilişkin olduğunu bulamaması demek. ve namelookup'ın başarısız olması her zaman sentaks hatasıdır.
+	(1) İsmin bulunamaması.
+	(2) Birden fazla isim bulunması ve dilin kurallarına göre bunların arasında bir ayrım yapılamaması.
+	    (ambigious hatası verir)
+
+Name Lookup Neden Başarısız olabilir?
+-C dilinde name lookup'ın başarısız olmasının belki de tek nedeni aranan ismi bulunamaması.
+
+
+
+
+The Golden Rules Of Namelookup
+------------------------------
+(1) İsim arama bir sıra dahilinde yapılır.
+	Buraya bak, bulamazsan şuraya bak vs.
+(2) Aranan isim bulununca isim arama sona erer ve bir daha başlamaz.
+
+mülakat/örnek
+-------------
+				
+int x(int);			Örneğin burada sentaks hatası verir fakat neden? Çünkü burada derleyici 2 numaralı ifadeye geldiğinde önce x ismin aramaya 
+				name lookup kurallarına göre başlar. Yani kendi bulunduğu scope içinde aramaya başlar, bulursa name lookup sonlandırılır, bulunamazsa bir üst
+				blokta arama devam eder. Burada aynı blokta bulunan x isminin definition'unu bulur( int x = 5 ) ve name lookup sonlandırılır. Context check aşamasına
+				geçilir fakat x(12) bir fonksiyon çağrı ifadesidir ve bu yüzden context check aşaması sonlandırılır ve hata verir.
+int main()
+{
+	int x = 5;	// 1
+	x(12);		// 2
+}	
+
+
+(3) 3. altın kurala daha sonra değineceğiz.
+
+
+
+
+
+
+____________________________________________________
+
+	Scope Resolution Operator ( :: )
+____________________________________________________
+
+
+C'de bu operatör yok.
+Bu operatörün farklı farklı kulanım biçimleri var.
+Ancak şimdilik bu operatörün kullanım biçimlerini 2'ye ayıralım;
+
+
+(1) Unary Operator Olarak Kullanımı
+-----------------------------------
+
+	::x
+
+Böyle kullanırsak, bu derleyiciye operandı olan ismin global namespace'de aranması talimatı.
+
+	::x // x ismini global namespace'de arayacak
+
+* Bir isim ya qualified Name'dir ya da unqualified Name'dir. İsmin qualified olması demek ismin aşağıdaki operatörlerden birisinin
+operandı olarak kullanılması demek.
+
+
+
+Qualified Name ( Nitelenmiş İsim)
+_________________________________
+
+	a.b
+	
+	p->x
+
+	::a
+
+	x::y
+
+İsmin unqualified name olması ise bu operatörlerin operandı olmadan kullanılması, yalın olarak kullanılması demektir.
+
+
+
+*mülakat sorusu
+---------------
+
+int x = 5;
+int main()
+{
+	int x = x;
+}
+
+Cevap = UB.
+
+Burada Namelookup kurallarına göre isim aranacak. 	int x = x;
+								^
+								|
+							     isim bulundu. fakat bu x, x'in kendisi.
+							Yani kendi çöp değeri ile ilk değer vermiş oluruz.
+
+Eğer global değişkenin değeri ile initialize etmek istersek ::x kullanırız;
+	
+	int x = ::x;
+
+
+
+
+*mülakat sorusu
+---------------
+Soru: 1 numaralı ifade Recursive bir çağrı mıdır?
+Cevap: Hayır.
+
+void foo(int foo){
+	foo(foo); // 1		==> bu isim (foo) scope'dan dolayı parametre değişkeninin ismidir. Fonksiyonun ismi değil.
+}				    yani name lookup ile ilk olarak parametre değişkeninin ismini bulacak.
+
+Bu kodun recursive hali;
+
+	void foo(int foo)
+	{
+		::foo(foo);
+	}
+
+
+
+
+Source File ve Translation Unit
+_______________________________
+
+İkisi aynı şey değil.
+
+Source File = Preprocessor directivelerinin yapılmamış halı, yürütülmemiş hali.
+
+Translation Unit = Preprocessor directiveleri işlenmiş, preprocessor time tamamlanmış ve sıra derleyiciye gelmiş.
+
+
+
+
+______________________________________________
+
+	ODR ( One Definition Rule )
+______________________________________________
+
+Yazılımsal varlıkların sadece ve sadece proje içinde bir tane tanımı olabilir. İkinci bir tanımının olması ill formed'tur. Yani dilin kurallarına
+aykırıdır. Ama birden fazla bildirimi olabilir. 
+C++ dili birçok durumda declaration ile definition arasında farklılık görüyor.
+
+* Her declaration bir definition değildir ama her definition bir declarationdur.
+
+* ODR proje bazındadır. Sadece source file bazında değildir.
+
+
+
+*mülakat sorusu
+---------------
+//onur.h
+
+	int x = 12;	onur.h başlık dosyasına değişken definitionu koyduk. Peki doğru mu? - Hayır kesinlikle. Çünkü eper biz bunu bir .h dosyasına koyarsak ve bu header dosyası
+			2 ayrı source file tarafından (aynı projede) include edilirse ODR çiğnenmiş olur.
+
+* Özellikle ODR'da fonksiyonlar ve global değişkenler çok önemlidir. Bunların da birden fazla tanımı olamaz. Hatta bunu derleyicinin saptama imkanı da yok. Çünkü derleyicinin
+derleme birimi kaynak dosya translation unit. En iyi ihtimalle link durumunda hata alırız.
+
+* Fakat ODR aynı kaynak dosyasında çiğnenirse doğrudan sentaks hatasıdır. Çünkü derleyici bunu görür.
+
+Örneğin
+-------
+
+	int x = 5;
+	
+	int x = 80;	direk sentaks hatası.
+
+
+* Bazı istisna durumlar var ki ODR birden fazla tanımı olmasına rağmen çiğnenmiyor.
+
+- Inline Functions
+- Inline Variable
+- Constexpr Functions
+- Template Definitions
+
+
+
+
+
+
+____________________________________
+
+	Inline Expansion
+____________________________________
+
+Derleyicinin kullandığı bir optimizasyon tekniği ve en etkili optimizasyon tekniklerinden biri.
+C++'da en önemli kurallardan biri as if rule denilen kural.
+
+Yani derleyici Observable Behaviour değişmediği sürece, kodu farklı şekilde ele alabilir.
+Derleyicinin yaptığı optimizasyonlar kodun efficient olmasını sağlar.
+
+Derleyicinin Inline Expansion yapabilmesi için;
+
+(1) Olmazsa olmaz koşulu, derleyicinin fonksiyon çağrısının yapıldığı noktada bu fonksiyonun tanımını görmesi gerekir. Sadece bildirimini, prototipini
+görse yapamaz.
+
+(2) Derleyiciye bağlı, derleyici uygun bulursa, isterse.
+
+(3) Derleyici yapabilirse. ( Yani isteyip de yapabilirse. İsteyip yapamadığı da olabilir. )
+Mesela iç içe kontrol deyimleri falan varsa, recursive çağrılar çoksa vs. derleyicinin onu inline expanse etme durumu azalır.
+
+(4) Derleyicilerin tipik olarak inline expansion ile ilgili switchleri var. Yani mesela "always inline expansion yap" gibi bir switch olabilir. Veya tam tersi olarak
+".. yapma" diye bir switch olabilir.
+
+* Inline expansion ile Inline function birbiri ile karıştırılabiliyor.
+
+
+
+
+___________________________________
+
+	Inline Function
+___________________________________
+
+Fonksiyonun inline olarak tanımlanması derleyiciyi inline expansion yapmaya teşvik eder. Fakat derleyici inline expansion yapmayabilir, yapmak zorunda değil.
+Tam tersi olarak Inline olarak tanımlanmamış fonksiyonlar için de inline expansion yapılamaz diye bir şey yok.
+
+
+O Zaman Neden Kullanalım?
+-------------------------
+Dilin kuralları diyor ki inline fonksiyonlar ODR'ı şu koşulda çiğnemiyor: birden fazla kaynak dosyada eğer inline fonksiyon özdeş olarak tanımlanırsa
+ODR ihlal edilmez.
+
+//onur.h
+inline int sum_square(int x, int y)
+{
+	return x * x + y * y;				Bunlar özdeş değil! Her tokeni aynı olmak zorunda!
+}
+
+//oguz.h
+inline int sum_square(int x, int y)
+{
+	return x * x;
+}
+
+
+* Örneğin inline fonksiyonu neco.h başlık dosyasında tanımlasak ve proje içinde birden fazla kaynak dosyasına include edersek ODR'ı ihlal etmemiş oluruz.
+
+* Inline fonksiyonlar bu koşulları sağlarsa ODR çiğnenmez. Derleyici de bu fonksiyonun tanımını çağırıldığı yerde gördüğü için inline expansion yapma imkanına
+sahip olacak.
+
+* Yani hem derleyicinin fonksiyonun tanımını görmesini sağlamış oluyoruz hem de ODR'ı çiğnememiş oluyoruz. E derleyici de tanımı görebildiği için
+optimizasyon yapma imkanına sahip oluyor.
+
+
+
+header-only libary
+------------------
+Bir fonksiyonu inline yaparak, modülün ikinci bir dosyası olmadan sadece tek bir başlık dosyasından oluşan yani ona eşlik eden derlenecek bir kod dosyası olmayan bir
+modül oluşturabiliriz. Böyle modüllere header-only library denir.
+
+O zaman bütün fonksiyonları Inline yapalım?
+- Genel olarak derleyiciye o fonksiyon için inline expansion yapma imkanı vermek istiyorsak ve inline expansion'dan bir kar elde edilecek ise tipik olarak kodu çok küçük,
+az olan, sık çağrılan fonksiyonlar buna önemli bir aday.
+-Bazen de gereksiz inclusionlara neden olabilir.
+
+
+
+** Önemli
+---------
+Inline fonksiyonun derlenmiş hali, derlenmiş kodda bulunmak zorunda değil. Çünkü eğer derleyici bu fonksiyona yapılan çağrıların hepsini inline olarak expand ederse fonksiyonun
+derlenmiş hali ayrıca derlenmiş kodda bulunmak zorunda değil.
+
+
+* Inline function Modern C++'da gelen bir özellik değil, daha önceden de vardı.
+
+
+
+
+
+________________________________
+
+	Inline Variable
+________________________________
+
+Inline anahtar sözcüğü global değişkenlerin tanımında da kullanılır hale getirildi. Inline function ile hemen hemen aynı.
+Global değişkenlerde geçerli.
+
+* Örneğin global değişkenimizi başka kod dosyalarında da kullanmak istiyoruz, external linkage'a ait hale getiririz.
+
+	onur.h		onur.cpp
+	------		--------
+
+    extern int x;	int x = 5;
+
+
+
+Direk tanımı başlık dosyasına koyarsak ODR ihlal edilmiş olur. Bunların yerine inline variable şeklinde tanımlarız.
+
+
+
+
+____________________________________________________________
+
+	Numaralandırma Türleri ( Enumarations )
+____________________________________________________________
+
+C'de ki numaralandırma türleri ile C++'da bazı istenmeyen durumlar oluştu. 3 tanesini iyi anlarsak neden Modern C++'da yeni bir numaralandırma türünün dile eklendiğini daha iyi anlayabiliriz.
+
+(1) Örütlü Dönüşümler
+
+C'den gelen numaralandırma türleri C'de diğer aritmetik türlerle ya da diğer numaralandırma türleriyle örtülü dönüşüm ilişkisi içinde.
+C++ da bir hatayla bunu ilk başlarda korudu.
+
+enum Color{
+	White, Gray, Blue
+};
+
+Color mycolor = Blue;
+
+int x = mycolor;	// legal, örtülü dönüşüm var. Fakat böyle olması saçma.
+				valid but bad
+
+Bunun legal olması çok tehlikeli, yanlışlıkla yapılan dönüşümleri legal kılıyor, hata bulmak zorlaşıyor.
+
+(2) Underlying-Type ( Derleyiciye Bağlı )
+
+Bir derleyicide underlying type int iken bir başka derleyicide long olabilir. Underlying type'ın derleyiciden derleyiciye değişmesi enum türlerinin incomplete type olarak kullanılmasını
+mümkün kılmıyordu. C'de halen böyle.
+
+C'den gelen kurallarda enum sabitlerinin kendi scope'u yok. Enum constant dediğimiz isimlerin scope'u onlara sahip olan enum türleriyle aynı.
+
+* C++'da artık aritmetik türlerden enum türlerine örtülü dönüşüm yok.
+
+
+-----------
+Scoped Enum
+-----------
+
+C++'da eklendi. Enumlara scope kavramı geldi. Eski enumlarda eğer underlying tyoe belirtilmezse underlying type otomatik olarak int oluyor.
+
+	enum Class Color : unsigned char { Blue, Green, Red };	// artık böyle
+
+** eskiden enum türünün underlying type'ı derleyiciye göre değiştiğinden struct içinde incomplete type böyle yapıldı ve sorun çözüldü.
+
+
+İkinci Önemli Farklılık ( Scoped Enum ) 
+---------------------------------------
+	enum Class Color : unsigned char { Blue, Red, Green };
+	Color mycolor = Color :: Blue;	// artık böyle
+	Color mycolor = Green;		// sentaks hatası
+
+
+Bunlar artık scope kazandığı için farklı source file'lardan gelen enum türleri ile çakışmayacak.
+
+
+C++ 20 standardıyla yeni bir araç eklendi.
+
+Bazı durumlarda enumların kendi scopelarının olması koddaki verbosity ( kod kalabalığı ) arttırıyor. 
+	
+	enum Class Suit{ club, diamond, hearth };
+	Suit::club;  // sürekli bu şekilde yazarak kullanmalıyız yeni scope kavramından dolayı. bunu daha basite indirgemek için ise şöyle bir yol izleyebiliriz;
+
+	using enum Suit;
+
+artık nitelenmiş isim(Suit) kullanma zorunluluğunu ortadan kaldırmış olduk.
+
+	x = club;
+	y = hearth;
+	auto x = diamond;
+
+hatta şöyle de oluyor: 		using Suit::Diamond;	// şuan sadece diamond için bu işlemi yapmış olduk
+				x = Diamond;	// hata yok, sadece diamond için geçerli	
+				y = Hearth;	// sentaks hatası
+
+
+
+
+
