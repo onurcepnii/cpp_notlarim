@@ -20,8 +20,8 @@ Parametresi olmayan veya tüm parametreleri default argüman alan constructor.
 Special Member Functions
 ------------------------
 Modern C++'ta 6 tane special member functions var. 
-Bu fonksiyonları special yapan birinci özellik; belirli koşullar sağlandığında bu fonksiyonların kodunun bizim tarafımızdan değil derleyici tarafından
-yazılabilmesi.
+Bu fonksiyonları special yapan birinci özellik; belirli koşullar sağlandığında bu fonksiyonların kodunun bizim tarafımızdan değil
+derleyici tarafından yazılabilmesi.
 
 -Default Constructor
 -Destructor
@@ -33,17 +33,17 @@ yazılabilmesi.
 
 * to default a special member function (derleyicinin bir special member fonksiyonun kodunu yazması demek)
 
-* Bu fonksiyonlar aynı zamanda sınıf nesnelerinin oluşturulması, hayatının bitmesi, bir sınıf nesnesinin hayata bir başka sınıf nesnesinden değerini alarak 
-gelmesi, sınıf nesnelerinin birbirine atanması gibi işlemleri gerçekleştiriyorlar.
+* Bu fonksiyonlar aynı zamanda sınıf nesnelerinin oluşturulması, hayatının bitmesi, bir sınıf nesnesinin hayata bir başka sınıf 
+nesnesinden değerini alarak gelmesi, sınıf nesnelerinin birbirine atanması gibi işlemleri gerçekleştiriyorlar.
 
 * Her constructor bir special member function değildir!
 
-* Örneğin bir fighter nesnesi oluşturduğumuzda onun kullanılabilir hale gelmesi için bazı işlemlerin yapılmasının gerekiyor tipik olarak. Örneğin non-static
-data memberlarının belirli bir anlam taşıyan değerler ile donatılması gerekiyor vs. İşte constructorun görevi bu, nesneyi anlamlı, kullanılabilir bir varlık
-haline getirmek.
+* Örneğin bir fighter nesnesi oluşturduğumuzda onun kullanılabilir hale gelmesi için bazı işlemlerin yapılmasının gerekiyor tipik 
+olarak. Örneğin non-static data memberlarının belirli bir anlam taşıyan değerler ile donatılması gerekiyor vs. İşte constructorun 
+görevi bu, nesneyi anlamlı, kullanılabilir bir varlık haline getirmek.
 
-* Destructor ise  nesnenin hayatını bitirir. İleride göreceğimiz bazı durumlarda resource leak olmaması için nesnenin hayatının bitmesi ile birlikte o kaynakların
-geri verilmesi gerekecek. Bu işlemlerden sorumlu olacak fonksiyon destructor.
+* Destructor ise  nesnenin hayatını bitirir. İleride göreceğimiz bazı durumlarda resource leak olmaması için nesnenin hayatının
+bitmesi ile birlikte o kaynakların geri verilmesi gerekecek. Bu işlemlerden sorumlu olacak fonksiyon destructor.
 
 
 
@@ -65,7 +65,8 @@ geri verilmesi gerekecek. Bu işlemlerden sorumlu olacak fonksiyon destructor.
 
 
 
-* Örneklerin çoğunda sınıfların constructor ve destructorları class içinde inline olarak tanımlanacaktır. Fakat yukarıdaki gibi de tanımlanabiliyor.
+* Örneklerin çoğunda sınıfların constructor ve destructorları class içinde inline olarak tanımlanacaktır. Fakat yukarıdaki gibi de
+tanımlanabiliyor.
 
 
 	class Myclass{
@@ -83,8 +84,8 @@ geri verilmesi gerekecek. Bu işlemlerden sorumlu olacak fonksiyon destructor.
 	
 	Myclass m;	// default initialize ettik. Dilin kuralı bu sınıf nesnesi için default constructor çağıracak.
 
-			// *** Global sınıf nesnelerinin hayata gelmesi main() fonksiyonunun çağırılmasınıdan önce. Hayatlarının bitmesi main() fonksiyonunun
-				kodunun çalışmasından sonra.
+			// *** Global sınıf nesnelerinin hayata gelmesi main() fonksiyonunun çağırılmasınıdan önce. Hayatlarının 
+			// bitmesi main() fonksiyonunun kodunun çalışmasından sonra.
 	int main()
 	{
 		std::cout << " main has just started \n";
@@ -103,7 +104,8 @@ OUTPUT = Myclass default ctor this = 00C35400
 * Global sınıf nesnelerinin hayata gelmesi main() fonksiyonunun çağırılmasınıdan önce. Hayatlarının bitmesi main() fonksiyonunun
 				kodunun çalışmasından sonra.
 
-* Aynı kaynak dosyada 3 tane global değişken oluşturursak ( Myclass m1, m2, m3; ) bunların hayata gelme sırası belirli mi? - Kesinlikle evet.
+* Aynı kaynak dosyada 3 tane global değişken oluşturursak ( Myclass m1, m2, m3; ) bunların hayata gelme sırası belirli mi? 
+- Kesinlikle evet.
 Bildirimlerdeki sırayla hayata gelecekler. Önce m1 sonra m2 ve daha sonra m3. 
 
 * Farklı sınıf türlerinden de olabilir, orada da aynı bu şekilde.
@@ -111,12 +113,14 @@ Bildirimlerdeki sırayla hayata gelecekler. Önce m1 sonra m2 ve daha sonra m3.
 	A a;	
 	B b;
 	C c;
- Bu durumda constructorlar şu sırayla çağırılır; önce a sonra b sonra c. Destructorlar ise ters sırayla çağırılır. Yani hayata son gelen hayata ilk veda eder.
+ Bu durumda constructorlar şu sırayla çağırılır; önce a sonra b sonra c. Destructorlar ise ters sırayla çağırılır. Yani hayata son
+gelen hayata ilk veda eder.
 Yani ilk c sonra b sonra a destructorı çağırılır.
 
 
-* Bu constructorların çağırılması global değişkenler için aynı dosyada bir sıraya tabii. Ancak farklı kaynak dosyalardaki global değişkenlerin hayata gelme
-sırası dil tarafından belirli değil. Bununla ilgili probleme karşılık gelen idiomatic bir terim de var: "Static Initialization Fiasco"
+* Bu constructorların çağırılması global değişkenler için aynı dosyada bir sıraya tabii. Ancak farklı kaynak dosyalardaki global 
+değişkenlerin hayata gelme sırası dil tarafından belirli değil.
+Bununla ilgili probleme karşılık gelen idiomatic bir terim devar: "Static Initialization Fiasco"
 
 
 	cengiz.cpp
@@ -128,7 +132,8 @@ sırası dil tarafından belirli değil. Bununla ilgili probleme karşılık gel
 	oguzhan.cpp
 		O ox; // Global olarak O türünden ox tanımlanmış olsun.
 
-Bunlar global değişken olduklarına göre main() fonksiyonu çağırılmadan hayata gelecekler. Peki hangisi daha önce hayata gelecek? - Belli değil. Ne bileyim ben
+Bunlar global değişken olduklarına göre main() fonksiyonu çağırılmadan hayata gelecekler. Peki hangisi daha önce hayata gelecek? 
+- Belli değil. Ne bileyim ben
  
 
 
@@ -144,12 +149,15 @@ void func()
 
 int main()
 {
-	// herhangi bir çağrı yok func() fonksiyonuna, o yüzden Myclass m; nesnesi oluşturulmaz statik olsa da. Eğer foo() ya çağrı gelirse oluşturulur.
+	// herhangi bir çağrı yok func() fonksiyonuna, o yüzden Myclass m; nesnesi oluşturulmaz statik olsa da. Eğer foo() ya çağrı 
+	// gelirse oluşturulur.
 
 }
 
-*** Fakat foo() fonksiyonu sadece ilk çağırıldığında m nesnesi oluşturulur. İkinci üçüncü veya daha fazla çağırdığımızda tekrar tekrar oluşturulmaz.
-*** Statik ömürlü yerel değişkenlerin hayatları main fonksiyonunun sonlandırılmasından sonlanır. Yani destructor, main sonlandırıldıktan sonra çalıştırılıyor.
+*** Fakat foo() fonksiyonu sadece ilk çağırıldığında m nesnesi oluşturulur. İkinci üçüncü veya daha fazla çağırdığımızda tekrar tekrar
+oluşturulmaz.
+*** Statik ömürlü yerel değişkenlerin hayatları main fonksiyonunun sonlandırılmasından sonlanır. Yani destructor, main sonlandırıldıktan
+sonra çalıştırılıyor.
 
 
 Soru:
@@ -179,7 +187,8 @@ Mülakatlarda sorulan puzzle tarzı sorulara örnek:
 		Myclass a[100];
 	}
 
-Burada 100 tane Myclass türünden nesne oluşturulacak ve constructor'ları çalıştırılacak. Bu sayede 0'dan 100'e kadar yazdırmış olacağız döngü kullanmadan.
+Burada 100 tane Myclass türünden nesne oluşturulacak ve constructor'ları çalıştırılacak. Bu sayede 0'dan 100'e kadar yazdırmış olacağız
+döngü kullanmadan.
 
 
 
@@ -217,7 +226,8 @@ Soru 1 : Hangi durumlarda default constructor çağırılıyor?
 	
 	Myclass m{};
 
-Not: Eğer Myclass m(); bu şekilde yazdığımızda aslında bu geri dönüş değeri türü Myclass sınıfı olan m isimli bir fonksiyon bildirimi olmuş oluyor, dikkat!
+Not: Eğer Myclass m(); bu şekilde yazdığımızda aslında bu geri dönüş değeri türü Myclass sınıfı olan m isimli bir fonksiyon bildirimi
+olmuş oluyor, dikkat!
 
 
 ---------------------------------
@@ -228,8 +238,8 @@ ________________________________________________________________________________
 
 1) Bir fonksiyonun delete edilmesi.
 
-  Bir fonksiyonun delete edilmesi demek bu fonksiyon için özel bir sentaksla ( bu sentaksa delete declaration diyebiliriz ) fonksiyonun var olduğunun
-fakat ona yapılacak çağrının sentaks hatası olması gerektiğinin bildirilmesi demek.
+  Bir fonksiyonun delete edilmesi demek bu fonksiyon için özel bir sentaksla ( bu sentaksa delete declaration diyebiliriz )
+fonksiyonun var olduğunun fakat ona yapılacak çağrının sentaks hatası olması gerektiğinin bildirilmesi demek.
 
 	void foo(int) = delete; // bu fonksiyona çağrı yapılması durumunda sentaks hatası olacak.
 
@@ -247,7 +257,8 @@ fakat ona yapılacak çağrının sentaks hatası olması gerektiğinin bildiril
 	{
 		foo(2.3); // 2.fonksiyon çağırılır.
 
-		foo(32); // overload resolution ile ilk fonksiyon seçilir fakat o fonksiyon çağırılınca yine sentaks hatası verir delete edildiğinden dolayı.
+		foo(32); // overload resolution ile ilk fonksiyon seçilir fakat o fonksiyon çağırılınca yine sentaks hatası verir
+			//  delete edildiğinden dolayı.
 	}
 
 * Yani bir fonksiyonun olmamasından kaynaklı sentaks hatası başka, o fonksiyonun delete edilmesinden kaynaklı sentaks hatası başka.
@@ -292,7 +303,8 @@ fakat ona yapılacak çağrının sentaks hatası olması gerektiğinin bildiril
 		// yani programcı Nec sınıfının default constructorunun kodunun derleyici tarafından yazılmasını talep etmiş.
 	};
 
-* Herhangi bir fonksiyon default edilebilir mi? - Hayır. Eğer C++ 20 ile spaceship operatörünü saymazsak sadece Special Member Functions default edilebilir.
+* Herhangi bir fonksiyon default edilebilir mi? - Hayır. Eğer C++ 20 ile spaceship operatörünü saymazsak sadece Special Member 
+Functions default edilebilir.
 
 	class Nec{
 	public:
@@ -344,7 +356,8 @@ Programcı ya Nec() şeklinde ya, Nec() = default ya da Nec() = delete şeklinde
 
 Implicitly Declared
 -------------------
-Öyle durumlar var ki derleyici user declarde bir bildirim olmasa dahi dilin kurallarını zorlaması ile bir special member functionu implicitly bildiriyor.
+Öyle durumlar var ki derleyici user declarde bir bildirim olmasa dahi dilin kurallarını zorlaması ile bir special member functionu
+implicitly bildiriyor.
 Fakat burada da 2 tane alt kategori var;
 
 - Bildiriyor ve default ediyor.
@@ -375,7 +388,8 @@ O halde implicitly declared defaulted.
 	}
 
 Burada derleyicinin verdiği hata ==> 'Nec::Nec(void)' : attempting to reference a deleted function
-İşte burada derleyici yukarıda bahsettiğimiz gibi derleyici bir special functionu implicityle declare ediyor fakat aynı zamanda delete ediyor.
+İşte burada derleyici yukarıda bahsettiğimiz gibi derleyici bir special functionu implicityle declare ediyor fakat aynı zamanda delete
+ediyor.
 
 * Bir special member function not declared ise o yok demektir.
 * Bir special member function user declared olabilir.
@@ -394,8 +408,8 @@ Soru: Bütün sınıfların default constructoru olmak zorunda mı?
 
 	int main()
 	{
-		Nec ar[10];	// Örneğin Nec sınıfının default constructoru olmadığı için bu kod hata verecek. Default const. olması gerekli böyle bir
-				// dizi oluşturabilmek için.
+		Nec ar[10];	// Örneğin Nec sınıfının default constructoru olmadığı için bu kod hata verecek. Default const. olması
+				// gerekli böyle bir dizi oluşturabilmek için.
 	}
 
 ////////////////
@@ -437,14 +451,15 @@ Constructor initializer list ise, sınıfın veri elemanını initialize eden, o
 Öyle durumlar var ki;
 	a) Sınıfın veri elemanı initialize edilmek zorundaysa, yani default initialize edilemiyorsa,
 
-* Sınıfın non-static veri elemanları için her zaman birinci tercih constructor initializer list olmalı. Constructor initialize list kullanmadan doğrudan
-veri elemanına atama yaparsak şunlardan birisi söz konusu olabilir:
+* Sınıfın non-static veri elemanları için her zaman birinci tercih constructor initializer list olmalı. Constructor initialize list 
+kullanmadan doğrudan veri elemanına atama yaparsak şunlardan birisi söz konusu olabilir:
 
 - Ya bir sentaks hatasıdır,
 - Ya daha verimsiz bir kod üretilmesine neden oluyordur,
 - Ya da bir anlamsal farklılık söz konusudur.
 
-*** Her zaman tek seçenek olmasada birinci seçenek sınıfın non-static veri elemanlarının constructor initializer list kullanılarak initialize edilmesi.
+*** Her zaman tek seçenek olmasada birinci seçenek sınıfın non-static veri elemanlarının constructor initializer list kullanılarak 
+initialize edilmesi.
 
 	class Nec{
 	public:
@@ -464,8 +479,9 @@ veri elemanına atama yaparsak şunlardan birisi söz konusu olabilir:
 
 
 
-* Constructor initializer list'de tüm non-static data memberları initialize etmek zorunda değiliz. Eğer burada initialize etmediğimiz non-static data memberlar
-varsa o zaman onlar default initalize edilecekler. Eğer onların default initialize edilmesi sentaks hatası oluşturacaksa o halde sentaks hatası olacak.
+* Constructor initializer list'de tüm non-static data memberları initialize etmek zorunda değiliz. Eğer burada initialize etmediğimiz 
+non-static data memberlarvarsa o zaman onlar default initalize edilecekler. Eğer onların default initialize edilmesi sentaks hatası
+oluşturacaksa o halde sentaks hatası olacak.
 
 Örnek:
 
@@ -476,8 +492,8 @@ varsa o zaman onlar default initalize edilecekler. Eğer onların default initia
 		const int mx;
 	};
 
-	Nec::Nec() : mx(0) { } // örneğin burada mx const olduğu için eğer biz bu şekilde init. etmesek ve derleyici default initialize etse sentaks hatası
-			       // oluşur. Çünkü const değişkenler default initialize edilemezler.
+	Nec::Nec() : mx(0) { } // örneğin burada mx const olduğu için eğer biz bu şekilde init. etmesek ve derleyici default initialize
+				// etse sentaks hatası oluşur. Çünkü const değişkenler default initialize edilemezler.
 
 
 ///////////////
@@ -490,7 +506,8 @@ varsa o zaman onlar default initalize edilecekler. Eğer onların default initia
 	};
 
 	Nec::Nec() {
-			// Örneğin şuan mx referansı default init. edilmek zorunda. Referanslar default init. edilemezler. O yüzden sentaks hatası olacak.
+			// Örneğin şuan mx referansı default init. edilmek zorunda. Referanslar default init. edilemezler. O yüzden 
+			// sentaks hatası olacak.
 	} 
 
 
@@ -518,12 +535,13 @@ varsa o zaman onlar default initalize edilecekler. Eğer onların default initia
 
 	}
 
-bu kod da sentaks hatası olur. Çünkü Erg e; ile Erg sınıfına ait bir nesneyi default initialize ediyoruz ve böyle init. ettiğimiz için o nesnenin default
-constructoru olması gerekiyor. Fakat default constructor yok. Bu yüzden hata.
+bu kod da sentaks hatası olur. Çünkü Erg e; ile Erg sınıfına ait bir nesneyi default initialize ediyoruz ve böyle init. ettiğimiz için 
+o nesnenin default constructoru olması gerekiyor. Fakat default constructor yok. Bu yüzden hata.
 
 
-*Eğer bir sınıfın default constructorunda ya da herhangi bir constructorunda bir veri elemanını constrcutor initializer list ile initialize etmezsek 
-derleyici oraya onun default initializ edildiği kodu ekliyor. Bu durumda default initialize edilmesi sentaks hatası oluşturuyorsa sentaks hatası oluyor.
+*Eğer bir sınıfın default constructorunda ya da herhangi bir constructorunda bir veri elemanını constrcutor initializer list ile 
+initialize etmezsek derleyici oraya onun default initializ edildiği kodu ekliyor. Bu durumda default initialize edilmesi sentaks hatası
+oluşturuyorsa sentaks hatası oluyor.
 
 
 	class Nec{
@@ -550,13 +568,14 @@ derleyici oraya onun default initializ edildiği kodu ekliyor. Bu durumda defaul
 	}
 
 
-Cevap: Tanımsız davranış. Çünkü mx ve my değerleri default initialize edilirler. Böylece indetermined value alırlar. Bunu cout ile bastırmak da Undefined
-Behaviour.
+Cevap: Tanımsız davranış. Çünkü mx ve my değerleri default initialize edilirler. Böylece indetermined value alırlar. Bunu cout ile 
+bastırmak da Undefined Behaviour.
 
 Soru:
  Construct Initializer List'de küme parantezi kullanabilir miyiz? Yani direct list initialization yapabilir miyiz?
 
-Cevap: Standarda bağlı. Modern C++'dan önce orada braca init./uniform init. yoktu ve parantez zorunluydu. Fakat Modern C++ ile birlikte bu olanak getirildi.
+Cevap: Standarda bağlı. Modern C++'dan önce orada braca init./uniform init. yoktu ve parantez zorunluydu. Fakat Modern C++ ile birlikte
+bu olanak getirildi.
 Uniform initializer biraz da bu nedenle verilen bir isim.
 Fakat hatırlayalım** Uniform Initialization'da Narrowing Conversion her zaman sentaks hatası.
 
@@ -575,11 +594,11 @@ Fakat hatırlayalım** Uniform Initialization'da Narrowing Conversion her zaman 
 		std::string mstr;
 	};
 
-Örneğin burada 1 numaralı ifadede initialization yok. Çünkü burada constrcut initializer list kullanılmadığı için mstr değişkeni otomatik olarak default
-initialize edildi bile. Daha sonrasında 1 numaralı ifade ile değeri değiştirildi. 
+Örneğin burada 1 numaralı ifadede initialization yok. Çünkü burada constrcut initializer list kullanılmadığı için mstr değişkeni 
+otomatik olarak default initialize edildi bile. Daha sonrasında 1 numaralı ifade ile değeri değiştirildi. 
 
-Burada görebildiğimiz üzere efficiency olarak da tek işlem yapmak yerine iki işlem yapıyor. Hatta daha önce gördüğümüz gibi bazı durumlarda sentaks hatası
-oladabilir.
+Burada görebildiğimiz üzere efficiency olarak da tek işlem yapmak yerine iki işlem yapıyor. Hatta daha önce gördüğümüz gibi bazı
+durumlarda sentaks hatası oladabilir.
 
 Daha güzel bir kullanım:
 	
@@ -613,9 +632,9 @@ Cevap: Bildirimdeki sıra esas alınacak. Eğer programcı bunu bilmezse çok te
 
 	Nec() : my(10), mx(my/3) {}
 
-Yukarıdaki kodda bu şekilde yazsak çok büyük problem olur. Çünkü biz constructor initializater listte sırayı doğru yazsak da bildirim sırası esas alındığı için
-ilk başka mx(my/3) kodu çalışacak. Bu kod çalıştığında my garbage value (indetermined value) değerinde. my'nin garbage valuesini kullandığımız için 
-Undefined Behaviour oluşacak.
+Yukarıdaki kodda bu şekilde yazsak çok büyük problem olur. Çünkü biz constructor initializater listte sırayı doğru yazsak da bildirim 
+sırası esas alındığı için ilk başka mx(my/3) kodu çalışacak. Bu kod çalıştığında my garbage value (indetermined value) değerinde.
+my'nin garbage valuesini kullandığımız için Undefined Behaviour oluşacak.
 
 Her zaman aynı sırayı koruyarak bu durumdan kaçınabiliriz.
 
@@ -649,9 +668,9 @@ Constructor Initializer List'in en gerekli olduğu senaryolardan birisi ==> para
 Çok yanlış anlaşılan bir sentaks. Bu sentanksa "In Class Initializer" deniyor. Standardın kullandığı terim ise "Default Member Initializer".
 Yani adı üzerinde memberin default olarak initialize edileceği değeri gösteriyor.
 
-Eğer ben yazdığım constructorlardan birinde constructor initializer list ile bu veri elemanlarını initialize etmezsem, normalde derleyici bunları default
-initialize edecekti. Bu durumda derleyiciye demiş oluyoruz ki "Derleyici bu durumda default initialize etmeyeceksin, benim verdiğim initializer değerlerini
-kullanacaksın."
+Eğer ben yazdığım constructorlardan birinde constructor initializer list ile bu veri elemanlarını initialize etmezsem, normalde 
+derleyici bunları default initialize edecekti. Bu durumda derleyiciye demiş oluyoruz ki "Derleyici bu durumda default initialize 
+etmeyeceksin, benim verdiğim initializer değerlerini kullanacaksın."
 
 	class Point{
 	public:										     
@@ -666,7 +685,8 @@ kullanacaksın."
 	};
 
 
-Burada önemli bir nokta daha var. Default member initializer kullanırken {} ile initialize edebiliriz fakat parantez () ile initialize edemeyiz.
+Burada önemli bir nokta daha var. Default member initializer kullanırken {} ile initialize edebiliriz fakat parantez () ile
+initialize edemeyiz.
 	
 	private:
 		int x(10); 	// sentaks hatası
@@ -674,8 +694,8 @@ Burada önemli bir nokta daha var. Default member initializer kullanırken {} il
 
 
 
-** Default Member Initializer'ın bir önemli sonucu daha var. Eğer derleyici sınıfın default constructorunu implicitly declare ediyorsa, derleyicinin yazdığı
-default constructor veri elemanlarının hepsini default initialize eder.
+** Default Member Initializer'ın bir önemli sonucu daha var. Eğer derleyici sınıfın default constructorunu implicitly declare ediyorsa,
+derleyicinin yazdığı default constructor veri elemanlarının hepsini default initialize eder.
 
 
 -----------------------
@@ -693,11 +713,12 @@ default constructor veri elemanlarının hepsini default initialize eder.
 
 bu kodda default constructor var. Kim yazdı? - Derleyici. Peki derleyicinin yazdığı bu default constructor ne yapıyor?
 
-Dilin kuralları derleyicinin implicitly declare ettiği bir special member fonksiyonun kodunun derleyici tarafından nasıl yazılacağını belirliyor. Yani
-derleyiciden derleyiciye göre değişen birşey değil.
+Dilin kuralları derleyicinin implicitly declare ettiği bir special member fonksiyonun kodunun derleyici tarafından nasıl yazılacağını
+belirliyor. Yani derleyiciden derleyiciye göre değişen birşey değil.
 
-*** Burada dilin çok önemli bir kuralı devreye giriyor: Eğer derleyici implicitly declare ettiği bir special member functionu tanımlama sürecinde bir 
-sentaks hatası oluşursa yani dilin kurallarını çiğneyen bir durum oluşursa, derleyici default initialize etmesi gereken special member functionu delete eder.
+*** Burada dilin çok önemli bir kuralı devreye giriyor: Eğer derleyici implicitly declare ettiği bir special member functionu tanımlama
+sürecinde bir sentaks hatası oluşursa yani dilin kurallarını çiğneyen bir durum oluşursa, derleyici default initialize etmesi gereken
+special member functionu delete eder.
 
 
 Yukarıda yazdığımız koda tekrar bakalım;
@@ -722,10 +743,12 @@ Cevap: Hayır, dilin kurallarını çiğneyen bir durum yok.
 Peki şimdi derleyici tarafından yazılması gerekilen constructor delete edilecek mi?
 Cevap: Kesinlikle evet. Çünkü referanslar default initialize edilemezler.
 
-Hatta mülakatta da sorarlar. Diyecekler ki bu sınıfın default constructorunun durumu ne? Yok cevabı yanlış, derleyici tarafından yazılır cevabı yanlış.
+Hatta mülakatta da sorarlar. Diyecekler ki bu sınıfın default constructorunun durumu ne? Yok cevabı yanlış, derleyici tarafından
+yazılır cevabı yanlış.
 Doğru cevap: derleyici tarafından delete edilir.
 
-Fakat tabi bu kodu çalıştırdığımızda sentaks hatası olmaz. Çünkü default constructoru delete edilmiş durumda. Peki ne zaman sentaks hatası olur?
+Fakat tabi bu kodu çalıştırdığımızda sentaks hatası olmaz. Çünkü default constructoru delete edilmiş durumda. Peki ne zaman sentaks
+hatası olur?
 - Delete edilmiş default constructora çağrı yapma girişiminde bulunduğunda sentaks hatası olur.
 
 
@@ -748,9 +771,9 @@ Soru: Myclass sınıfının default constructoru delete edilmiş midir?
 	};
 
 
-Cevap: Doğru. Neden doğru? Çünkü Nec'in default constructoru private. Derleyici Myclass sınıfı için default constructor yazarken sınıfın veri elemanını
-default initialize edecek. Default initialize edilmesi demek default constructorun çağırılması demek. Private constructorun çağırılması sentaks hatası.
-O halde derleyici delete edecek.  
+Cevap: Doğru. Neden doğru? Çünkü Nec'in default constructoru private. Derleyici Myclass sınıfı için default constructor yazarken
+sınıfın veri elemanını default initialize edecek. Default initialize edilmesi demek default constructorun çağırılması demek.
+Private constructorun çağırılması sentaks hatası. O halde derleyici delete edecek.  
 
 	public:
 		Nec();
@@ -765,8 +788,8 @@ böyle olsa sentaks hatası olmaz. Çünkü public olmuş oluyor.
 
 
 
-*** Eğer derleyici dilin kurallarına göre bir special member fonksiyonu implicitly declare ediyorsa, bu fonksiyon her zaman sınıfın non-static public inline
-üye fonksiyonudur.
+*** Eğer derleyici dilin kurallarına göre bir special member fonksiyonu implicitly declare ediyorsa, bu fonksiyon her zaman sınıfın
+non-static public inline üye fonksiyonudur.
 
 
 
@@ -793,8 +816,9 @@ Soru:
 
 	mynec.Nec(); 	// Sentaks hatası, bu şekilde çağırılamaz.
 
-	mynec.~Nec();	// Sentaks hatası yok fakat burada değil başka senaryolarda kullanmalıyız. Eğer böyle kullanırsak hem burada destructoru çağırmış
-			// oluruz. Fakat ana bloğun sonuna gelindiğinde tekrar destructor çağırılır ve bu da Tanımsız Davranış oluşturur.
+	mynec.~Nec();	// Sentaks hatası yok fakat burada değil başka senaryolarda kullanmalıyız. Eğer böyle kullanırsak hem burada 
+			// destructoru çağırmış oluruz. Fakat ana bloğun sonuna gelindiğinde tekrar destructor çağırılır ve bu da 
+			// Tanımsız Davranış oluşturur.
 	}
 
 ** Constractor nokta operatörü veya ok operatörü ile çağırılamaz. Dilin kurallarına aykırı.
@@ -815,12 +839,13 @@ Bir tür belirli bir kod noktasında ya bir complete type'dır ya da incomplete 
 Sınıf türleri söz konusu olduğu zaman 2 tane ihtimal var.
 
 1) Derleyici o sınıfın varlığından haberdar fakat o sınıfın tanımını henüz görmemiş durumda.
-	Bunu oluşturmanın birden fazla yolu var. Biri, doğrudan sınıfın bildirimini yapmak. Böyle bir bildirime "forward-declaration" deniyor.
+	Bunu oluşturmanın birden fazla yolu var. Biri, doğrudan sınıfın bildirimini yapmak. Böyle bir bildirime "forward-declaration" 
+	deniyor.
 
   class Myclass;
 	
-   Bu bildirim okuyucuya Myclass isminin bir sınıf ismini olduğunu söylüyor. Ama Myclass sınıfının tanımını henüz derleyici görmedi. Burada Myclass sınıfını
-	bir Incomplete type.Fakat eğer şöyle;
+   Bu bildirim okuyucuya Myclass isminin bir sınıf ismini olduğunu söylüyor. Ama Myclass sınıfının tanımını henüz derleyici görmedi. 
+   Burada Myclass sınıfını bir Incomplete type.Fakat eğer şöyle;
 
   class Myclass{
 	
@@ -836,7 +861,8 @@ Sınıf türleri söz konusu olduğu zaman 2 tane ihtimal var.
 
 Derleyici için bunlar incomplete type. Fakat derleyici class definition'u gördüğü anda derleyici için o sınıf türü bir complete type.
 
-Dilin sentaks kuralları bazı durumlarda Incomplete type'ın kullanılmasını legal olarak görüyor fakat bazı durumlarda o bağlamda bir sınıf türünün kullanılması için türün complete type olması gerekiyor.
+Dilin sentaks kuralları bazı durumlarda Incomplete type'ın kullanılmasını legal olarak görüyor fakat bazı durumlarda o bağlamda bir 
+sınıf türünün kullanılması için türün complete type olması gerekiyor.
 
 -Bir fonksiyon bildiriminde bu türü kullanmamız sentaks hatası oluşturmaz.
 
@@ -868,7 +894,8 @@ A foo(B,C); // böyle de kullanılabilir.
 
   int main()
   {
-  	Nec* mp;  // object pointer, Nec sınıfının ne olduğunu bilmemesine rağmen bellekte yer ayırır. Derleyiciden derleyiciye değişir fakat pointer genelde 4byte yer kaplar.
+  	Nec* mp;  // object pointer, Nec sınıfının ne olduğunu bilmemesine rağmen bellekte yer ayırır. Derleyiciden derleyiciye 
+		  // değişir fakat pointer genelde 4byte yer kaplar.
   	Nec* mp {};
 	Nec* mp = nullptr;
 
@@ -968,7 +995,8 @@ Veri elemanının Incomplete type olması bir sentaks hatası değil.
 
 	};
 
-Böyle yapmayıp da nec başlık dosyasını include edersek bir dependency oluşacak. Aynı zamanda compile time da uzar. Çünkü nec.h'yı include ettik, onun da include ettiği başlık dosyaları olacak vs. Bu da compile time uzatacak.
+Böyle yapmayıp da nec başlık dosyasını include edersek bir dependency oluşacak. Aynı zamanda compile time da uzar. Çünkü nec.h'yı 
+include ettik, onun da include ettiği başlık dosyaları olacak vs. Bu da compile time uzatacak.
 
 
 
