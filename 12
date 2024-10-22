@@ -1,0 +1,715 @@
+Sınıfın elemanları handle değilse, kaynak kontrolunu kendisi gerçekleştiren sınıflarsa derleyiciye bırakabiliriz.
+
+Not:
+	Bir de copy assignment fonksiyonun idiomatic başka şekilde bir yazım biçimi var. Bu yazım biçimine ilişkin
+	idioma " Copy Swap Idiom " deniyor.
+
+---------------------------------
+
+//temporary objects = tipik olarak bir sınıf türünden nesne, fakat ortada o nesnenin isminin olmadığı ifadeler.
+
+class Nec{};
+
+void foo(const Nec&);
+void foo(Nec&&);
+
+böyle bir overload ile L value ve R value sınıf nesneleri için farklı implementasyonlar sunuluyor.
+
+int main()
+{
+Nec mynec;
+	
+//mynec		değişkenin ismi var. Bir ismin söz konusu olduğu ifadeler Lvalue expr, dolayısıyla bu da öyle
+//Nec{}		değişkenin ismi yok sınıfın ismi var sadece. İsmin olmadığı ifadeler R val. expr, dolayısıyla
+		bu da öyle.
+
+		ancak bu ikiside Nec türünden birer nesne.
+
+//std::move(mynec)		l value de, r value de argüman olarak alsa, r value bir ifade oluşturur.
+//static_cast<Nec&&>(mynec)	pek ala bunu da kullanabiliriz, ikisi de aynı işi yapmış oluyor.
+
+// r value expr olan sınıf nesnesi oluşturan birkaç tane ifade var. Birisi temporary object oluşturma ifadeleri,
+// ikincisi std::move() fonksiyonuna yapılan çağrı ifadesi, üçüncüsü move yerine sınıf türünden r value ref. türüne
+// static_cast operatörü ile cast eden ifadeler.
+
+}
+	
+
+/////////////////////////////
+
+class Nec{};
+
+void foo(const Nec&);		// 1
+void foo(Nec&&);		// 2
+
+Nec 	bar();
+Nec&& 	baz();
+
+int main()
+{
+	Nec mynec;
+	
+	foo(mynec);			// 1. foo çağırılır.
+	foo(std::move(mynec));		// 2. foo çağırılır.
+	foo(Nec{});			// foo'ya gönderdiğimiz ifade bir temporary object ifadesi, yani PR value
+					// expression. Dolayısıyla R value expr. Bundan dolayı 2. foo çağırılır.
+
+
+	foo(bar());	// R value expr. argüman vermiş olduk, 2.foo
+	foo(baz());	// R value expr. argüman vermiş olduk, 2.foo
+
+}
+
+
+* 2.foo'yu silersek kodda sentaks hatası olmaz, hepsi 1.foo'ya bağlanır. Çünkü const l value referans hem l value'ya
+hem r value'ya bağlanıyor. Bu durum için kullanılan popüler terim " Fallback ".
+
+* Öyle durumlar var ki, aslında koda bakarak hem biz aynı zamanda derleyici, bir sınıf nesnesinin artık kullanılma
+olanağının olmadığını,o nesneyi kullanacak bir kodun söz konusu olmadığını anlayabiliyor(uz). Böyle bir durumda
+bir sınıf nesnesi varken onun değeriyle başka bir sınıf nesnesini hayata getirmek istediğimizde şimdiye kadar (Modern
+C++'dan önce) değerini alacağımız sınıf nesnesinin hayatının bitecek olmasına karşın onun kaynağını yine kopyalıyorduk
+bir çok durumda.
+
+
+
+
+
+______________________________________________________
+	
+	Move Constructor / Move Assignment
+______________________________________________________
+
+
+
+Move constructor ve move assignment öyle fonksiyonlar ki copy constructor ve copy assignmenta göre, yaptıkları iş
+kopyalama yapmamak (deep copy yapmamak), diğer nesnenin kaynağını çalmak ve sadece kaynağını çalmakla yetinmeyip 
+diğer nesne için destructor çağırıldığında kaynağı geri vermemesini sağlamak.
+
+Peki bunu nasıl yapacağız?
+
+Başka bir kodun kullanma ihtimali olmayan, hayatı bitecek, gidici nesneler dilin kurallarına göre bu ifadeler
+sağ taraf değeri. O zaman 2 tane constructor overloadu olsa biri sol taraf değeri argümanlar alsa, diğeri sağ taraf
+değeri argümanlar alsa, sağ taraf değeri argümanı alan overload bilecek ki referansın bağlandığı nesnenin hayatının
+biteceği ve başka bir kodun ona ihtiyaç duymadığını bilecek ve onun kaynağını çalacak. 
+
+Derleyicinin yazdığı move constructor, ismi sınıfın ismi ile aynı (constructor olduğu için) fakat parametresi
+Myclass&& (sınıf türünden sağ taraf referansı).
+
+	class Myclass{
+	public:
+		Myclass(const Myclass&);	// copy ctor
+		Myclass (Myclass &&);		// move ctor // bunlar göründüğü üzere overload
+
+		Myclass& operator=(const Myclass&);	// burada bir kopyalama yapılacak
+		Myclass& operator=(Myclass&&);		// burada kaynak çalınacak. bunlar da overload.
+							// işte bu kaynak çalmaya move(taşıma) diyoruz.
+	};
+
+* Taşıma semantiği aslında hiçbir kopyalama yapılmayacak durumlarda  gereksiz yere kopyalama yapılmasının önüne geçer. Kopyalama maliyeti olağanüstü yüksek
+olabilir bazı durumlarda.
+
+* Derleyicinin yazdığı move constructor, elemanlara taşıma yapıyor kopyalama yapmıyor. yani elemanları da move constructor ile hayata getirecek.
+
+
+// en sık yapılan hata -> Myclass(Myclass &&r) : ax(r.ax), bx(r.bx), cv(r.cx) {} // r sağ taraf referansı olsa da ifade r.ax ve diğer ifadeler isim olduğundan
+dolayı L value bir ifade oluşturur. Bu şekilde yazarsak sık yapılan hataya bizde düşmüş oluruz. Bunun yerine r value ifadesi oluşturan std::move() fonksiyonunu
+kullanmalıyız.
+
+
+	class Myclass{
+	public:
+		////
+		Myclass(const Myclass& r) : ax(r.ax), bx(r.bx), cx(r.cx) {}
+		Myclass(Myclass &&r) : ax(std::move(r.ax)), bx(std::move(r.bx)), cv(std::move(r.cx)) {}
+
+	private:
+		A ax;
+		B bx;
+		C cx;
+	};
+
+
+Sınıfın move copy contstructorun derleyici tarafından yazılması, eğer sınıfın elemanları veya elemanlarından birisi handle ise felakete neden olur. Ama
+sınıfın move constructorunun olması gerekirken olmaması bir felaket senaryosu değil. Sadece efficiency açısından zararı var.
+
+Yani move constructoru olmasa taşımanın faydalarından yararlanabileceğimiz bir yararlanamaz ve kopyalama işlemi yapardık. Move constructorun ve move assignment'in
+varlığı bir hata durumunu engellemekten ziyade daha verimli hale getirmek, gereksiz kopyalamalardan kaçınmaktır*. Gereksiz kopyalama yerine kopyalamayı
+ortadan kaldırıp kaynağın bir nesneden adeta bir nesneye geçmesini sağlamak.
+
+String sınıfımız için bir move constructor yazalım.
+
+
+
+	class Myclass{
+	public:
+	String(const String& other) : mlen(other.mlen)
+	{
+		mp = static_cast<char*>(std::malloc(mlen+1));
+		if (!mp) {
+			std::cerr << "cannot allocate memory\n";
+			std::exit(EXIT_FAILURE);
+		}
+		std::strcpy(mp, other.mp);	
+	}
+
+	String(String && other) : mlen(other.mlen), mp(other.mp)
+	{
+		other.mp = nllptr; // değerini çaldığımız nesnenin pointeri hala bizim aldığımız adresi gösteriyor. destructor ile bizim adresin silinmemesini
+			     	   // sağlamak için mp pointerini nullptr yaptık.
+		other.mlen = 0;	   // bu da gerekli.
+	}
+
+	String& operator=(const String& other)
+	{
+		if(this == &other) // self assignment
+			return *this;
+		mlen = other.mlen;
+		std::free(mp);
+
+		mp = static_cast<char*>(std::malloc(mlen+1));
+		if (!mp) {
+			std::cerr << "cannot allocate memory\n";
+			std::exit(EXIT_FAILURE);
+		}
+		std::strcpy(mp, other.mp);
+
+		return *this;
+	}
+
+	String(const char* p) : mlen(std::strlen(p))
+	{
+		mp = static_cast<char*>(std::malloc(mlen+1));
+		if (!mp) {
+			std::cerr << "cannot allocate memory\n";
+			std::exit(EXIT_FAILURE);
+		}
+		std::strcpy(mp, other.mp);
+	}
+	
+	~String()
+	{
+		if (mp)
+			std::free(mp);
+	}
+
+	std::size_t length()const
+	{
+		return mlen;
+	}
+	
+	void print()const
+	{
+		std::cout << '[' << mp << "]\n";
+	}	
+
+	private:
+	std::size_t mlen;
+	char* mp;
+
+	};
+
+
+	
+	int main()
+	{
+		String str(String{"bugun yine cok sicak bir hava vardi."}) // bu bir temp. obj. yani R value expr. o zaman move ctor çağırılacak.
+					//move ctor da bunun kaynağını kopyalamak yerine onu çalacak.
+	}
+
+
+* Sınıfın hem copy cotr hem move cotr varsa bizim bunlardan hangisinin çağırılması gerektiğini düşünmemiz gerekmiyor. Gönderdiğimiz argüman L value ise
+derleyici copy cotr seçecek, R value ise move cotr seçecek.
+
+mülakat sorusu
+--------------
+
+class Myclass{};
+
+void func(Myclass &&)
+{
+
+}
+
+int main()
+{
+	Myclass m;
+
+	func(std::move(m)); // *
+	//
+}
+
+Soru * işaretli satırdan sonra m nesnesinin kaynağı çalınmış mıdır?
+-Cevap = Hayır.
+
+Bir nesneyi sağ taraf referansına bağlamak onun kaynağını çalmak demek değil.Aslında assembly kodunda göreceğimiz şey func'ın parametresi bir pointer ve
+myclass nesnesinin adresini alıyor. Peki kaynağın çalınmasını sağlayan ne olacak? - func içindeki implementasyon.
+
+func içinde öyle bir implementasyon olmalı ki bu sağ taraf referansının bağlandığı nesnenin kaynağını çalmalı. Onunda 2 tane yolu var; ya bir myclass nesnesini
+hayata getireceğiz ya da bir myclass nesnesine atama yapacağız.
+	
+	class Myclass{};
+
+	void func(Myclass && r)
+	{
+		Myclass mx = r; // r ifadesi L value. o halde bu nesne için copy cotr çağırılacak, move değil. o zaman kaynağı çalmayacak, kopyalayacak.
+				// kaynağı çalması için burada ki mx'i hayata getirirken kullandığımız nesnenin r val. expr. olması gerekir. peki nasıl
+				// yapacağız? - std::move() ile. Yani sorunun cevabının evet olabilmesi için bu kodun; Myclass mx = std::move(r); olması lazım.
+	}
+
+	int main()
+	{
+		Myclass m;
+	
+		func(std::move(m));
+		//
+	}
+
+
+///////////////////////////////
+
+* En çok kullanılan yapılardan birisi;
+L value ve R valueler için ayrı fonksiyon yazmak. L value için yazılan fonksiyonun bir kopyalama yapmasını sağlamak ama R value alan fonksiyonun kopyalama
+yerine taşıma yapmasını sağlamak.
+
+
+	class Myclass{};
+
+	void func(Myclass && r)
+	{
+		Myclass mx = std::move(r);
+	}
+	
+	void func(const Myclass& r)
+	{
+		Myclass mx = r;
+	}
+
+
+
+ * Bir sağ taraf nesneyi sağ taraf referansına bağlayarak taşıma semantiğinden faydalanmış olmuyoruz. Sadece taşıma semantiğine zemin hazırlamış oluyoruz.
+Taşımayı gerçekleştiren, burada bu referansın bağlandığı nesneyi kullanarak yeni bir nesne oluşturmak. Veya varolan bir nesneye atama yapmak.
+
+* Move constructorun implemente edilmesi için bir fayda sağlaması gerekiyor.
+
+
+	class Myclass{
+	private:
+		int ar[1000];
+
+	};
+
+Örneğin yukarda move cotr ile yapabileceğimiz birşey yok. Çünkü elimizde bir ptr yok ki kaynağını çalalım. Fakat aşağıdaki koda bakarsak;
+
+	class Myclass{
+	private:
+		std::string* p;
+	};
+
+Örnek olarak bu ptr dinamik olarak allocate edilmiş bir bellek bloğundaki string nesnelerinin bulunduğu bir bloğun adresini tutuyor olsaydı, burada move cotr
+hayati önem taşırdı. Çünkü kopyalama semantiği ile yetinirsek, kopyalama yoluyla hayata getireceğimiz nesne gidecek ayrı bir bellek alanı allocate edecek
+ve üstelik orada string nesnelerini oluşturacak. Yani diğerinin allocate ettiği bellek bloğunda 10000 tane string nesnesi varsa, bizim hayata getirdiğimiz
+string nesnesi de o 10000 tane string nesnesini hayata getirecek. Yani burada inanılmaz yüksek bir maliyet söz konusu olabilir.
+
+
+
+	Move Assignment
+--------------------------------
+
+Bir sınıf nesnesi bir sınıf nesnesine bir R value expr. sınıf nesnesini atadığımızda, aslında atama op. sağ tarafındaki nesnenin artık bir daha kullanılmayacağını
+biliyor olsak da, eğer move assignment dediğimiz fonksiyon olmasaydı orada kopyalama yapmaya zorlamış olacaktık.
+
+	class Myclass{
+		Myclass(const Myclass& r) : ax(r.ax), bx(r.bx), cx(r.cx) {}					// cctor
+		Myclass(Myclass &&r) : ax(std::move(r.ax)), bx(std::move(r.bx)), cx(std::move(r.cx)) {}		// move ctor
+		Myclass& operator=(const Myclass& r)
+		{
+			ax = r.ax;
+			bx = r.bx;
+			cx = r.cx;
+			return *this;
+		}
+		
+		Myclass& operator=(Myclass&& r)
+		{
+			ax = std::move(r.ax);
+			bx = std::move(r.bx);
+			cx = std::move(r.cx);
+			return *this;		
+		}
+
+		private:
+			A ax;
+			B bx;
+			C cx;
+	};
+
+
+
+----------------------------------------------------
+
+
+	class Myclass{
+	public:
+	String(const String& other) : mlen(other.mlen)
+	{
+		mp = static_cast<char*>(std::malloc(mlen+1));
+		if (!mp) {
+			std::cerr << "cannot allocate memory\n";
+			std::exit(EXIT_FAILURE);
+		}
+		std::strcpy(mp, other.mp);	
+	}
+
+	String(String && other) : mlen(other.mlen), mp(other.mp)
+	{
+		other.mp = nllptr; // değerini çaldığımız nesnenin pointeri hala bizim aldığımız adresi gösteriyor. destructor ile bizim adresin silinmemesini
+			     	   // sağlamak için mp pointerini nullptr yaptık.
+		other.mlen = 0;	   // bu da gerekli.
+	}
+
+	String& operator=(const String& other)
+	{
+		if(this == &other) // self assignment
+			return *this;
+		mlen = other.mlen;
+		std::free(mp);
+
+		mp = static_cast<char*>(std::malloc(mlen+1));
+		if (!mp) {
+			std::cerr << "cannot allocate memory\n";
+			std::exit(EXIT_FAILURE);
+		}
+		std::strcpy(mp, other.mp);
+
+		return *this;
+	}
+	
+	String& operator=(String&& other) 	// move assignment
+	{
+		if (this == &other)	// self-assignment kontrolü
+			return *this;
+
+		std::free(mp);		// bunu yazmasak kaynak sızıntısı olur
+		mlen = other.mlen;
+		mp = other.mp;
+		// kaynak çalma kısmı tamamlandı, şimdi diğer nesnesyi destroyable bir state sokalım;
+		other.mp = nullptr;
+		other.mlen = 0;
+	
+		return *this;
+	}
+	
+	String(const char* p) : mlen(std::strlen(p))
+	{
+		mp = static_cast<char*>(std::malloc(mlen+1));
+		if (!mp) {
+			std::cerr << "cannot allocate memory\n";
+			std::exit(EXIT_FAILURE);
+		}
+		std::strcpy(mp, other.mp);
+	}
+	
+	~String()
+	{
+		if (mp)
+			std::free(mp);
+	}
+
+	std::size_t length()const
+	{
+		return mlen;
+	}
+	
+	void print()const
+	{
+		std::cout << '[' << mp << "]\n";
+	}	
+
+	private:
+	std::size_t mlen;
+	char* mp;
+
+	};
+
+-----------------------------------------
+
+Elimizde bir L val. kategorisinde bir sınıf nesnesi olmasına rağmen yine de onun kaynağını çalmak istiyoruz. 
+
+int main()
+{
+	std::string str(10000, 'A');
+	
+	std::string sx = str;	// burada sx için cotr çağırılır.
+
+// öyle bir senaryo olsun ki, str'nin hayatının devam ettiğini biliyorum fakat str'yi artık kullanmayacağım dolayısıyla sx'in str'nin kaynağını
+kopyalamasını değil çalmasını istiyorum. std::move() ile bunu yapabiliriz.
+
+	std::string sx = strstd::move(str);
+	// str'nin kaynağını çaldık
+	
+	//moved-from state/object deniyor. Yani nesne hala hayatta fakat kaynağı çalınmış.
+}
+
+
+Bu durumda şu soruyu sormamız gerekiyor: Herhangi bir problem olmaması için böyle durumlarda neler yapabiliriz?
+					 ----------------------------------------------------------------------
+
+1.ihtimal şu olabilir: artık str'yi hiç kullanmayız. Yani str'nin kaynağı çalınmıştır ve ne zaman str'nin destructoru çağırılacak olsa herhangi
+bir sorun olmayacak çünkü onun move cotr ona göre yazılmış. Peki biz str'yi kullanabilir miyiz? 
+- Standard kütüphanenin türleri (std::string, std::vector gibi vs.) ve 3.party kütüphanelerin sınıfları (eğer özel bir durum yoksa) sınıfları 
+kaynağı çalınmış nesneler için tipik olarak şu garantiyi veriyor;
+
+	a) kaynağı çalınmış nesne "in a valid state"
+		Bu ne demek? bir nesnenin valid state'de olması ne demek?
+			-Sınıfın Invariant'ları korunmuş olacak, bozulmayacak. 
+
+	b) nesne destructible. ( destructor'un çağırılması herhangi bir soruna yol açmayacak. )
+	
+Ancak nesnenin değeri garanti altında değil.
+
+Örneğin string std kütüphanenin string sınıfı için biz bir string nesnesinin kaynağını çalsak ve kaynağı çalınmış nesnenin tuttuğu yazıyı bir
+şekilde yazdırsak ve o yazi "fatih"  yazısı olsa(halen fatih yazısını tutuyor). Sınıfın length fonksiyonu string sınıfı nesnesinin tuttuğu 
+yazının uzunluğunu döndürüyor. Bu durumda length fonksiyonunun 5 değerini döndürmesi garanti altında mı?
+- Evet garanti altında. Valid state olması bu demek. Yani sınıf nesnesinin üye fonksiyonları çağırıldığında herhangi bir şekilde problem yok ama
+değerinin ne olduğunu bilmiyoruz.
+
+Invariantları tutması demek: uzunluk değeri gerçekten uzunluk değeri, örneğin string'in tuttuğu boş yazı ise uzunluk değeri 0.
+
+	c) nesneye yeni bir değer atayarak onu tekrar kullanabiliriz.
+
+
+* moved from state'de ki nesnenin değerinin ne olacağı derleyiciye bağlı ancak nesne geçerli bir durumda. Yani o değeri kullanabiliriz. Bu değeri
+kullanmak bir tanımsız davranış değil!***.
+
+
+
+
+valid state'den ne kast ediliyor?
+---------------------------------
+
+int main()
+{
+	using namespace std;
+	
+	string str{"string yazisi"};
+	
+	auto s = move(str);
+
+	cout << str.length() << "\n";		// 0
+
+	if(str.empty())				// buraya girme garantisi var.
+		cout << "evet bos yazi\n";
+
+	cout << "(" << str << ")\n";		// parantezin içinde hiçbir karakter olmayacağı garantisi var.
+
+	str = "string test";			// herhangi bir UB durumu yok.
+
+}	// programın akışı bu noktaya str için destructor çağırılacak mı? - evet. Herhangi bir soruna yol açacak mı? - hayır.
+
+
+Bütün sınıflar bu garantileri vermek zorunda değil fakat standardda böyle.
+
+
+
+
+* Sınıf nesnelerinin ctor ya da copy assignment'i varsa yani sınıf nesnelerinin kopyalanmasında herhangi bir problem yoksa, böyle sınıflara
+copyable sınıflar diyebiliriz. Yani kopyalanmasında herhangi bir engel yok. 
+
+Ancak bazı durumlarda biz sınıf nesnelerinin kopyalanmasını engellemek istiyoruz. Nedeni de kopyalamanın semantik karşılığının olmaması. Yani
+öyle sınıflar var ki problem domainindeki temsil ettikleri kavram için zaten kopyalama ya bir anlam taşımıyor, ya saçma ya da problemli.
+
+Örneğin bir dosyayı kontrol eden sınıf nesnesi düşünelim. Bu nesnenin kopyasının çıkarılması anlamsızdır. İşte böyle durumlarda sınıf için
+kopyalama kapatılıp sentaks hatası haline getiriliyor. Bunu yapmanın da yolu sınıfın kopyalama özel fonksiyonlarını delete etmek.
+
+	class Nec{
+	public:
+		//..
+		Nec();
+		Nec(const Nec&) = delete;		// ctor delete bildirimi
+		Nec& operator=(const Nec&) = delete;	// copy assignment delete bildirimi
+	};
+
+	int main()
+	{
+		Nec x;
+	
+		Nec y(x); // sentaks hatası
+
+		Nec y;
+
+		x = y;	// sentaks hatası
+	}
+
+
+Böyle sınıflardan bahsederken, yani kopyalamaya karşı kapatılmış sınıflardan bahsederken onlara "non-copyable" sınıflar diyoruz.
+Örneğin standard kütüphanede belirli fonksiyonlar non-copyable.
+
+Fakat öyle sınıflar var ki bu sınıflar türünden nesnelerin kopyalanması istenmiyor ancak taşıma semantiğine açık olması isteniyor. Bunlara da
+popüler olarak "move-only class" deniyor. Kopyalaması yok fakat taşıması var.
+
+
+------------------------------------------------------------------------------------------------------------------------------------------------
+
+Derleyicilerin hangi durumlarda hangi special memberi implicitly declare edeceğini öğrenelim. Bunun için dilin kuralları devreye giriyor. Yani
+derleyiciye/implementasyona bağlı değil direk dilin kuralı olarak sabit.
+
+
+1) Eğer sadece böyle bir bildirim yaparsak;
+	class Myclass{
+	
+	};
+
+  Derleyici tarafından aşağıdaki şekilde special member functionlar declare edilir.
+
+	class Myclass{
+	
+	Myclass() = default;	
+	~Myclass() = default;
+	Myclass(const Myclass&) = default;
+	Myclass(Myclass&&) = default;
+	Myclass& operator=(const Myclass&) = default;
+	Myclass& operator=(Myclass&&) = default;
+
+	};
+
+2) Eğer sınıfa special member function olmayan bir constructor koyarsak sadece ve sadece Myclass() = default; olmaz.
+
+Buradan şu kuralı tekrar edelim: Sınıfa herhangi bir fonksiyonu, special member function olsun veya olmasın, user declared yaptığımız zaman
+derleyici default ctor'u implicitly declare etmez. Aşağıda da örneği var.
+
+	class Myclass{
+		Myclass(int);
+	};
+
+	class Myclass{
+	public:
+		~Myclass() = default;
+		Myclass(const Myclass&) = default;
+		Myclass(Myclass&&) = default;
+		Myclass& operator=(const Myclass&) = default;
+		Myclass& operator=(Myclass&&) = default;
+	};
+
+
+3) Eğer sınıfa user declared default ctor bildirirsek bu durumda yine sınıfın diğer bütün özel üye fonksiyonları derleyici tarafından default
+ediliyor.
+
+	class Myclass{
+		Myclass();
+	};
+	
+
+
+	class Myclass{
+		public:
+		Myclass();
+		~Myclass() = default;
+		Myclass(const Myclass&) = default;
+		Myclass(Myclass&&) = default;
+		Myclass& operator=(const Myclass&) = default;
+		Myclass& operator=(Myclass&&) = default;
+
+	};
+	
+
+4) Eğer sınıfa destructor bildirirsek, destructoru user-declared yapmış oluruz fakat diğer üye fonksiyonların derleyici tarafından yazılmasında
+herhangi bir şekilde engel yok.
+
+// dikkat bu durumda sınıfın move memberları yok. delete edilmiş değil, direk yok.
+
+	class Myclass{
+		~Myclass();
+	};
+
+	class Myclass{
+		public:
+		Myclass();
+		~Myclass() = default;
+		Myclass(const Myclass&) = default; 		// ?
+		Myclass& operator=(const Myclass&) = default;   // ?
+
+	};
+
+*kritik -> User defined destructor bildirdiğimiz zaman, derleyici sınıfın move memberlarını default etmiyor. Yani move memberlar yok.
+*kritik -> derleyici defult ctor'u default ediyor, copy ctor'u ve copy assignmenti yine default ediyor. Fakat bu durum son derece tehlikeli. Asla
+ve asla böyle bir duruma yol açmamamız gerekiyor. Ve standarda göre bu deprecated ilan edildi.
+
+
+4) Copy ctor bildirilmişse; default ctor yok, destructor var default, copy assignment var ve default, move ctor ve move assignment yok.
+	
+	class Myclass{
+		Myclass(const Myclass&);  // copy ctor
+	};
+	
+	class Myclass{
+	public:
+		~Myclass() = default;
+		Myclass(const Myclass&);
+		Myclass& operator=(const Myclass&) = default; //!!!
+	};
+
+
+
+
+5) Copy assignment bildirilmişse; default ctor var ve default , destructor var ve default, copy ctor var ve default, move ctor yok, move 
+assignment yok.
+
+	class Myclass{
+		Myclass& operator=(const Myclass&);	// copy assignment	
+	};
+	
+	class Myclass{
+	public:
+		Myclass() = default;
+		~Myclass() = default;
+		Myclass(const Myclass&) = default;
+		Myclass& operator=(const Myclass &);
+	
+	};
+
+
+6) Sınıfa move ctor yazarsanız; default ctor yok ( çünkü bu zaten bir ctor. neydi kural? bir tane ctor bildirirseniz derleyici default ctor'u 
+bildirmez), destructor var ve default, copy ctor var ama delete edilmiş. Sınıfa move ctor bildirirseniz derleyici copy ctor'u delete ediyor.
+Move ctor zaten user declared, move assignment yok.
+
+
+	class Myclass{
+		Myclass(Myclass &&);
+	};
+	
+	class Myclass{
+	public:
+		~Myclass() = default;
+		Myclass(const Myclass&) = delete;
+		Myclass& operator=(const Myclass&) = delete;
+		Myclass(Myclass&&);
+	};
+
+
+
+
+7) Move assinment yazarsak; default ctor var ve default, destructor var ve default, copy assignment deleted, copy ctor deleted, move ctor yok, move assignment user 
+declared.
+
+
+	class Myclass{
+		Myclass& operator=(Myclass &&); // move assignment
+	};
+
+	class Myclass{
+	public:
+		Myclass() = default;
+		~Myclass() = default;
+		Myclass(const Myclass&) = delete;
+		Myclass& operator=(const Myclass&) = delete;
+		Myclass& operator=(Myclass &&);
+	};
+
+
+
+* Bir sınıfa herhangi (default ctor olmayan) bir ctor bildirirsek derleyici default ctor'u bildirmez. (not declared)
+* Bir sınıfın her zaman destructor'ı vardır. Destructorun olmadığı bir senaryo yok. Biz bildirirseniz user declared, bizim bildirmediğimiz bütün
+durumlarda implicitly declared. 
+* Bir sınıfa eskiden büyük 3'lü (big 3) (destructor, copy assignment, copy ctor) denilen bunlardan hangisini bildirirsek bildirelim, derleyici 
+move memberları bildirmez. Bu durumda sınıfın move memberları yoktur.
+* Bir sınıfa move memberlardan birini bildirirseniz ister move ctor olsun ister move assignment olsun, derleyici copy memberları delete eder.
