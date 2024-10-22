@@ -316,9 +316,9 @@ Functions default edilebilir.
 ***
   Modern C++ diyor ki; Special Member Functions ( 6 tane yukarıda öğrendiğimiz ) şu statülerden birinde olabilir;
 
-- User Declared			( Bildirilmemiş )
-- Implicitly Declared		( Programcı tarafından bildirilmiş )
-- Not Declared			( Programcı bildirmemiş fakat dilin kuralları gereği derleyici bunun bildirimini yapıyor )
+- User Declared			( Programcı tarafından bildirilmiş )
+- Implicitly Declared		( Programcı bildirmemiş fakat dilin kuralları gereği derleyici bunun bildirimini yapıyor )
+- Not Declared			( Bildirilmemiş )
 
 Örnekler:
 
