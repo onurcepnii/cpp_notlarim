@@ -1,0 +1,326 @@
+___________________________________
+
+	Copy Constructor
+___________________________________
+
+Bir nesne hayata değerini aynı türden bir başka nesneden alarak gelirse, hayata gelen nesne için çağırılan fonksiyon sınıfın copy constructor dediğimiz
+special member fonksiyondur.
+
+
+
+Kopyalama Semantiği Ne Demek?
+-----------------------------
+Bir nesneyi bir başka nesnenin değeriyle hayata getiriyoruz. Ya da bir nesneye bir başka nesnenin değerini atıyoruz.
+
+Bu durumda;
+
+ (1) Bu nesneler birbirinden bağımsız yani bundan sonraki bu nesnelerin biri üzerinde yapılan işlemler diğerini etkilemeyecek. Yani bu nesneler
+	değerce birbirlerinden	bağımsız.
+ (2) Bu nesneler karşılaştırılabilir (equality comparable) nesneler ise, bu atamadan sonra bu nesneler eşit olacak.
+
+
+
+
+	class Myclass{};
+
+	int main(){
+
+		Myclass m1;
+
+		Myclass m2(m1);	// m2 için cc çağırılacak
+
+
+	}
+
+
+
+* Her sınıfın copy constructoru olmak zorunda.
+
+
+Rule Of Zero Ne Demek?
+----------------------
+Herhangi bir sorun çıkarmıyorsa special member fonksiyonlarının derleyici tarafından yazılması. Derleyicinin yazdığı fonksiyonların
+işimizi gördüğü noktada tercihimiz hep o yönde olmalı.
+
+
+Derleyicinin implicitly declare edilen ve default edilen copy constructor şöyle bir parametrik yapıya sahip;
+-public, non static, inline üye fonksiyonu
+-parametresı sınıf türünden sol taraf referansı
+
+	class Myclass{
+	public:
+		//////
+		Myclass(const Myclass &r) : ax(r.ax), bx(r.bx), cx(r.cx) {}	
+
+	private:
+		A ax;
+		B bx;
+		C cx;
+	};
+
+Derleyicinin yazdığı copy constructor sınıfın elemanlarını, diğer nesnenin elemanlarıyla copy construct ediyor. Böylece hayata gelen nesne değerini
+diğer nesnenin elemanlarından alıyor.
+
+Örnek:
+
+	class Date{
+	public:
+		Date(int d, int m, int y) : md{d}, mm{m}, my{y} 
+		{
+			std::cout << "Date(int,int,int) this = << this << '\n\;
+		}
+		
+		~Date()
+		{
+			std::cout << "~Date() this = " << this << '\n';
+		}
+
+	private:
+		int md, mm, my;
+	};
+
+
+	int main()
+	{
+		Date d1{ 12, 3, 1997 };
+
+		Date d2 = d1;
+	}
+
+Output:		Date(int, int, int) this = 00EFFD38
+		~Date() this = 00EFFD2C
+		~Date() this = 00EFFD38
+
+Buradan anlıyoruz ki derleyici copy constructor yazmış ve d2 nesnesini onun ile oluşturmuş.
+
+
+
+
+Başka Hangi Durumlarda Copy Constructor Çağırılır?
+--------------------------------------------------
+
+(1) Bir fonksiyonun parametresinin bir sınıf türünden olması ve fonksiyona da sınıf türünden bir argüman geçilmesi.
+	
+	class Myclass {};
+	void func(Myclass m)
+	{
+	
+	}
+	
+	int main()
+	{
+		Myclass m1;
+		func(m1);		// böyle bir nesne (m1) ile çağırırsak, burada fonksiyonun parametre değişkeni için copy constructor çağırılacak.
+	
+	}
+
+
+Bu senaryoda fonksiyonun parametresi için copy constructor çağırılır ve nesne oluşturur.
+
+
+(2) Bir fonksiyonun geri dönüş değeri türünün bir sınıf türü olması ve fonksiyonun return ifadesinin bir myclass nesnesi olması.
+
+	class Myclass{};
+
+	Myclass g;
+
+	Myclass foo()
+	{
+		return g;
+	}
+
+Bu durumda fonksiyonun geri dönüş değerini tutacak temporary object için yine copy constructor çağırılacak. Fakat burada dilin bazı başka kuralları devreye
+girebiliyor => Copy elision, return value optimization, named return value optimization, mandatory/guaranteed copy elision gibi.
+
+* O ya da bu nedenle copy constructor delete veya default edilebilir.
+
+	class Myclas{
+	public:
+		Myclass(const Myclass&) = default;
+	};
+
+////////////////
+
+	class Myclas{
+	public:
+		Myclass(const Myclass&) = delete;
+	};
+
+	int main()
+	{
+		Myclass m1;
+		Myclass m2 = m1; // sentaks hatası.
+	}
+
+
+
+
+
+Madem derleyici copy constructor yazıyor, biz hangi senaryolarda copy constructor yazmalıyız?
+- Öyle sınıflar var ki, bu sınıflar kaynak(resource) kullanıyorlar. Bu kaynak dinamik allocate edilmiş bir bellek bloğu olabilir, bir dosya olabilir, bir 
+veri tabanı bağlantısı olabilir vs.vs. Böylesi durumlarda sınıf nesneleri bu kaynağa tipik olarak bir handle tutuyor(pointer veya referans).
+
+	class String{
+	public:
+		String(const char*);
+
+	private:
+		char* mp;  // dinamik olarak allocate edilen bellek bloğunun adresini tutsun
+		std::size_t mlen;
+	};
+
+	int main()
+	{
+		String str("bugun hava cok guzel"); // dinamik bellek bloğu allocate edilecek, mp o bloğun adresini tutacak. mlen ise yazının uzunluğunu
+						    // tutacak.
+		String s = str;  //copy constructor ile s nesnesi oluşturulacak.
+	}
+
+
+					       ac40 = blok başının adresi
+     ------------				__
+str | mp = ac40  | ----------------------->    "bugun hava cok guzel"
+    | mlen = 20  |		 	     ^ 
+     ------------                            |
+					     |
+                                             |			str nesnesinin değerleri ile s nesnesi copy constructor vasıtası ile oluşturuldu.
+				             |			fakat bu sefer şöyle bir problem var ki bu nesnelerden birisinin hayatı biterse bu allocate
+					     |			edilmiş bellek alanı destructor ile free edilecek.
+     ------------			     |
+s   | mp = ac40  |----------------------------
+    | mlen = 20  |		 
+     ------------
+
+
+____________________________________________________________________
+
+	RAII IDIOMU (Resource Acquisition Is Initialization)
+____________________________________________________________________
+
+Constructor kaynağı edinir, destructor kaynağı geri verir. Destructor çağırıldığında kaynak sızıntısı ihtimali oratan kalkar.
+
+
+
+
+class String{
+	public:
+		String(const char*);
+		~String()
+		{
+			if(mp)
+			  std::free(mp);
+		}
+
+	private:
+		char* mp;  // dinamik olarak allocate edilen bellek bloğunun adresini tutsun
+		std::size_t mlen;
+	};
+	
+	void func(String s)
+	{
+		//
+		// burada s'nin hayatı bitiyor. ve s için çağırılan destructor bellek bloğunu free edecek. fakat str'nin hayatı devam ediyor.
+		// o halde str dangling pointera dönüşür.
+	}
+
+
+	int main()
+	{
+		String str("bugun hava cok guzel"); // dinamik bellek bloğu allocate edilecek, mp o bloğun adresini tutacak. mlen ise yazının uzunluğunu
+						    // tutacak.
+		String s = str;  //copy constructor ile s nesnesi oluşturulacak.
+		func(str);	
+	}
+
+
+
+İşte böyle sınıflar için copy constructor yazma görevini derleyiciye verirsek derleyici elemanları birbirine kopyalıyor. Oysa çoğu zaman bizim istediğimiz,
+yukarıdaki kodda olduğu gibi, bu nesnelerin birbirinden bağımsızlığını kılmak ve value semantiği korumak için hayata gelen nesnede ayrı bir bellek alanı
+allocate edecek bir copy constructor olması. Yani görsel olarak şöyle;
+
+
+					       ac40 = blok başının adresi
+     ------------				__
+str | mp = ac40  | ----------------------->    "bugun hava cok guzel"
+    | mlen = 20  |		 	     
+     ------------                           			
+ 
+					       f2d4
+     ------------			       __
+s   | mp = f2d4  |------------------------>   "bugun hava cok guzel"
+    | mlen = 20  |		 
+     ------------
+
+
+"Kaynağın kendisi değil o kaynağın adresini tutan pointer, referans kopyalanıyor" ==> shallow copy, memberwise copy
+"Kendi kaynağını edinsin, copy constructor ile hayata gelen nesnenin kaynağına kopyalama yapılsın" ==> deep copy
+
+Örneğin yukarda deep copy kullanmamız gerekir.
+
+
+
+	
+class String{
+
+	public:
+	String(const String& other) : mlen(other.mlen)
+	{
+		mp = static_cast<char*>(std::malloc(mlen + 1));
+		if(!mp) {
+			std::cerr << "cannot allocate memory\n";
+			std::exit(EXIT_FAILURE); }
+		std::strcpy(mp, other.mp);
+	}
+
+	String(const char* p) :  mlen(std::strlen(p))
+	{
+		mp = static_cast<char*>(std::malloc(mlen + 1));
+		if(!mp){
+			std::cerr << "cannot allocate memory\n";
+			std::exit(EXIT_FAILURE);
+		}
+		std::strcpy(mp, p);
+	}
+
+	~String()
+	{
+		if(mp)
+			std::free(mp);
+	}
+	
+	std::size_t length() const
+	{
+		return mlen;
+	}
+
+	void print() const
+	{
+		//..
+		std::cout << '[' << mp << "]\n";
+	}
+
+	private:
+	std::size_t m_len;
+	char* mp;
+};
+
+int main()
+{
+	String str("bugun sinifin ozel fonksiyonlarini isliyoruz");
+	
+	str.print();
+}
+
+
+Bu kodda biz copy constructor yazmasak derleyicinin yazacağı copy constructor bu;
+	String(const String &other) : mlen(other.mlen), mp(other.mp) {}
+
+İşte bu sığ kopyalama yani shallow copy, memberwise copy.
+
+Fakat bizim işimizi bu görmüyor o yüzden kendimiz yazdık. 
+
+
+
+
+
+
