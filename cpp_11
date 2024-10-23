@@ -478,6 +478,13 @@ Bu kontrolü de iki nesnenin adreslerini karşılaştırarak yapabiliriz.
 		...
 	}
 
+************
+
+this: Atama operatörünün çağrıldığı nesnenin adresi.
+&other: Atama işleminde sağ taraftaki nesnenin adresi.
+
+************
+
 
 Peki neden gidip de programcı x = x yapsın? Fakat self-assignment sadece bu şekilde yapılmaz tabi ki.
 
