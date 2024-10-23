@@ -319,7 +319,172 @@ Bu kodda biz copy constructor yazmasak derleyicinin yazacağı copy constructor 
 
 Fakat bizim işimizi bu görmüyor o yüzden kendimiz yazdık. 
 
+* Copy Constructor'u programcı olarak biz implemente ediyorsak, artık bütün veri elemanlarının alması gereken
+değerleri almasından biz sorumluyuz. Derleyiciye bırakırsak derleyici onları default init. eder. Fakat tabi böyle
+init. edilmesi işimize geliyor, bir problem olmuyorsa sorun yok.
 
+	String str("string metni");
+	String str2("string2 metni");
+
+	str = str2;	// !!! operator overloading
+
+* Bir sınıf nesnesini  atama op. kullanarak aynı türden bir l val. expr. sınıf nesnesi atandığında, bu atama işlemini
+yapan sınıfın özel bir üye fonksiyonu ==> Copy Assignment Function
+
+* Burada kopyalama yapan fonksiyon, sınıfın copy assignment fonksiyonu. Sınıfın copy assignment fonksiyonu olmak zorunda yani olmamak gibi bir ihtimal
+söz konusu değil.
+
+* Fonksiyonun isminin içinde operator keywordü olacak. Ondan sonra hangi operatörü overload ediyorsak, yani sınıf nesnesi hangi operatörün operandı olduğunda
+derleyicinin o ifadeyi bu fonksiyona yapan çağrıya dönüştürmesini istiyorsak o operatörün sembolü gelecek.
+
+	operator+
+	operator==
+	operator!=
+	operator++
+
+O zaman atama da bir operatör. Sınıf nesnesi  atama operatörünün operandı olduğunda bu bir fonksiyon çağrısına dönüştürülüyorsa bu da bir operator overloading
+vakası. O halde benzer şekilde fonksiyonun isminin operator assignment ->  operator=
+
+Bir sınıf nesnesine aynı türden başka bir sınıf nesnesini atama operatörü ile atadığımız zaman çağırılan fonksiyonun ismi -> Operator Assignment
+
+
+
+	class Myclass()
+	{
+	
+	};
+
+	int main()
+	{
+		Myclass m1, m2;
+
+		m1 = m2;	// burada çağırılan fonksiyon bir constructor değil. Constructor nesneyi hayata getiren bir fonksiyon.
+				// burada hayata gelen bir fonksiyon yok, m1 de m2'de zaten hayatta. 
+				// m1.operator = (m2);	bu da aynı anlamda
+	}
+
+
+* Dolayısıyla Copy Assignment fonksiyonu nesne hayata getiren bir fonksiyon değil. Ve dolayısıyla constructor ve destructor için geçerli olan geri dönüş
+değeri kavramı olmaması durumu bu fonksiyon için geçerli değil.
+
+Derleyici Copy Assignment Fonksiyonunu Nasıl Yazar?
+
+
+	class Myclass{
+	public:
+		Myclass(const Myclass &r) : ax(r.ax), bx(r.bx), cx(r.cx) {}
+		Myclass& operator=(const Myclass &)	// copy assignment function // derleyici böyle bir definition yapar;
+		{
+			ax = r.ax;
+			bx = r.bx;	// Eğer elemanlar primitive türlerse bu atamalar basit atamalardır.
+			cx = r.cx;	// Fakat bunlar sınıf türünden nesnelerse, bu sefer sınıf türünden nesneler atama operatörünün operandı olduğu için
+					// yine elemanlar için copy assignment fonksiyonu çağırılır.
+			return *this;	// fonksiyonun geri dönüş değeri atama operatör fonksiyonu kendisine atama yapılmış nesneyi döndürür.
+		}			
+	private:			
+		A.ax;
+		B.bx;
+		C.cx;
+	};
+
+* Eğer yukardaki copy assignment fonksiyon tekse ve overloadu yoksa, aldığı argüman L value de R value de olabilir. Çünkü const l val referans hem l hem r
+valueye bağlanır.
+
+
+//////////////////////////////
+
+	a = b 	// bu işi yapan fonksiyonun geri dönüş değeri L value referans olduğuna göre, bu ifade bir Lvalue expression'dur.
+
+
+Geri dönüş değerinin L value reference olması, C++ dilinde atama operatörü ile oluşturulan ifadelerin L value olmasını destekliyor.
+Yani sadece sınıflar için değil, genel olarak atama operatörü ile oluşturulan ifadeler C++'da L value expression'dur.
+
+
+//////////////////////////////
+
+
+	Myclass m1, m2;
+
+	m1.operator = (m2);			// bu fonksiyonun geri dönüş değeri L val. ref. ve m1'in kendisini döndürür. O halde şöyle yapabiliriz;
+	m1.operator=(m2).set(12).print();	// set fonksiyonunu m1 için çağırmış oluyoruz. hatta set fonksiyonunun da geri dönüş değeri eğer
+						// Myclass& ise print fonksiyonunu da m1 için çağırmış oluyoruz.
+	
+
+--------------------------------------
+
+Copy Assignment işleminde yine daha önce bahsettiğimiz ve yazdığımız ufak çaplı String sınıfındaki UB,dangling pointer durumunu hatırlayalım. Deep copy ve 
+shallow copy. Burada da deep copy olmadığı için eğer copy assignment kodunu derleyici yazarsa buna benzer bir problem olur. Fakat farklı olarak bu durumda
+zaten nesnemiz hayatta, yani yeni bir nesne oluşturulmuyor constructor ile. Fakat bu durumda kaynağı doğrudan kaybediyoruz ve resource leak oluşmuş oluyor.
+
+Yani burada copy assignmentin yapması gereken kendi kaynağını geri verecek ve böylece resource leak olmasını baştan engelleyecek. Sonrası aslında copy 
+constructorun koduyla neredeyse aynı kod. Yeni kaynak edinecek ve deep copy yapacak.
+
+
+	deep copy		copy ctor
+	release resources	destructor
+
+Copy assignment rr + dp yapar.
+
+Bazı sınıfları implemente ederken bunları ayrıştırıyorlar kod tekrarını engellemek için. Release resources ve deep copy örneğin ayrı fonksiyonlar olabiliyor.
+Copy Assignment bu ikisini çağırabiliyor. Copy Constructor sadece deep copy çağırıyor vs.
+
+--------------------------------------
+
+ Copy Assignment Fonksiyonunu daha önce sadece bazı kavramları kavramak için oluşturduğumuz küçük çaplı String sınıfı için kendimi yazalım:
+
+ String& operator=(const String &other)
+ {
+	mlen = other.mlen;
+	std::free(mp);		//önce kaynağımızı geri veriyoruz. // derleyiciye bıraksak mp = other.mp; yapacak ve yukarda bahsettiğimiz problemler olacak
+
+	mp = static_cast<char*>(std::malloc(mlen + 1));
+
+	if(!mp)
+		std::cerr << "cannot allocate memory \n";
+		std::exit(EXIT_FAILURE);
+	}
+	std::strcpy(mp, other.mp);	
+	return *this;
+ }
+
+//////////////////////////
+
+	int x = 10;
+	
+	x = x;	//self-assignment
+
+* Eğer biz nesnemiz için böyle bir self-assignment yaparsak problem olur;
+
+
+	String str("bugun ozel fonksiyonlari goruyoruz");
+
+	str = str;
+	
+	str.print();
+
+* Ne olmuş oldu? Biz copy assignment fonksiyonunda yazdığımız kodda iki nesne de aynı ve biz o kodda kopyalanan nesnenin kaynağını geri verdik fakat bu durumda
+iki nesne de aynı. Yani ikisinin kaynağını da free etmiş olduk. Bu durumda pointerlar dangling pointer oldu.
+
+* Eğer nesnenin kendisine atanmasında bir problem olmasını istemiyorsak, atama operatörünün sol operandı olan nesne ile sağ operandı olan nesnin aynı nesne
+olup olmadığını kontrol etmemiz lazım.
+
+Bu kontrolü de iki nesnenin adreslerini karşılaştırarak yapabiliriz.
+	
+	String& operator=(const String& other)
+	{
+		if(this == &other) // self assignment
+			return *this;
+		...
+		...
+	}
+
+
+Peki neden gidip de programcı x = x yapsın? Fakat self-assignment sadece bu şekilde yapılmaz tabi ki.
+
+	void func(Myclass *p1, Myclass *p2)
+	{
+		*p2 = *p1;	// örneğin burada her iki parametreye aynı nesne geçilmeyeceği ne malum? o zaman da self-assignment olur.
+	}
 
 
 
