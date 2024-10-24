@@ -1,0 +1,962 @@
+_____________________________________
+
+Temporary Objects ( Geçici Nesneler )
+_____________________________________
+
+Geçici nesne bir PR value expression.
+
+* İsimlendirilmemiş nesneler işinizi görüyorsa, nesnelerinizi isimlendirmeyin. Çünkü bu şekilde kullanacağımız nesnelerin bazı avantajları var.
+
+-Eğer sınıfın ismini yazıp, bir isim olmadan nesne oluşturma ifadesi yazarsak temporary bir nesne oluşturmuş oluruz.
+
+	class Myclass{};
+
+	int main()
+	{
+           Myclass(); // geçici nesne
+	}
+
+///////////////////
+	
+	class Myclass{
+	public:
+		Myclass();
+		Myclass(int);
+		Myclass(int, int);
+	};
+
+	int main()
+	{
+	   Myclass(12,45);	// temporary object 
+	   Myclass{ 12, 45 };	// temporary object
+	}
+
+* Bu ifadenin (Myclass() veya diğer üstteki 2 ifade) value kategorisi PR Value expression. Dolayısıyla böyle bir ifade ile ne yapabilir sorusunun cevabı;
+örneğin bunu başka bir myclass nesnesine ilk değer veren ifade olarak kullanabiliriz.
+
+	auto m = Myclass{};
+
+* Eğer bir fonksiyonun parametresi Myclass türünden ise, böyle bir fonksiyona yapılacak çağrı ifadesinde geçici nesne kullanabiliriz.
+
+	void func(Myclass);
+
+	func(Myclass{});
+
+* Referanslar söz konusu olduğu zaman, bir referansı geçici bir nesneye bağlayabiliriz fakat geçici nesne ifadesi PR value olduğu için, bağlanacak referansın
+da ya const L val. ref. ya da R val. ref. olması gerekiyor.
+
+	Myclass& mr = Myclass{}; 	// sentaks hatası, r val expr, l val exp bağalanamaz.
+	Myclass&& mr = Myclass{}; 	// sorun yok
+	const Myclass& mr = Myclass{};	// sorun yok
+
+
+
+-------------------------
+Neden Kullanacağız?
+-------------------------
+
+Örneğin bizim bir fonksiyon çağrısında kullanılacak bir argümana ihtiyacımız var ancak amacımız sadece orada kullanılması. 
+
+	void func(Myclass);
+	
+	int main()
+	{
+		Myclass m{ 3, 4 };
+
+		func(m);
+	}
+
+böyle yazarsak;
+
+	1) İsim alanına bir isim enjekte etmiş olduk.
+	2) Kodu okuyanda buradaki Myclass nesnesinin fonksiyon çağrısından sonra tekrar kullanılacağı konusunda bir algı oluşturmuş olduk.
+	3) Bu Myclass nesnesinin hayatı local otomatik ömürlü bir değişken olduğu için, tanımlandığı bloğun sonunda bitecek. Oysa bu nesneye sadece 
+	bu iş için ihtiyacımız varsa, bu noktadan sonra hayatının devam etmesi özellikle de bu nesne kaynaklar kullanıyorsa istediğimiz bir durum değil.
+
+
+|Temporary Materializetion|
+---------------------------
+* Bir PR Value expression Modern C++17 standardıyla, artık kendisi doğrudan bir nesne değil. Adeta şöyle; bir nesnenin oluşturulması için bir reçete, talimat
+gibi. Yeni standard diyor ki, yeri geldiğinde-zamanı geldiğinde bu ifadeden bir nesne oluşturulabilir. İşte bunun teknik olarak karşılığı da "Temporary Materializetion".
+
+Temporary Materializetion'un olduğu durumları basitçe ifade etmek gerekirse;
+
+1) Bir referansa bağlamak.
+
+	auto &&r = Myclass { 3,5 };
+
+	const &r = Myclass { 3,5 };
+	
+Burada materialization gerçekleştirilir.
+
+2) Referans değil de bu ifadeden bir nesne oluşturursak yine temp. materializetion gerçekleştirilir.
+
+	Myclass m = Myclass{ 3, 5 };
+
+
+"Mandatory Copy Ellision" = "Guaranteed Copy Ellision"
+
+
+	Myclass m = Myclass{ Myclass{} };	// burada copy ctor çağırılmayacak yeni standardlara göre, çünkü zaten burada nesne yok ki. Bunlar nesne
+						// reçetesi olarak geçiyor. Sadece ctor çağırılır.
+	// cpp17 öncesi için : derleyici burada optimizasyon yapar.
+	// fakat eğer copy ctor delete edilmiş olursa sentaks hatası olur.
+
+------------------------------------------------------
+
+
+*  Temporary Objectlerin en büyük avantajlarından birisi de bunun doğrudan nesne olmaması ve bazı senaryolarda copy ellision dediğimiz sonucu doğurması.
+
+________________________________
+
+	Copy Ellision
+________________________________
+
+* C++'da son derece önemli, yazdığımız kodun verimini %100 arttırabilecek bir durum. Kullanma biçimimize bağlı olarak.
+
+Copy Ellision demek aslında kopyalamanın yapılmaması demek. 
+
+
+
+
+1.tipik örnek geçici nesne ifadesini, başka bir geçici nesne ifadesi oluştururken argüman olarak kullanmak.
+
+	Myclass m = Myclass{ Myclass{ Myclass{} } }; // birden fazla da olabilir böyle
+						     // copy ctor çağırılmaz sadece ctor çağırılır.
+
+2.örnek, bir temporary object-prvalue expr. ile sınıf türünden argüman alan fonksiyona çağrı yapmak.
+
+	void func(Myclass);
+	
+	func(Myclass{});	// eski cpp'a göre önce default ctor çağırılır, sonra copy ctor çağırılır ve çok büyük ihtimalle %99 derleyici bunu optimize edecekti
+				// şuan default ctor çağırılır sadece.
+
+ 	Bu neden önemli bazı sınıf nesnelerinin contruction'u çok ciddi bir maliyet, yani biz doğrudan kopyalama maliyetinden kurtulmuş oluyoruz.
+
+	Hatta bu kural olmasaydı, bir fonksiyona myclass pr value ifade gönderiyoruz ve burada normalde Move Ctor çağırılırdı. Fakat bu kural ile o çağırılmıyor.
+
+
+* C++17' de radikal bir değişiklik yapıldı.
+
+
+
+* Bir fonksiyonun geri dönüş değeri türünün Myclass sınıfı türünden olması ve fonksiyonun return ifadesinin Myclass türünden bir PR Value expr. olması C++17
+öncesi söz konusu olsaydı,
+
+	Myclass m = func(); // bir kez ctor çağırılır fakat bu bir compiler optimization. eğer optimizasyon switchlerini disable ederseniz o zaman copy ctor'Un
+				çağırıldığını göreceksiniz. fakat optimizasyon ayarlarını açsanız veya kapatsanız da eğer copy ctor deleted ise sentaks hatası
+				göreceksiniz.
+
+	Fakat C++17 ve sonrasında burada bir kopyalama yok, temporary materializetion var.
+
+
+
+----------------------
+
+	ÖZETLE
+
+----------------------
+
+C++ 17'den önceki standardlarda eğer şöyle bir ifade yazarsak;
+	
+	Myclass m = Myclass{}; veya Myclass m = Myclass{ Myclass {} }; // bu kodlarda çok büyük ihtimalle derleyici optimizasyon yapacak ve ctor çağırılacak.
+									// copy ctor çağırılmayacak.
+
+	Fakat eğer copy ctor deleted ise, derleyici optimizasyon yapsa da yapmasa da sentaks hatası verecek.
+
+
+C++ 17 ve sonraki standardlar için ise bu kodda sadece ctor çağırılacak. Temporary Materialization var, kopyalama yok.
+
+Hatta burada da problem yok;
+	Myclass m = Myclass { Myclass{ func() } };
+
+----------------------
+
+Mandatory Copy Ellision ya da Guaranteed Copy Ellision C++17 standardının bir eseri. Ancak copy ellision, guaranteed copy ellision'un üstünde bir terim.
+
+Bir de garanti altında olmayan copy ellision var.
+
+---
+RVO
+---
+* Bir fonksiyonun geri dönüş değerinin bir sınıf türünden olması ve fonksiyonun geri dönüş değerini oluştuacak olan return statement'ta bir PR Value Expr. 
+kullanılması durumuna karşılık geren terim " Return Value Optimization ". ==> RVO
+
+RVO'nun bu biçimi, C++17 öncesinde bir compiler optimization'du, fakat artık direk dilin kuralı. Yani derleyici artık burada copy cotr delete edilmiş ben sentaks hatası
+veriyorum diyemiyor. Veya burada ben copy yapacağım diyemiyor artık dilin kuralı burada kopyalanma durumu engellenmiş.
+
+	Myclass func()
+	{
+		return Myclass();
+	}
+
+Aslında return value optimization 2 kategoriye ayrılı diyebiliriz;
+-isimlendirilmiş, named (RVO)
+-isimlendirilmemiş, unnamed (NRVO)
+
+----
+NRVO ( Unnamed RVO )
+----
+Halen compiler optimization, mandatory değil. Fakat derleyicilerin çok kolayca yapabildiği bir compiler optimization. Kod verimini çok arttırır.
+ 
+	class Myclass{
+	public:
+
+		Myclass()
+		{
+			std::cout << "default cotr \n";
+		}
+
+		~Myclass()
+		{
+			std::cout << "destructor \n";
+		}
+
+		Myclass(const Myclass&)
+		{
+			std::cout << "copy ctor\n";
+		}
+		
+		Myclass(Myclass&&)
+		{
+			std::cout << "move ctor \n";
+		}
+	};
+	
+	Myclass func()
+	{
+		Myclass x; // 1
+		// bu yerel nesne (x) üzerinde bir takım işlemler yapıp fonksiyona çağrı yapan koda iletmek için o yerel nesneyi return ifadesi olarak kullanıyoruz.
+		return x;
+	}
+
+	int main()
+	{
+		Myclass m = func(); 
+	}
+
+
+* Aslında teorik olarak önce func() fonksiyonu çağırıldığında 1 numaralı nesne için default ctor çağırılacak fakat fonksiyon çağırı tamamlandığı anda fonksiyonun geri dönüş
+değerini m isimli nesneye kopyaladığımızda 1 veya 2 kez copy ctor çağırılacak. Neden 1 veya 2 dedik? - Çünkü aslında böyle durumda fonksiyonun geri dönüş değerini bellekte
+bir yere yazıyoruz. Dolayısıyla orada da bir nesne oluşuyor. O nesne de bir temp. object ve o nesne copy ctor ile hayata geliyor. Daha sonra o nesneden yine cop ctor ile
+m isimli nesneyi oluşturuyoruz.
+
+Burada derleyicinin aslında ürettiği kod; doğrudan myclass nesnesini fonksiyonun geri dönüş değerinin yazılacağı yerde(return slot) oluşturması. Bu guaranteed
+copy ellision değil.
+
+* Guaranteed copy ellision değil yani eğer copy ctor delete edilmiş olsa ve derleyici optimizasyon yapmasa sentaks hatası olur.
+
+örnek:
+
+class Myclass{
+public:
+	Myclass()
+	{
+		std::cout << "default constructor \n";
+	}
+
+	Myclass(const Myclass&) = delete;
+};
+
+using namespace std;
+
+vector<int> foo()
+{
+vector<int> vx(100'000);
+///...
+
+return vx;
+}
+
+int main()
+{
+	auto vec = foo();
+}
+
+burada 2 ihtimal var; 1) derleyicinin yapmasını engelleyeceği özel bir senaryo yok ise, move ctor çağırılacak.
+
+
+--------------------------------------------------------------
+
+R value			
+_______
+
+X Value U PR Value
+
+
+GL Value
+________
+
+L Value U X Value
+
+
+
+------------------------------------------
+
+
+
+class Myclass{
+		Myclass()
+		{
+			std::cout << "default cotr";
+		}
+		~Myclass()
+		{
+			std::cout << "destructor";
+		}
+	};
+
+
+int main()
+{
+	Myclass{}; // default ctor çağırılır. Temporary Materialization noktalarından birisi de, bir PR Value expression'un initializer olmadan kullanılması
+			// fakat ifadenin sonunda destructor çağırılması durumu.
+
+	std::cout << "main bitiyor";
+}
+
+burada yazılar şu sırayla bastırılır:	"default ctor" -> "destructor" -> "main bitiyor" 
+
+
+
+
+
+____________________________________________________________________________________________________________________________________________________________________________
+
+
+
+
+
+__________________________________________
+
+	Conversion Constructor
+__________________________________________
+
+Dönüştüren kurucu işlev.
+Special Member Function değil.
+
+Sınıfların tek parametreli ctorları nesneyi oluşturmanın dışında ilginç bir niteliğe daha sahipler.
+
+	class Myclass{
+	public:
+		Myclass()
+		{
+			std::cout << "Myclass(int x) x = " << x << "\n";
+		}
+	};
+
+
+Bu ctor aynı zamanda parametresi olan türden, bu sınıf türüne örtülü bir dönüşüm gerçekleştirmek için de kullanılır. Function overloading konusunda user declared conversions
+kısmını hatırla.
+
+
+	class Myclass{
+	public:
+		Myclass() = default;
+
+		Myclass(int x)	// 2
+		{
+			std::cout << "Myclass(int x) x = " << x << "\n";
+		}
+	};
+
+	
+	int main()
+	{
+		Myclass m;
+		m = 5;		// 2 numaralı cotr olmazsa sentaks hatası, olursa değil.
+	}
+
+
+Dilin kurallarına göre derleyici bu fonksiyonun (2 numaralı) bildirimini ya da tanımını gördüğünde int türden 5 ifadesinden Myclass sınıfına dönüşümü, bu fonksiyona çağrı
+yaparak gerçekleştiriyor.
+
+Derleyici m = 5; 'i gördüğünde durumdan vazife çıkartarak 2 numaralı fonksiyona örtülü olarak çağrı yaptı, 5 ifadesini argüman olarak gönderdi ve bir Myclass nesnesini
+oluşturdu. O myclass nesnesi bir PR Value expression, geçici nesne.
+
+Yani burada aslında bir geçici nesne var ama biz görmüyoruz;
+
+	m = 5;
+
+Peki atama nasıl yapılıyor? - Move assignment çünkü bu bir r val expr. Fakat biz ne move assignment ne copy assignmenti görmediğimiz için move assignment'in çağırıldığını
+görmüyoruz.
+
+***
+Fakat şöyle bir durum var. Derleyici burada eğer move assignment varsa onu kullanır veya eğer move assignment yoksa kendisi oluşturmayı dener ve oluşturursa yine onu 
+kullanır. Ancak eğer oluştururken dilin kurallarını çiğneyen bir durum olursa move assignment deleted olarak tanımlanır. Ve bu durumda parametresi const Myclass &r olan ve
+hem R hem L value'ye bağlanabilen copy assignment fonksiyonunu kullanır.
+
+Hatta diyelim ki user declared bir copy assignment fonksiyonu var. Bu durumda kurala göre move assignment ve move cotr deleted olur. Derleyici direk copy assignment
+function ile işlemi tamamlar. İşte örnek;
+
+
+	class Myclass{
+	public:
+		Myclass() = default;
+
+		Myclass(int x)	// 2
+		{
+			std::cout << "Myclass(int x) x = " << x << "\n";
+		}
+
+		Myclass& operator=(const Myclass&r)	
+		{
+			std::cout << "copy assignment\n";
+			return *this;
+		}
+		
+		
+	};
+
+	
+	int main()
+	{
+		Myclass m;
+		m = 5;		// copy assignment ile bu işlem yapılacak.
+	}
+
+
+-----------------------------------------------------------------------------------------------------
+
+Aşağıdaki kodda 100.000 tane . yazdırılıyor.
+
+struct Myclass{
+public:
+	Myclass()
+	{
+		std::cout << '.';
+	}
+};
+
+int main()
+{
+	using namespace std;
+
+	size_t n{ 100'000 };
+
+	vector<Myclass> ivec;
+}
+
+Fakat burada ivec'e n'i atarsak //  ivec = n;
+Madem vector sınıfının size_t parametreli böyle bir constructoru var, burada da az önce bahsettiğimiz kuralların devreye girmesi gerekir. Belki de programcı bu kodu 
+yanlışlıkla yazdı ve derleyici örtülü olarak 100.000 elemanlı bir vector oluşturacaktı ve sonra vectorun move assignment fonksiyonu ile bunu ivec'e taşıyacak.
+
+Tabi ki bunu engelleyen bir araç var.. 
+
+
+	class Myclass{
+	public:
+		Myclass() { std::cout << "cotr"; }
+		~Myclass() { std::cout << "destructor"; }
+		Myclass(int) { std::cout << "int "; }
+	};
+
+// örneğin bu sınıfta int alan bir constructor var ve diyelim ki şöyle bir kod yazıldı;
+
+	int main()
+	{
+		Myclass m;
+		double dval{};
+		bool flag{};
+
+		m = dval;	// ama bunlar int türünden değil ki?
+		m = flag;	//
+	}
+
+
+
+Dilin bunun için 2 farklı kuralları var;
+
+1) Standard Conversion
+	Dilin kuralları gereği zaten var olan dönüşüm. Örneğin int'den double'a dönüşüm standard conversion. Narrowing conversion da bir standard conversion'dur.
+	Daraltıcı olduğu için standard conversion dışında kalmaz. Hatta long double'dan char'a da dönüşüm dilin kurallarına göre geçerli bir dönüşüm.
+									(akıl almaz dönüşüm diyor Neco)
+
+2) User-defined Conversion
+	Bir fonksiyona çağrı yapılarak oluşturulan dönüşüm. Tabi sadece conversion constructor ile yapılmıyor. 2 tane birbirinden ayrı user-defined 
+	conversion var.
+
+	class Nec{
+	public:
+		operator int()const;
+	};
+
+	int main()
+	{
+		Nec mynec;
+		int ival;
+
+		ival = mynec;
+	}
+
+	Şuanlık detaya girmiyoruz, ileride detaylı göreceğiz.
+
+
+
+*******************************
+
+	ÖNEMLİ KURAL
+
+*******************************
+
+Eğer bir örtülü dönüşüm (implicit conversion)
+	önce standard conversion + user defined conversion uygulanarak yapılabiliyorsa, derleyici gerçekten önce standard conversion uygular ardından da
+		user defined conversion uygular. Bunu yapmak zorunda, dilin kuralı! Conversion Sequence
+
+
+Eğer bir örtülü dönüşüm (implicit conversion)
+	önce user defined conversion + standard conversion uygulanarak yapılabiliyorsa, derleyici gerçekten önce standard user defined conversion uygular 
+		ardından da standard conversion uygular. Derleyici yine bu dönüşümü yapmak zorunda.
+
+AMA eğer dönüşüm arka arkaya iki tane user defined conversion ile yapılabiliyorsa ( UDC + UDC ) derleyici hiçbir zaman bu dönüşümü örtülü olarak yapmaz.
+
+*******************************	
+
+Şimdi tekrar koda dönelim ve bakalım dönüşümler geçerli mi?
+
+
+
+	class Myclass{
+	public:
+		Myclass() { std::cout << "cotr"; }
+		~Myclass() { std::cout << "destructor"; }
+		Myclass(int) { std::cout << "int "; }
+	};
+
+// örneğin bu sınıfta int alan bir constructor var ve diyelim ki şöyle bir kod yazıldı;
+
+	int main()
+	{
+		Myclass m;
+		double dval{};
+		bool flag{};
+							standard conversion			user defined conversion
+		m = dval;	// geçerli -> Önce double'dan int'e dönüşüm yapılacak sonra int'den Myclass türüne dönüşüm yapılması gerekiyor.
+
+	}
+
+/////////////////////////////////
+
+	class Myclass{
+	public:
+		Myclass() {};
+		Myclass(bool);
+	};
+	
+	int main()
+	{
+		Myclass m;
+		
+		m = "onur cepni"; // geçerli. neden? - çünkü array decay ile const char* türüne dönüşüyor, ondan da bool türüne dönüşüm var.
+				  // çok tehlikeli. bir çok durumda bizi çok büyük riske sokabilir.
+	}
+
+
+----------------------------------------------
+
+Bunu Nasıl Engelleriz / Kontrol Altına Alırız?
+
+----------------------------------------------
+
+CEVAP => Explicit Constructor
+
+
+Bir cotr'ı özellikle de tek parametreli cotr'ı explicit anahtar sözcüğü ile bildirmek, o constructoru explicit constructor yapıyor.
+
+	class Myclass{
+	public:
+		explicit Myclass(int); veya explicit Myclass();
+	};
+
+
+Ne demek bu explicit constructor? 
+
+-Buradaki explicit anahtar sözcüğünü şöyle düşünmekte fayda var : Explicit Only
+
+Yani bu constructor sadece explicit conversion'a izin verir implicit conversion'a izin vermez.
+
+Explicit dönüşüm = tür dönüştürme operatörü kullanarak yapılan dönüşüm. Örtülü olmayan dönüşüm. Örneğin static_cast op. kullanarak yapılan.
+Ama bir operatör kullanılmıyorsa, derleyici durumdan vazife çıkararak dönüşüm yapıyorsa, o da implicit conversion.
+
+
+	class Myclass{
+	public:
+		Myclass();
+		explicit Myclass(int);
+	};
+
+	int main()
+	{
+		Myclass m;
+		m = 5;	// sentaks hatası
+	}
+
+Burada implicit dönüşümü engellemiş oluyoruz. Fakat kendimiz explicit dönüşüm yapabiliriz şöyle;
+
+	..
+	...
+	Myclass m;
+	int ival{245};
+
+	m = static_cast<Myclass>(ival);
+
+
+Yani bu şu demek : Eğer niyetimizin dışında, yanlışlıkla olabilecek dönüşümleri tamamen devre dışı bırakmak/onları illegal hale getirmek istiyorsak sınıfın
+özellikle tek parametreli constructorlarını explicit olarak nitelemeliyiz.
+
+* Tavsiye : Aksi yönde karar almanızı makul kılacak bir neden olmadıkça, sınıfınızın tek parametreli constructorlarını explicit yapınız!
+
+ Constructor'u explicit yapmamamız örtülü dönüşümü bilerek/fiilen kendiniz destekliyorsunuz, özellikle istiyorsunuz demek. 
+
+* Şöyle düşünelim, constructorun defaultunun explicit cotr olması gerektiğini düşünelim ancak özel durumlarda cotr'u non-explicit yapalım.
+
+
+***
+  Constructor'un explicit olmasının çok önemli bir sonucu daha var. Constructor'un explicit olması durumunda Copy Initialization sentaksı geçerli değil!
+
+	class Myclass{
+	public:
+		explicit Myclass(int);
+	};
+
+	int main()
+	{
+		using namespace std;
+	
+		Myclass m(12); 		// direct-init sentaks hatası değil
+		Myclass m{ 365 } 	// direct list init sentaks hatası değil
+		Myclass m = 342;	// sentaks hatası
+	}
+
+
+
+
+
+
+
+* Sınıfların üye fonksiyonlarını niteleyen bazı anahtar sözcükler var. Bunlara duruma göre specifier ya da qualifier diyoruz. Bu specifierları kullanırken
+genel bir kural yok. Yani bazılarını sadece bildirimde kullanabiliyoruz, bazılarını hem bildirimde hem de tanımda kullanmamız gerekiyor.
+
+Örneğin explicit için bu duruma bir göz atalım.
+
+	// .h
+	class Myclass{
+	public:
+		explicit Myclass(int);
+	};
+
+
+	//.cpp
+	Myclass::Myclass(int) {}	// explicit keyword bildirimde varken tanımda da olamaz! 
+					// yani 	explicit Myclass::Myclass(int) {}	// sentaks hatası
+
+//////////////////////////
+	
+	//.h
+	class Myclass{
+	public:
+		static int foo();	// static keywod yoksa non-static member function, varsa static member function
+	};
+
+	//.cpp
+	int Myclass::foo()		// burada da tekrar keyword ü eklemiyoruz tanımda. Eklersek sentaks hatası olur.
+	{
+	
+	}
+	
+
+///////////////////////////
+
+	// .h
+	class Myclass{
+	public:
+		int foo()noexcept;
+	
+	};
+
+	// .cpp
+	noexcept int Myclass::foo()	// burada da tam tersi, yazmak gerekiyor.
+	{
+	
+	}
+
+
+
+Görüldüğü üzere uniform bir kural yok.
+
+
+Explicit Constctor 
+	1) Örtülü dönüşüme izin vermez, sadece explicit dönüşüme izin verir.
+	
+	2) 
+
+
+***
+  Her ne kadar programcılar arasında sadece int parametreli cotr'ın explicit olması sanki söz konusuymuş gibi bir yanlış algı var. Yanlış algının nedeni tek
+parametreli olmayan cotr'ların explicit olamaması değil, az tercih edilmesi.
+
+	class Myclass{
+	public:
+		Myclass();
+	};
+	
+	int main()
+	{
+		Myclass x = {}; // aslında böyle yazmak şöyle yazmaya eşdeğer => Myclass x = Myclass {};
+				// yani bu durumda aslında yine örtülü bir dönüşüm oluyor dilin kurallarına göre.
+				// ancak şimdi default cotr'u explicit yapar isek bu sentaks hatası olacak.
+	}
+
+
+///////////////////////
+
+	class Myclass{
+	public:
+		Myclass(int, int);
+	};
+
+	int main()
+	{
+		Myclass x = { 12, 56 };	// henüz görmedik fakat böyle de kullanabiliyoruz. Sanki burada da bu türden bir geçici nesne oluşturuluyor diye
+					// düşünelim ama bu da bir ilk değer verme biçimi.
+					// yine aynı şekilde burada da iki parametreli cotr'u explicit yaparsak bu şekilde kullanım sentaks hatası.
+	}
+
+
+
+
+//////////////////////
+
+
+	class Myclass{
+	public:
+		Myclass(int);
+	};
+	
+	void func(Myclass);
+
+	int main()
+	{
+		func(123);	// burada örtülü dönüşüm gerçekleşecek. fakat cotr explicit olursa bu da sentaks hatası.
+				// aslında bu da bir koruma faktörü.
+	}
+
+
+///////////////////////
+return statement söz konusu olduğunda
+
+
+	class Myclass{
+	public:
+		Myclass(int);
+	};
+
+	Myclass foo()
+	{
+		return 321321;  // return statement'i int veya int'e dönüşebilen bir türden olursa
+				// oysa cotr explicit olursa sentaks hatası olur.
+	}
+
+	int main()
+	{
+
+	}
+	
+
+bir durum daha var;
+
+/////////////////////////////
+
+	class Myclass{
+	public:
+		explicit Myclass(int);
+		Myclass(double);
+	};
+
+	int main()
+	{
+		Myclass m = 12; // sentaks hatası yok. Burada copy initialization sentaksı ile ilk değer verdiğimiz zaman, explicit cotr overload sete dahil
+				// olmuyor.
+	}
+
+
+
+-----------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+
+
+________________________________________
+
+	Delegating Constructor
+________________________________________
+
+Bir constructorun bir nesneyi hayata getirirken sınıfın bir başka constructorunu kullanarak memberların initialize edilmesini sağlamak.
+
+Neden Var?
+- 
+
+
+Eskiden şöyle yapılırdı;
+
+Burada constructorlar nesneyi oluştururken bazı aynı kodları kullanıyorlar. Bunun için sadece member functionların erişebileceği private alanda bir fonksiyon
+tanımladık ve o fonksiyon içinde ctor'ların kullanacağı bu ortak kodu yazdık. Bu sayede kod tekrarı yapmadık daha derli toplu oldu.
+
+	class Myclass{
+	public:
+		Myclass(int, int, int)
+		{
+			//...
+			init();
+		}
+		Myclass(int,int);
+		Myclass(int);
+		Myclass(const char*);
+
+	private:
+		void init();
+	};
+
+
+Bu yaklaşımın tabi dezavantajları da var:
+ 
+- Bu fonksiyonun private olması client kodların ona çağrı yapmasını engelliyor fakat sınıfın üye fonksiyonları onu
+çağırabilir. Oysa biz bu fonksiyonu sadece ctor'ların çağırabilmesi için yazmıştık. Bilerek veya bilmeyerek sınıfın bir başka member fonksiyonu bu fonksiyonu
+çağırdığında derleyici bir sentaks hatası vermeyecek çünkü sınıfın üye fonksiyonları için böyle bir erişim kontrolü yok.
+
+- Fonksiyona biz init ismini verdik fakat bunun initialize fonksiyonu olmadığı açık. Neden? Çünkü programın akışı ctor'un ana bloğuna girdiğinde zaten 
+non-static data memberlar hayata gelmiş durumda. Ctor non-static data memberları initialize ediyor. Fakat bu initialize işlemini bir ortak kodda toplarsak
+aslında o initializer olmaktan çıkıyor. Dediğimiz gibi init() e çağrı yapıldığı noktada zaten bu elemanlar hayata gelmiş oluyor. Burada da bir çelişki oluyor.
+Bazı programcılar da isim olarak post_init() gibi isimler verebiliyorlar.
+
+Buna daha iyi bir seçenek olarak, C++11 ile dile eklenen delegating constructor aracı var!
+
+Bir ctor, ctor initializer listte sınıfın diğer ctor'larından birine çağrı yaparak initialization yapma sürecini o ctor'a delege edebiliyor. Örnek;
+
+	class Myclass{
+	public:
+		Myclass(int, int, int);
+		Myclass(int, int);
+		Myclass(int x) : Myclass(x, x, x)
+		{  }
+		Myclass(const char*) : Myclass(std::atoi(p)) { }
+	}; 
+
+
+Önemli bir başka kural daha var;
+-Delegating Constructor sadece bir ctor'a delege edilecek, yani ctor initializer listte başka bir üye olmayacak.
+
+	class Myclass{
+	public:
+		Myclass(int,int) : mx{x},  my{y} { }
+		Myclass(int x) : Myclass(x,x), mz{335} { } // sentaks hatası
+	private:
+		int mx, my, mz;
+	};
+
+
+Fakat şunda bir problem yok;
+
+	class Myclass{
+	public:
+		Myclass(int,int) : mx{x},  my{y} { }
+		Myclass(int x) : Myclass(x,x) { }
+	private:
+		int mx, my, mz{ 21 };
+	};
+
+Kursun ilk bölümünde kalan major alt başlıklar:
+-Namespace
+-Operator Overloading
+-Static Members ( Static Data Members ve Static Member Functions )
+-Dynamic Storage
+-Nested Types
+
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+
+
+
+_________________________________
+
+	Friend Declarations
+_________________________________
+
+Bir sınıfın private bölümü clientlara kapalıdır. Eğer erişmeye çalışırsa access hatası olur.
+
+Friend bildirimleri, başka kodların sınıfın private ve protected elemanlarına erişimini geçerli kılıyor. 
+
+Programcıların anlamadığı nokta şu: friend bildirimleri client kodlar için yapılmıyor.
+
+** C++'da bir sınıfın public interface'i sadece sınıfın public bölümünden ibaret değil. Başlık dosyasında yapılan tüm bildirimler sınıfın yine public 
+interface'inde.
+
+// myclass.h
+
+	class Myclass{
+	public:
+		void foo();
+		int mx{};
+		class Nested {};
+	};
+
+	
+	void foo(Myclass);
+	void bar(Myclass, Myclass);
+
+Bu fonksiyonları neden sınıfın başlık dosyasında(myclass.h) bildirdim? Çünkü client kodlar bunları çağırsın diye. O zaman client kodların bunları çağırmasını
+istiyorsam ve sınıfın başlık dosyasında bildiriyorsam o zaman bunlar da public interface'ine ait! 
+Dilin kuralı = Public interface, başlık dosyasında client kodların kullanmasını istediğiniz tüm öğelerden oluşuyor. Bu da ne demek? Hem sınıfın public
+bölümünde yapılan bildirimler, hem de namespace içinde yapılan bildirimler.
+
+Hatta;
+
+// myclass.h
+
+	class Myclass{
+	public:
+		void foo();
+		int mx{};
+		class Nested{};
+	};
+
+	class Helper{
+	
+	};
+
+burada ki Helper sınıfı da public interface'in bir parçası.
+
+------------------------------
+Dilin kuralı diyor ki Global(free) functions dilin private bölümüne erişemez. Aslında friend bildirimi (istisnai bazı durumları saymazsak) sınıfın kendi
+kodlarının sınıfın private bölümüne erişmesini sağlıyor. Yani dilin kuralları gereği erişim kontrolüne tabi fakat adeta derleyiciye diyoruz ki 
+"Derleyici burada benim niyetim kötü değil, bunlar benim kodlarım, arkadaşlarım, dostlarım. Onlar bana yardımcı oluyorlar. Onların da private bölümüne
+erişmesini istiyorum. Sen bunlar için erişim kontrolünü kaldır"
+
+
+// myclass.h
+
+	class Myclass{
+	public:
+		void foo();
+		int mx{};
+		class Nested{};
+	};
+
+	class Helper{
+	
+	};
+
+	void bar(Myclass x, Myclass y); // global function
+
+
+
+Friend bildirimlerini 3 kategoriye ayırabiliriz.
+
+-Global bir fonksiyona friend bildirimi yapmak, friend'lik vermek
+-Bir başka sınıfın bir üye fonksiyonuna friend'lik vermek
+-Bir sınıfın tamamına friend'lik vermek
+
+
+
