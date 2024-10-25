@@ -208,7 +208,7 @@ Mandatory Copy Ellision ya da Guaranteed Copy Ellision C++17 standardının bir 
 Bir de garanti altında olmayan copy ellision var.
 
 ---
-RVO
+RVO ( Unnamed )
 ---
 * Bir fonksiyonun geri dönüş değerinin bir sınıf türünden olması ve fonksiyonun geri dönüş değerini oluştuacak olan return statement'ta bir PR Value Expr. 
 kullanılması durumuna karşılık geren terim " Return Value Optimization ". ==> RVO
@@ -222,11 +222,11 @@ veriyorum diyemiyor. Veya burada ben copy yapacağım diyemiyor artık dilin kur
 	}
 
 Aslında return value optimization 2 kategoriye ayrılı diyebiliriz;
--isimlendirilmiş, named (RVO)
--isimlendirilmemiş, unnamed (NRVO)
+-isimlendirilmemiş, unnamed (URVO)	=> Mandatory
+-isimlendirilmiş, named (NRVO)	=> Not Mandatory
 
 ----
-NRVO ( Unnamed RVO )
+NRVO ( Named RVO )
 ----
 Halen compiler optimization, mandatory değil. Fakat derleyicilerin çok kolayca yapabildiği bir compiler optimization. Kod verimini çok arttırır.
  
