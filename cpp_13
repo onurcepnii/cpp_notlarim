@@ -79,6 +79,8 @@ böyle yazarsak;
 * Bir PR Value expression Modern C++17 standardıyla, artık kendisi doğrudan bir nesne değil. Adeta şöyle; bir nesnenin oluşturulması için bir reçete, talimat
 gibi. Yeni standard diyor ki, yeri geldiğinde-zamanı geldiğinde bu ifadeden bir nesne oluşturulabilir. İşte bunun teknik olarak karşılığı da "Temporary Materializetion".
 
+Bir PR Value expression'un adeta hedefini bulduğunda bir nesne haline gelmesi/ondan bir nesne oluşturulmasıdır Temporary Materielization.
+
 Temporary Materializetion'un olduğu durumları basitçe ifade etmek gerekirse;
 
 1) Bir referansa bağlamak.
@@ -91,16 +93,45 @@ Burada materialization gerçekleştirilir.
 
 2) Referans değil de bu ifadeden bir nesne oluşturursak yine temp. materializetion gerçekleştirilir.
 
-	Myclass m = Myclass{ 3, 5 };
+	Myclass m = Myclass{ 3, 5 }; // burada bir kez iki int parametreli cotr (Myclass(int, int)) çağırılacak.
+	//yanlış algıya düşmeyelim. Burada derleyici önce iki int parametreli cotr çağırıp daha sonra move veya copy ctor çağırmaz.
 
 
 "Mandatory Copy Ellision" = "Guaranteed Copy Ellision"
-
+Bir PR Value expression'Un Materyalize olmadan kullanılması durumuna  Mandatory Copy Ellision deniyor.
 
 	Myclass m = Myclass{ Myclass{} };	// burada copy ctor çağırılmayacak yeni standardlara göre, çünkü zaten burada nesne yok ki. Bunlar nesne
 						// reçetesi olarak geçiyor. Sadece ctor çağırılır.
-	// cpp17 öncesi için : derleyici burada optimizasyon yapar.
-	// fakat eğer copy ctor delete edilmiş olursa sentaks hatası olur.
+	// cpp17 öncesi için : derleyici burada optimizasyon yapar, fakat eğer copy ctor delete edilmiş olursa sentaks hatası olur.
+
+-------- Ayrıntı açıklama -----------------------
+MyClass{} ifadesi ile geçici (temporary) bir MyClass nesnesi oluşturulur.
+MyClass{ MyClass{} } ifadesinde, geçici MyClass{} nesnesi, dıştaki MyClass nesnesine kopyalanır veya taşınır (constructor ile).
+Dıştaki MyClass nesnesi m değişkenine atanır, burada da bir kopyalama veya taşıma işlemi gerçekleşir.
+
+Bu işlem normalde iki kez kopyalama veya taşıma gerektirebilir:
+-İlk geçici nesne dıştaki MyClass nesnesine.
+-Dıştaki MyClass nesnesi m'ye atanır.
+
+C++11 ve C++14'te, derleyiciler copy elision (özellikle Return Value Optimization, RVO) adı verilen bir optimizasyon tekniği kullanarak bazı geçici nesnelerin kopyalanmasını 
+veya taşınmasını atlayabilir. 
+
+Eğer derleyici MyClass{ MyClass{} } için copy elision uygularsa:
+-İlk geçici nesne doğrudan m olarak materyalize edilebilir.
+-Böylece ekstra kopya veya taşıma işlemlerini atlamış olur.
+
+C++17'de, bu tür ifadeler için copy elision zorunlu hale getirilmiştir. Bu durumda:
+
+Derleyici, MyClass{ MyClass{} } ifadesinde geçici nesneyi m değişkenine doğrudan taşıyacak veya kopyalayacaktır; hiçbir kopyalama veya taşıma işlemi yapılmaz.
+
+-----------------------------------------------
+
+
+Myclass m = Myclass{ Myclass{} };	// aslında burada C++17'ye göre zaten bir nesne yok (sağ taraf kast ediliyor). Burada bir PR Value expression var. Ve dilin kurallarına
+					// göre (17 ve üstü) nesne ne zaman oluşacak? Temporary Materializetion oluşacağı zaman nesne oluşacak. Dolayısıyla PR Value expr.
+					// doğrudan nesne kabul edilmiyor, hedefini bulduğu zaman nesne haline geliyor. Bu kural olduğu için ctor delete edilse dahi bir sentaks
+					// hatası oluşmayacak. 
+
 
 ------------------------------------------------------
 
