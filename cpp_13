@@ -396,6 +396,7 @@ kısmını hatırla.
 	{
 		Myclass m;
 		m = 5;		// 2 numaralı cotr olmazsa sentaks hatası, olursa değil.
+				// şöyle düşün aslında arkaplanda =>  m = Myclass{ 5 };
 	}
 
 
