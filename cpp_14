@@ -1,0 +1,675 @@
+
+-global bir fonksiyona friendlik vermek.
+-bir başka sınıfın bir üye fonksiyonuna friendlik vermek
+-bir sınıfın tamamına friendlik vermek
+
+
+1-) Global bir fonksiyona Friendlik vermek
+------------------------------------------
+
+class Myclass{
+	public:
+	friend int foo(int);
+
+	private:
+	int mx;
+	void bar();
+};
+
+Örneğin burada, namespace'de ki int foo(int) fonksiyonu Myclass sınıfının bir friendi. Bu ne demek? - Bu fonksiyon için derleyici sınıfın private bölümüne erişimi sentaks 
+hatası olarak değerlendirmeyecek.
+
+
+
+	class Myclass{
+		public:
+		friend int foo(int);
+
+		private:
+		int mx;
+		void bar();
+	};
+
+	int foo(int)
+	{
+		Myclass m;
+
+		auto val = m.mx;
+		m.bar();
+	}
+
+
+* Peki eğer friend bildirimini private bölümünde bildirsek ne olur? - Hiçbir şey fark etmez. İster public ister protected ister private bölümünde yapılsa değişen birşey yok.
+
+
+
+
+
+//hidden friends => Idiomatic bir yapı
+
+Friend fonksiyonlarını doğrudan sınıfın içinde tanımlayabiliriz. 
+
+class Myclass{
+	public:
+		friend int foo(int);	// friend fonksiyonu, ayrıca implicitly inline, zaten sınıf içinde tanımlandığı için
+
+	private:
+		int mx;
+		void bar();
+};
+Bu şekilde bir friend bildirimi yaptığımız zaman, derleyicinin daha önce bu fonksiyonun bildirimi veya tanımı ile karşılaşması gerekmiyor. 
+
+
+-Friend bildirimi bir free function için yapılabilir.
+-Friend bildiriminin sınıfın hangi bölümünde yapıldığının, etkisi üzerinde bir sonucu yok.
+-Free olan fonksiyona friendlik verdiğimizde onu class definition içinde tanımlayabiliriz.
+
+
+
+
+2-) Bir başka sınıfın bir üye fonksiyonuna friendlik vermek.
+------------------------------------------------------------
+Çok daha az kullanılır. 
+
+class Nec{};
+
+class Myclass{
+	public:
+		friend int Nec::foo(int); // sentaks hatası
+
+	private:
+		int mx;
+		void bar();
+};
+
+Fakat bir başka sınıfın bir üye fonksiyonuna yapılacak friend bildirimi için sınıfın tanımını içinde fonksiyonun bildirimini görmek zorunda. Forward declaration yapsak da 
+geçerli olmaz. Yani class Nec{ int foo(); } olsa sentaks hatası olmaz.
+
+Sınıfın special member functionlarına da friendlik verilebilir. Sınıfın herhangi bir üye fonksiyonu için geçerli bir durum.
+
+
+
+3-) Bir sınıfın tamamına friendlik vermek
+-----------------------------------------
+
+class Myclass{
+	public:
+		friend class Nec;
+	private:
+		int mx;
+		void bar();
+};
+
+Derleyici friend class Nec; ifadesinin geçerli olması için, Nec sınıfının daha önce bir bildiriminin veya tanımının olmasını şart koşmuyor. Bundan daha sonra bildirilen 
+Nec class'ı gördükten sonra Nec nec sınıfının herhangi bir üye fonksiyonu Myclass'ın private bölümüne erişebilecek.
+
+***
+	A sınıfı  ==>  friend B
+
+
+	A sınıfı B sınıfına friend bildirimi yapsın. B sınıfı da A sınıfına friendlik vermiş olmaz.
+
+	class A{
+		friend class B;
+	}
+
+	B sınıfı A'nın private bölümüne erişebilir fakat A sınıfı B'nin private bölümüne erişemez.
+
+*** 
+	A ==> B ==> C
+	
+	A sınıfı B sınıfına friendlik vermiş olsun. B sınıfı da C sınıfına friendlik vermiş olsun.
+	
+	Geçişken (transitive) de değil. Geçişkenlik yok.
+
+	A, B'ye diyor ki sen benim private bölümüme erişebilirsin.
+	B, C'ye diyor ki sen benim private bölümüme erişebilirsin.
+	Ancak C, A'nın private bölümüne erişemez.
+
+
+Babanızın veya dedenizin arkadaşları sizin de arkadaşınız mıdır? -Çoğunlukla hayır.
+
+Inheritence ( Kalıtım - Miras )
+-------------------------------
+
+Base sınıfı Nec sınıfına friendlik vermiş olsun.
+Base sınıfından da Der sınıfını kalıtım yoluyle elde etmiş olalım. Nec bu durumda Der'in private bölümüne erişemez.
+
+
+Örneğin ben bir sınıfa friendlik vermek istiyorum fakat bütün private bölümüme değil, örneğin belirli fonksiyonlar için. Böyle bir friendlik vermek mümkün değil.
+
+	class Myclass{
+	public:
+
+	private:
+		void foo();
+		void bar();
+		void baz();
+	};
+
+Bu bazen bir ihtiyaç haline geliyor fakat bunu gerçekleştiren doğrudan bir araç yok. Fakat bazı idiomatic yapılar ile bunu gerçekleştirmek mümkün. Attorney - Client Idiomu.
+
+
+______________________________________
+
+		Operator Overloading
+______________________________________
+
+Operator Overloading, 
+
+Bir sınıf nesnesi bir operatörün operandı olduğunda, derleyici dilin kurallarından vazife çıkararak operatörün operandı olan sınıf nesnesi ifadedisini bir fonksiyon çağrısına
+dönüştürüyor. Ortada doğrudan fonksiyon çağrı ifadesi yok fakat, kodun anlamı derleyicinin bir fonksiyona çağrı yapması mekanizmasına denir.
+
+ * Burada söz konusu olan/çağrılan fonksiyona da operatör fonksiyonu diyoruz. Copy assignment ve move assignment da birer operator fonksiyonu.
+
+***
+ 	a ve b bir sınıf türünden nesneler olsun.
+
+ 	a + b 	eğer bu durumda dilin kurallarına göre çağırılabilecek bildirilmiş/tanımlanmış bir fonksiyon varsa, derleyici a + b ifadesini bir operatör fonksiyonuna yapılan
+  çağrı ifadesine dönüştürüyor. 
+  
+	Burada çağrılan fonksiyonlar hem global hem de non-static member fonksiyonlar olabiliyor.
+
+
+* Compile time'a yönelik bir mekanizmadır. Çünkü derleyici hangi fonksiyonun çağırıldığını derleme zamanı anlıyor.
+
+
+Peki Ne İşe Yarıyor?
+--------------------
+Operatörlerin verdiği bir çağrışım var. Daha yüksek anlaşılırlık sağlıyor.
+
+Örneğin : 	
+
+	m1 * m2 + m3 * m4 	yazabiliyorken şöyle yazdığımızı düşünelim;
+
+	add(multiply(&m1,&m2), multiply(m3,m4))
+
+
+* Operatörlerin primitive türler için yaptığı çağrışımdan başka problem domainindeki varlıkları temsil eden sınıflar için de faydalanıyoruz. Örneğin matrislerin çarpılması,
+ toplanması.
+
+* Operatör Overloading'den faydalanabilmek için, kullanımın kesinlikle "intuitive" olması gerekiyor. Ne demek yani intuitive?
+-Sezgisel olarak anlaşılacak.
+
+	image1 | image2		// böyle birşey yapmak mümkün fakat iyi bir fikir değil.
+						// Çünkü burada intuitive bir şekilde bir algı doğmuyor.
+						// Yani ne yapılıyor anlaşılmıyor. Burada iki resim birleştiriliyor mu, yoksa bir resimden faydalanarak 
+						// filtrasyon vs. mi yapılıyor belli değil. Birşey çağrıştırmıyor.
+
+	Burada amaç client kodların işini kolaylaştırmak, kendi işimizi kolaylaştırmak değil.
+
+
+Operator Fonksiyonlarını 2'ye ayıracağız.
+
+-Global(Free) Function Olan Operatör Fonksiyonları
+-Non-Static Member Fonksiyonlar
+
+
+-----------------------
+	Temel Kurallar
+-----------------------
+
+1) Operatörün operandı olan ifadelerden en az birinin bir sınıf türünden ya da enumaration türünden olması gerekiyor.
+	
+2) Overload edilecek operatörün (onun için fonksiyon yazacağımız operatörün) C++ dilinin operatör kümesinde olması gerekiyor.
+
+	Myclass a1, a2;
+
+		a1 @ a2;	// olmayan operatörün yüklemesi olmaz! @ diye bir operatör yok.
+
+
+3) Bu amaçla tanımlanacak fonksiyonların isimleri keyfi şekilde isimlendirilemez.
+	
+	operator+
+	operator[]
+	operator*
+
+	.. gibi
+
+
+4) Dilin bütün operatörleri overload edilemiyor. Bazı operatörler için overloading mekanizması kısıtlanmış/yasaklanmış.
+
+	sizeof 	(sizeof operator)
+	.		(member selection dot)
+	? :		(ternary opreator)
+	::		(scope resolution)
+	typeid
+	.*
+		gibi
+
+
+5) Öyle operatörler var ki free function olarak overload edilmesi dil tarafından yasaklanmış. Yani member function olmak zorunda, free function olamıyor. Bazı operatörler için
+de bu kısıtlama var.
+
+	()		function call operator		free function olamıyor
+	[]		subscript operator			free function olamıyor
+	->		arrow operator				 		''
+	=		assignment operator					''
+	type cast operator function 				''
+
+
+6) Tüm operatör fonksiyonları (istisnasız) isimleriyle de çağrılabilir.
+
+	Myclass m1, m2;
+
+	m1 = m2;				// iki yazımda aynı işlemi yapıyor
+	m1.operator=(m2);		//
+
+	Öyle durumlar var ki, gerçekten operatör notasyonu ile değil, ya mecburiyetten ismi ile çağırıyor olacağız ya da ismi ile çağırmanın o bağlamda daha iyi kabul edilebileceği
+  senaryolar olabiliyor.
+
+
+7) Biri operatör fonksiyonu hariç operatör fonksiyonları default argument alamazlar.
+
+	()		function call operator
+
+
+8) Operator Overloading mekanizmasında, operatörlerin arity'si değiştirilemez. 
+
+	Ne demek bu?	Operatörün arity'si derken kast edilen şey; operatörün unary / binary olması.
+
+	Örneğin (*) çarpma operatörü binary, (!) lojik değil operatörü unary gibi gibi.
+
+	
+	global fonksiyon ise
+	x * y  derleyici dönüştürecek =>	operator*(x,y)
+	x > y  derleyici dönüştürecek =>	operator>(x,y)
+
+	1 tane veya 3 tane parametresi olursa sentaks hatası olur. Mutlaka 2 tane olması lazım.
+
+		class Matrix{
+		public:
+
+
+		};
+
+		bool operator<(const Matrix&);	// burada sentaks hatası var. Çünkü < operatory binary fakat burada bir tane parametre 									// alıyor.
+
+	***
+	Binary operatörü overload edecek fonksiyon, sınıfın üye fonksiyonu ise o üye fonksiyon binary operatörün sol operandı için çağırılır. This pointeri sol operand olan 
+  nesnenin adresi.
+
+	member function ise
+	x > y 		derleyici dönüştürecek =>	x.operator(y)
+
+
+	class String{
+	public:
+		bool operator<(const String&) const;
+	};
+
+	
+
+
+	Unary Operators
+
+	diyelim ki ptr bir sınıf nesnesi ve lojik değil operatörünün operandı olmuş. 	-->  !ptr
+
+	Global Function ise derleyici bu operatör ifadesini global operatör değil fonksiyonuna çağrıya dönüştürecek. Doğal olarak operatörün operandı olarak sınıf nesnesi de bu 
+  fonksiyona yapılan çağrıda argüman olarak kullanılacak.
+
+		operator!(ptr)
+
+	Member Function ise parametresiz olacak.
+
+		class SmartPtr {
+		public:
+			bool operator!()const;
+
+		};
+
+
+	Soru: Bu ifadede bir sentaks hatası var mı?
+
+		class String{
+		public:
+			String operator+();
+		};
+	Cevap: Sentaks hatası değil çünkü bu operator toplama operatörünü overload etmiyor. Sign operatör!
+
+
+----------
+NOT-DİKKAT
+----------
+	Şu 4 operatöre dikkat et.
+
+
+	x + y 		addition operator
+	+x 			sign operator
+
+	x - y 		subtraction operator
+	-x			sign operator
+
+	x & y 		bitwise and operator
+	&y 			address of operator
+
+	x * y 		multiplication operator
+	*p 			dereferencing operator
+
+
+Örnek:
+	
+	class Myclass{
+	public:
+		Myclass operator+()const;			// sign operator
+		Myclass operator+(Myclass)const;	// dereferencing operator
+	};
+
+
+
+
+9)  Operator Overloading mekanizmasında doğal olarak function overloading de kullanılabilir.
+
+	class Bigint{
+	public:
+		Bigint operator+(int) const;
+		Bigint operator+(long)const;
+		Bigint operator+(long long) const;
+	};
+
+
+	***
+	Function Overloading'in en tipik örneği;
+
+		int x = 10;
+		double dval = 3.4;
+
+		cout << x << '\n';
+		cout << dval << '\n';	// aslında bu bitsel sola kaydırma operatörü
+
+		cout.operator<< (x);
+		operator<<(cout.operator(x), '\n');	// aslında böyle
+		operator<<(cout.operator(dval), '\n');	// aslında böyle
+
+		// burada da operator overloading var. 
+		// cout bir global sınıf türünden bir nesne, bu sınıfın ismi ostream. Biz ostream sınıfının operator<<() fonksiyonuna x'i
+		// argüman olarak gönderdik. Fakat alt satırda dval'i argüman olarak gönderdik. Burada yine function overload var.
+
+NOT:
+	Atama Operatör Fonksiyonu demek sadece special member function olması anlamına gelmiyor. Mesela şöyle fonksiyonlar olabilir;
+
+	class Myclass{
+	public:
+		Myclass& operator=(int);
+		Myclass& opreator=(double);
+	};
+
+
+10) Operatör fonksiyonları static member function olamaz.
+
+11) Operator Overloading mekanizmasında, operatörlerin öncelik seviyesini ve öncelik yönünü değiştiremeyiz.
+
+	class Bigint{
+	public:
+
+	};
+
+	Bigint operator*(const Bigint&, const Bigint&);
+	Bigint operator+(const Bigint&, const Bigint&);
+	Bigint operator&(const Bigint&, const Bigint&);
+
+
+	int main()
+	{
+		Bigint b1, b2, b3, b4, b5;
+		Bigint bx;
+
+		bx = b1 * b2 + b3 * b4 & b5 > b6;	// bunları böyle değil de fonksiyon çağrılarıyla yazsak nasıl olur?
+		//		  ((b1 * b2) + (b3 * b4)) & b5; öncelik
+
+		bx.operator=(operator&(operator+(operator*(b1,b2), operator*(b3,b4)), b5));	// burada operator overloading önemini anlıyoruz.
+
+	}
+
+//////////////////
+
+
+	class Bigint{
+	public:
+
+		Bigint operator*(const Bigint&);
+		Bigint operator+(const Bigint&);
+		Bigint operator&(const Bigint&);
+	};
+
+	int main()
+	{
+		Bigint b1, b2, b3, b4, b5;
+		Bigint bx;
+
+		bx = b1 * b2 + b3 * b4 & b5;
+
+		bx.operator=(b1.operator*(b2).operator+(b3.operator*(b4)).operator&(b5));
+	}
+
+***
+ Eğer global operatör fonksiyonu olmasaydı, sol operandın bir sınıf türünden olmaması(primitive tür) durumunda bunun sınıfın üye
+operatör fonksiyonuna çağrıya doğrudan dönüştürme imkanı olmazdı.
+
+	x + 5
+	x.operator+(5)
+
+	peki ya şimdi? =>  5 + x
+
+	toplama işleminin değişme özelliği var, yani doğal olarak 5 + x de yazabilmeliyiz. Ancak şimdi sol operand bir sınıf türünden değil ki. int türünün
+	bir operatör fonksiyonu olamaz. Böyle bir işlem ancak global operatör fonksiyonu ile yapılabilir.
+
+///////////////
+
+	bir başka neden de bu;
+
+	class Matrix{
+	public:
+
+
+	};
+
+	int main()
+	{
+		using namespace std;
+
+		Matrix m;
+
+		cout << m;	// sol operand olan cout nesnesinin ilişkin olduğu sınıfın üye operatör fonksiyon olması gerekir.
+					// fakat o sınıf bizim değil ki, biz yazmadık. Ama halen global operator fonksiyon olarak yazabiliriz.
+					// böyle fonksiyonlara popüler olarak inserter deniyor.
+	}
+
+inserter : bir stream'e bir sınıf nesnesini vermek/insert etmek için yani onun değerini stream'e beslemek, formatlı olarak yazdırmak için.
+	
+	std::ostream& operator<<(std::ostream&,const Matrix);
+
+
+-----------------------------------------------------
+
+				Const Correctness
+
+-----------------------------------------------------
+
+class Matrix{
+	
+};
+
+a + b // bu ifadede side-effect yok. yani bu satırdan sonra ne a ne b state'inde bir değişiklik olacak.
+	  // aslında biz a + b yazmakla bir fonksiyonun çağırılmasını sağlıyorsak, fonksiyonun a ve b'yi değiştirmeme garantisi vermesi gerekiyor.
+
+	  Toplama operatör fonksiyonunun global operator function olması durumunda, sol ve sağ operandlarını parametrelere göndermiş
+	  oluyoruz. Burada tipik olarak call by value değil call by reference tercih ediyoruz. Dolayısıyla const l valu expr olmalı.
+
+operator+(const Matrix&, const Matrix&);
+
+	   ***
+	   	Operatörün bir yan etkisi yoksa ve argümanlar değişmeyecekse const olmalı.
+
+//////////////////////
+	  
+	  Üye fonksiyonlarda ise;
+
+
+	  class Matrix{
+	  public:
+	  	Matrix operator+();
+	  	// m1 + m2 gibi bir ifadede, bu fonksiyon m1 için çağırılacak. m1'in değişmeme garantisi = üye fonksiyonun const olması.
+	  	// fakat m2 (sağ operandın değişmeme garantisi) = fonksiyonun parametresinin const l val ref olması demek.
+
+	  	Matrix operator+(const Matrix&)const; // yani böyle
+
+	  	bool operator!()const; // unary operator bool, side effect'e sahip değil o yüzden const yaptık.
+
+	  };
+
+Örneğin sign operatörü yazarken global operator function yazıyorsak;
+	
+	operator+(const Matrix&);
+
+	olacak. Fakat üye fonksiyon olacak ise;
+
+	class Matrix{
+	public:
+		Matrix operator+()const;	// const doğruluğu bu sefer kendisinin const olarak nitelenmesiyle gerçekleştirilecek.
+
+	};
+
+
+
+/////////////////////////////////
+
+	class Matrix{
+	public:
+		Matrix operator*(int)const; // bir int değer ile çapılacak. tabiki const üye fonksiyon olacak.
+
+		Matrix& operator*=(int);	 // nesneyi değiştiriyor, mutator. bu durumda const olmaması gerekiyor.
+
+	};
+
+*
+Aynı şekilde increment ve decrement operatör fonksiyonları da bir mutator olduğu için, üye fonksiyonsa const üye fonksiyon 
+olmaması gerekiyor. Global fonksiyon ise argümanının l value reference olması gerekiyor yani const l val ref olmayacak.
+
+
+---------------------------
+	 Return Value Type
+---------------------------
+Fonksiyonların geri dönüş değerlerinin ne olacağını sınıfa göre yazmalıyız. Fakat istediğimiz geri dönüş değerini vermemiz semantik olarak doğru olmasa da sentaks hatası 
+oluşturmaz. Hatta void bile yapabiliriz.
+
+	class Matrix{
+	public:
+		void operator+();
+
+	};
+
+
+Eski C++ olsaydı, biz fonksiyonların geri dönüş değerini maliyeti yüksek olur diye tipik olarak bir sınıf türünden yapmak
+istemezdik. Ancak şimdi taşıma semantiği ve bazı durumlarda da mandatory copy ellision ve çoğunlukla da NRVO, bir fonksiyonun
+geri dönüş değerinin bir sınıf türünden olması durumunda yüksek bir maliyet çıkartmıyor.
+
+Bazı programcılar da diyor ki fonksiyonun geri dönüş değeri referans olsun.
+
+	class Matrix{
+	public:
+		Matrix& operator+(const Matrix&)const;
+
+	}; 
+
+Peki bu iyi bir fikir mi? - Hayır asla. Bir kere şöyle bir problem var: Referans, bir nesnenin yerine geçen isim değişken,
+peki fonksiyonun geri dönüş değeri kime referans olacak? Eğer fonksiyonun geri dönüş değeri otomatik ömürlü bir nesne ise
+zaten ona referans döndürmemiz tanımsız davranış olur(dangling pointer/reference). Yani örneğin şöyle olur;
+
+	class Matrix{
+	public:
+		Matrix& operator+(const Matrix&)const
+		{
+			Matrix result;
+			//..
+			return result;	// dangling pointer/reference
+			// ana akım derleyiciler zaten uyarı mesajı verir.
+		}
+	};
+
+E sol operanda referans döndürsek,
+	
+	// m1 + m2 ' de eğer m1'e referans döndürürsek m3 de toplama eklendiğinde;
+
+	// m1 + m2 + m3		tekrar m1'in değerini kullanmış oluruz.
+
+Dinamik ömürlü bir nesneye referans verebiliriz, o tanımsız davranış değil. Fakat dinamik ömürlü nesneyi kim delete edecek?
+O da saçma.
+
+Dolayısıyla hiçbir şekilde böyle fonksiyonların geri dönüşlerini L Value Reference yapmaya çalışmayalım.
+
+
+	class Matrix{
+	public:
+		Matrix operator+(const Matrix&)const
+		{
+			return expr;	// expr PR Value Expression ise Mandatory Copy Ellision olur.
+		}
+	};
+
+
+Eğer sonucu tutacak otomatik ömürlü bir nesne ise;
+
+	class Matrix{
+	public:
+		Matrix operator+(const Matrix&)const
+		{
+			Matrix result;
+
+			//..
+			return result; // Eğer NRVO'yu bloke eden bir senaryo değilse, derleyici NRVO yapacak.
+						   // Hadi onu da yapamıyor diyelim, o zaman ne olacak?
+						   // O zaman da Move Semantics devreye girecek.
+		}
+	};
+
+
+
+Fonksiyonun geri dönüş değeri, dille ilgili bir kısıtlama değil hatta void bile yapabiliriz. Fakat problem domainine uygun
+hareket etmeliyiz.
+
+Operator fonksiyonlarının (bir iki istisna olabilir) return değerini discard etmek lojik hata. Örneğin;
+
+	m1 + m2;
+
+	Fakat attribute'ları kullanarak bunu önüne geçebiliriz, örneğin = [[nodiscard]]
+
+	class Bigint{
+	public:
+		[[nodiscard]] Bigint operator+(const Bigint&);	
+	};
+
+Çoğu operatörleri (özellikle yan etkisi olmayan operatörler) lojik olarak [[nodiscard]] attribute ile nitelememiz daha doğru.
+
+
+**
+ Bir operatörü overload etmek istiyorum. Global mi olsun Member mi olsun?
+ - Bu sorunun net bir cevabı yok. Fakat birçok kişinin uyduğu ilke şöyle;
+
+ 	*Simetrik operatörleri global operatör fonksiyon yapmak. 
+ 	Simetrik burada ne anlama geliyor?;
+
+ 		x bir sınıf nesnesi olsun, eğer ( x + y ) ile ( y + x ) aynı işleme karşılık geliyorsa, aynı soyutlama ise (aynı değeri
+ 		üretiyorsa demiyoruz. dikkat) o halde global operatör fonksiyonu tercih ediliyor tipik olarak. Standard kütüphane de 
+ 		bu şekilde bir yol izliyor.
+
+
+
+NOT
+---
+C++20' iki ifade de geçerli. Fakat C++17 de sadece 1.ifade geçerli.
+
+	class Nec{
+	public:
+		bool operator==(const Nec&)const;
+	};
+
+	int main()
+	{
+		Nec n1, n2;
+
+		n1 == n2;	// 1
+		n1 != n2;	// 2
+	}
+
+
