@@ -255,8 +255,8 @@ de bu kısıtlama var.
 	m1 = m2;				// iki yazımda aynı işlemi yapıyor
 	m1.operator=(m2);		//
 
-	Öyle durumlar var ki, gerçekten operatör notasyonu ile değil, ya mecburiyetten ismi ile çağırıyor olacağız ya da ismi ile çağırmanın o bağlamda daha iyi kabul edilebileceği
-  senaryolar olabiliyor.
+	Öyle durumlar var ki, gerçekten operatör notasyonu ile değil, ya mecburiyetten ismi ile çağırıyor olacağız ya da ismi ile çağırmanın o bağlamda daha iyi kabul 
+edilebileceği senaryolar olabiliyor.
 
 
 7) Biri operatör fonksiyonu hariç operatör fonksiyonları default argument alamazlar.
@@ -283,7 +283,7 @@ de bu kısıtlama var.
 
 		};
 
-		bool operator<(const Matrix&);	// burada sentaks hatası var. Çünkü < operatory binary fakat burada bir tane parametre 									// alıyor.
+		bool operator<(const Matrix&);	// burada sentaks hatası var. Çünkü < operatory binary fakat burada bir tane parametre alıyor.
 
 	***
 	Binary operatörü overload edecek fonksiyon, sınıfın üye fonksiyonu ise o üye fonksiyon binary operatörün sol operandı için çağırılır. This pointeri sol operand olan 
@@ -305,8 +305,8 @@ de bu kısıtlama var.
 
 	diyelim ki ptr bir sınıf nesnesi ve lojik değil operatörünün operandı olmuş. 	-->  !ptr
 
-	Global Function ise derleyici bu operatör ifadesini global operatör değil fonksiyonuna çağrıya dönüştürecek. Doğal olarak operatörün operandı olarak sınıf nesnesi de bu 
-  fonksiyona yapılan çağrıda argüman olarak kullanılacak.
+	Global Function ise derleyici bu operatör ifadesini global operatör değil fonksiyonuna çağrıya dönüştürecek. Doğal olarak operatörün operandı olarak sınıf nesnesi de 
+	bu fonksiyona yapılan çağrıda argüman olarak kullanılacak.
 
 		operator!(ptr)
 
