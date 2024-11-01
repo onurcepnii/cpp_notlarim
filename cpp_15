@@ -1,0 +1,344 @@
+*** ÖNEMLİ
+
+	class Myclass{
+	public:
+		friend void func(int);
+	};
+
+	int main()
+	{
+		func(12); 	// sentaks hatası, namelookup error. 
+	}
+
+// sadece class scope'ta friend bildirimi yaptık. bu, fonksiyonun o sınıfın scope'u içinde olduğu anlamına gelmiyor.
+// fakat şimdi;
+
+	class Myclass{
+	public:
+		friend void func(Myclass);
+	};
+
+	int main()
+	{
+		Myclass m;
+		func(m);	// int parametreye sahip olduğunda sentaks hatası oluşmuşken şimdi kod tamamen legal.
+	}
+
+bu konu namespace'ler ile ilgili ve özellikle ADL (Argument Dependent Lookup) ile ilgili.
+												   Argümana Bağlı İsim Arama
+
+
+_______________________________
+
+Operatörlerin Overload Edilmesi
+_______________________________
+
+Nesneleri tam sayı değişkenler gibi kullanılabilecek, yani aslında int türden olmayan fakat int türdenmiş gibi
+davranan bir sınıf oluşturalım.
+
+	// önce sınıfın interface'ini oluşturalım.
+
+	// sınıfları içerden dışarıya doğru değil, dışarıdan içeriye doğru tasarlamak gerekiyor.
+
+	// yani client'ların gözüyle bakacağız, client'lar bu sınıfı nasıl kolay kullanırlar? ona yönelik bir interafece oluştururuz.
+
+	// ve genellikle interface oluştururken implementasyon tarafını düşünmeyeceğiz. Önce interface sonra implementasyon.
+
+
+	bjorne strostoup
+	cout << x;	// nesneden stream'e doğru bir gidişat kast ediliyor, inserter
+	cout >> x;	// stream'den nesneye doğru bir gidişat kast ediliyor, extractor
+
+
+Not: iosfwd kütüphanesi bir light header. Forward declarationları içeriyor.
+
+	//mint.h
+	#include <ostream>
+	#include <istream>
+
+	class Mint{
+	public:
+		Mint() = default;
+		explicit Mint(int x) : mval(x) { } // tamsayı ve gerçek türlerinden mint türlerin örtülü dönüşüm istemiyoruz o yüzden explicit.
+
+
+		// formatted input-output
+		// output işlemleri için operator<<
+		// input işlemleri için opreator>>
+ 
+		friend [[nodiscard]] Mint operator+(const Mint& lhs, const Mint& rhs);	// lhs: left hand side, rhs: right hand side
+		{
+			Mint temp(lhs);
+			temp += rhs;
+			return temp;
+			// bu kodun daha güzeli ==> return Mint(lhs) += rhs;
+		}
+		friend [[nodiscard]] Mint operator-(const Mint& lhs, const Mint& rhs)	// bu 4 operatörün sık kullanılan isimleri ise
+		{
+			return Mint(lhs) -= rhs;
+		}
+
+		friend Mint operator*(const Mint& lhs, const Mint& rhs);	// realtional operators
+		friend Mint operator/(const Mint& lhs, const Mint& rhs);
+
+		// Modern C++ 20 kullanmıyorsanız, sınıfınız da buna uygunsa en yaygın konvensiyon şudur: bunların hepsini ayrı ayrı //implemente etmek yerine =='i implemente ediyoruz. != (eşit değil) =='i çağırıyor.tabi onun değilini döndürüyor.
+		// operator< implemente ediyoruz, diğerleri(>,>=,=<) ise onu çağırıyor. Kod tekrarını engelleyen bir mekanizma
+
+		friend bool operator==(const Mint& lhs, const Mint& rhs)	// bu ikisine popüler olarak equality operators denir.
+		{
+			return lhs.mval == rhs.mval;
+		}
+
+		friend bool operator!=(const Mint& lhs, const Mint& rhs)
+		{
+			return !operator==(lhs,rhs);
+			//return !(lhs == rhs);			// bu iki ifade de aynı anlama geliyor.
+
+		}
+
+		friend bool operator<(const Mint& lhs, const Mint& rhs)
+		{
+			return lhs.mval < rhs.mval;
+		}
+
+		friend bool operator>=(const Mint& lhs, const Mint& rhs)
+		{
+			return !(lhs < rhs);
+		}
+
+		friend bool operator>(const Mint& lhs, const Mint& rhs)
+		{
+			return rhs < lhs;
+		}
+
+		friend bool operator<=(const Mint& lhs, const Mint& rhs)
+		{
+			return !(rhs < lhs);
+		}
+
+NOT: Sadece bir değer hesaplamaya yönelik pure function'ların nodiscard attribute ile bildirilmesi gerekiyor. Fakat örneğin
+atama operatörlerinin nodiscard olması anlamsız.
+
+
+		// Sign operatörü nasıl implemente ederiz?
+
+		Mint [[nodiscard]] operator+()const //const çünkü side effect'e neden olmuyor, geri dönüş değeri sınıf türü çünkü bu
+		operatör ile oluşturulan ifadeler PR value expr.
+		{
+			return *this;
+		}
+
+		Mint [[nodiscard]] operator-()const
+		{
+			return Mint(-mval);
+		}
+
+
+		[[nodiscard]] bool operator!()const
+		{
+			return static_cast<bool>(mval);
+		}
+
+
+		/*
+
+		// pre-increment, post-increment ve pre-decrement, post-decrement operatörlerinin oluşturduğu idiomatic yapıyı burada da
+		sürdürebilmek için bir yöntem uygulayacağız. 
+		C++'da pre-increment ve pre-decrement operatörleri L value expr., post-increment ve pre-increment operatörleri ise R 
+		value expr. oluşturur. Bunun için operatör fonksiyonlarımızı 2 tane overload olacak şekilde implemente edeceğiz.
+
+		operator++() 		// pre (önek)
+		operator++(int)		// post (sonek), bu parametreye bir argüman geçmeyeceğiz, sadece imzayı farklı kılabilmek için yazdık
+							// o yüzden isim bile vermedik zaten.
+
+		Mint& operator++();	// çünkü l value expr oluşturur, geri dönüş türü sınıf türünden l value expr
+		Mint operator++();	// bunda zaten geri dönüş değeri l val değil r value expr olması lazım bizde öyle yaptık
+
+		Peki bu fonksiyonları global operatör fonksiyon olarak yazabilir miyiz? - Evet fakat tercih edildiği senaryo pek yok.
+		Programcıların genel tavrı bunları üye operatör fonksiyon olarak yazmak.
+
+
+
+
+		*/
+
+		Mint& operator++() //prefix
+		{
+			++mval;
+			return *this;
+		}
+
+		Mint operator++(int) //postfix
+		{
+			Mint retval{ *this };
+			++*this;	// burada aslında nesnemiz yukarıda yazdığımız prefix increment fonk. çağırıyor ve işlemi böyle yapıyor.
+						// fakat şöyle de yazabiliriz => operator++();
+			return retval;
+		}
+
+		Mint& operator--()	//prefix
+		{
+			--mval;
+			return *this;
+		}
+
+		Mint operator--(int)	//postfix
+		{
+			Mint retval{ *this };
+			operator--();
+			return retval;
+		}
+
+		// kullanılmayan, sadece overload mekanizmasını kullanmak için yazdığımız int'e dummy int de denir.
+
+
+		// C++'da atama operatörleri L value expression oluşturuyorlar
+		Mint& operator+=(const Mint&)
+		{
+			mval += other.mval
+		}
+
+
+		Mint& operator-=(const Mint&);
+		Mint& operator*=(const Mint&);
+		Mint& operator/=(const Mint&);
+		Mint& operator%=(const Mint&);
+
+
+		friend std::ostream& operator<<(std::ostream&, const Mint&) // chaining için stream nesnesinin kendisini döndürdük, örn chaining ==>  cin >> m1 >> m2 >> m3 >> dval;
+		{
+			return os << '[' << m.mval << ']'; // int den ayırabilmek için köşeli parantez kullanıyoruz
+		}
+		friend std::istream& operator>>(std::istream& is, Minst&)
+		{
+			return is >> m.mval;
+		}
+
+	private:
+		int mval;	// aslında mintimizin tuttuğu değer
+
+
+
+		///members
+	
+	};
+
+	
+
+
+
+	// .cpp
+
+#include "mint.h"
+
+int main()
+{
+	Mint m1 { 467 }, m2 { 981 }, m3 { 123 }, m4;
+}
+
+
+
+
+
+
+
+
+
+
+* Böyle sınıflar kaynak kullanan sınıflar değil, böyle sınıflara wrapper deniyor. Neden? Çünkü asıl int türünü kullanacağız,
+fakat int türünden bir member tutacağız ve interface aslında o memberin üstüne işlemlerin yapılacağı API'lerden oluşacak.
+Bu tür sarmayıcılarda(wrapper) C++'ın çok önemli bir avantajı ortaya çıkıyor. Zero cost abstraction. Bizim yazdığımız öyle
+olmayacak fakat ilerde göreceğiz. Yani sıfır maliyetli soyutlama demek. Yani şöyle; int türünü kullanmak ile mint türünü 
+kullanmak açısından maliyet açısından bir fark olmayacak.
+
+
+
+
+
+
+* Bazı sınıflara array-like sınıf diyoruz. Yani kendisi bir array değil fakat arraymiş gibi bir interface sağlıyor ve arraymiş
+gibi kullanılabiliyor. Bunun en tipik örneği std::array sınıfı.
+
+	ar[i];		//		ar.operator[](i)
+	vec[5];		//		vec.operator[](5)
+	str[val]	// 		str.operator[](val)
+
+	*Subscript operator fonksiyonu(tipik olmayan senaryoları saymazsak);
+	-sınıfın üye fonksiyonu olması zorunlu,
+	-köşeli parantezin içindei argüman, sözde indeks olarak fonksiyona geçildiği için fonksiyonun parametresinin tipik olarak
+	tamsayı türünden olması gerekiyor. çok büyük çoğunlukla unsigned tamsayı türü kullanırız. typedef olarak da size_t kullanırız
+
+Önemli Nokta: İndeks / subscript operatörü ile oluşturulan ifadeler L value expressiondur. Yani dolayısıyla bu ifadelerin doğal
+olarak L value expr. oluşturması gerekiyor. O halde bu operator fonksiyonlarının geri dönüş değerinin L value expr olması
+gerekiyor.
+
+
+Dikkat - Const Overloading
+--------------------------
+
+	int main()
+	{
+		std::string str = "onur cepni";
+
+		str[4] = '!';	// sıkıntı yok, legal
+
+		cout << str << '\n';
+
+
+		const std::string str1 = "onur cepni";
+
+		str1[4] = '!';	// bu atama illegal, sentaks hatası. fakat bu fonksiyonu kullanabiliriz, mutator olarak kullanamayız. örn;
+
+		auto c1 = str[0];		// bunlar mutate etmediği için problem yok
+		autor c2 = str[3];		//
+
+		cout << str << '\n';
+	}
+
+Standardın da kullandığı bu biçime "const overloading" diyoruz.
+
+	class String{
+	public:
+		char& operator[](std::size_t idx);					
+		const char& operator[](std::size_t idx)const;		
+	};
+
+
+
+* Not: C'de olan 
+	
+		ar[5];	ar[i]	i[ar]
+	
+	özelliği yazdığımız subscript operatöründe geçerli değil.
+
+
+
+// reference qualifiers
+Sadece member functionlar için geçerli.
+
+	class Bigint{
+		public:
+			Bigint& operator=(int)&;	// l value referecence qualified
+			// bu fonksiyonun çağırılması için, bu fonksiyonun çağırılacağı sınınf nesnesinin L value olması gerekiyor demek.
+
+			void func()&&;	// bu fonksiyon r value referecence qualified
+
+			void func()&;	
+
+			void func()const;
+			//burada 3 tane func() overload'u var.
+			
+			void func(); // bu sentaks hatası qualified olmadığı için.
+	};
+
+
+	int main()
+	{
+		Bigint {} = 20;
+	}
+
+Bu araç seti ile şunları yapabiliriz;
+	-> Bazı fonksiyonların sadece L value veya R value expr. ile çağırılmasını sağlayabiliriz.
+
+
+
