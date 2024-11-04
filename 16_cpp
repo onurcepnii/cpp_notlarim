@@ -1,0 +1,342 @@
+
+Reference Qualifiers
+--------------------
+Sınıfların non-static üye fonksiyonunu niteleyen niteleyiciler. Bunlar ile ne yapıyoruz? 
+- Non-statik bir üye fonksiyonun bir L value expr. olan sınıf nesnesi ile çağırılmasını zorunlu hale getirebiliyoruz.
+- Non-statik bir üye fonksiyonun bir R value expr. olan sınıf nesnesi ile çağırılmasını zorunlu hale getirebiliyoruz.
+- Buna dayalı olarak overloading yapabiliyoruz
+
+
+	class Nec{
+	public:
+		void foo(int)&;
+		void foo(int)const &;
+		void foo(int)&&;
+		void foo(int)const &&;
+	};
+
+
+DİKKAT
+
+	class Nec{
+	public:
+		void foo();
+		void foo()&;	// burada overload olmaz, hata verir!
+	};
+
+
+
+
+___________________________________________________________
+
+		Dereferencing & Member Selection ( Arrow )
+___________________________________________________________
+
+a * b 	(asterisk)
+*ptr
+
+dereferencing operatürünün operandı adres olmak zorunda.
+bu operatörün oluşturduğu ifade L value expr.
+
+// pointer like sınıflar için dereferencing operator örnek
+
+	class Nec{
+
+	}; 
+
+	class NecPtr{	// pointer like class
+	public:
+		NecPtr(Nec* p);
+		Nec& operator*();
+	};
+
+	int main()
+	{
+		NecPtr = new Nec;
+
+		(*ptr).foo();
+		ptr.operator*().foo();
+	}
+
+
+Member Selection Operator ->
+
+- Normalde binary operatör fakat operator overloading de Unary olarak overload ediliyor. Ama nasıl?
+
+	SmartPtr ptr;
+
+	ptr->mx;	// ptr.operator->() ->mx; // derleyici bu ifadeyi ptr.operator->() , ->mx ifadesinin soluna koydu.
+
+	ptr->foo();
+	ptr.operator->()->foo();	// arrow op. geri dönüş değeri pointer olmalı
+
+
+Örnek;
+
+	class MintPtr{	// movable but not copyable
+	public:
+		explicit MintPtr(Mint* p) : mp(p) {};
+		~MintPtr()
+		{
+			if(mp)
+				delete mp;
+		}
+
+		MintPtr(const MintPtr&) = delete;				// hatta bu ikisini bildirmesek bile zaten bunlar böyle kabul edilecek.
+		MintPtr& operator=(const MintPtr&) = delete;	//
+
+		MintPtr(MintPtr && other) : mp(other.mp)
+		{
+			other.mp = nullptr;
+		}
+
+		MintPtr& operator=(MintPtr&& other)
+		{
+			delete mp;
+			mp = other.mp;
+			other.mp = nullptr;
+		}
+
+		Mint& operator*()
+		{
+			return *mp;
+		}
+
+		Mint* operator->()
+		{
+			return mp;
+		}
+
+
+	private:
+		Mint* mp;	// gerçek pointerimiz
+	};
+
+	int main()
+	{
+
+		using namespace std;
+
+		MintPtr ptr(new Mint(45));
+
+		cout << *ptr << '\n';
+
+		cout << ptr->get() << '\n';
+		cout << ptr.operator->()->get() << '\n'; // aslında böyle yukardakı satır
+	}
+
+
+
+İki tane ihtimal var;
+(1) Çok büyük çoğunlukla ok operatör fonksiyonunun geri dönüş değeri pointer olacak. ( %99 )
+(2) 
+
+
+
+
+
+Function Call Operator'un Overload Edilmesi
+-------------------------------------------
+
+kendisi bir sınıf nesnesi olmasına rağmen, nesneleri function call operator'un operandı olan sınıflara iki tane terim 
+kullanılıyor. => functor class, function object
+
+	Nec foo;
+
+	foo(4);
+	foo.operator()(4);
+
+	x();
+
+* Diğer operatör fonksiyonları default argument alamazken function call operator default argument alabilir.
+
+	class Myclass{
+	public:
+		int operator()(int x)
+		{
+			std::cout << "Myclass::operator()(int x) x = " << x << "\n";
+			std::cout << "this" << this << '\n';
+
+			return 42;
+		}
+
+		double operator()(double x)
+		{
+			std::cout << "Myclass::operator()(int x) x = " << x << "\n";
+			std::cout << "this" << this << '\n';
+
+			return 42 * 0.5;
+		}
+
+	};
+
+	int main()
+	{
+		using namespace std;
+
+		Myclass m;
+
+		cout << "&m1 = " << &m1 << '\n';
+		auto x = m(25);
+		cout << "x = " << x << '\n';
+	}
+
+
+Peki Ne İşe Yarıyor?
+--------------------
+Burada yapılacak açıklama şuan için tam olarak yapılmayacak çünkü asıl açıklama generik programlama içeriyor.
+
+	class Random{
+	public:
+		Random(int low, int high) : mlow(low), mhigh(high) {};
+		int operator()()
+		{
+			return rand() % (mhigh - mlow + 1 ) + mlow; // sadece örnek için rand ve diğer bazı şeyleri kullandık.
+		}												// normalde önerilmez.
+
+	private:
+		int mlow, mhigh;
+	};
+
+	int main()
+	{
+		Random rand1{ 42, 87 };
+
+		for(int i = 0; i < 10; ++i){
+			cout << rand1() << ' ';
+		}
+
+		cout << '\n';
+
+		Random rand2{ 8764, 2923 };
+		for(int i = 0; i < 10; ++i){
+			cout << rand2() << ' ';
+		}
+	}
+
+
+
+
+Type-Cast Operator Functions
+----------------------------
+User defined conversion oluşturmanın bir yolu daha var -> sınıf için type-cast operator function bildirmek.
+
+-Member function olmak zorunda.
+
+	class Nec{
+
+	};
+
+	int main()
+	{
+		Nec mynec;
+		int ival{};
+
+		ival = mynec;	// error C2440 '=' : cannot conver from 'Nec' to 'int'
+	}
+
+
+////////////////////
+
+
+
+	class Nec{
+	public:
+		operator int()const; // redundancy'den kaçınmak için kurala göre geri dönüş değeri türü yazmıyoruz. zaten fonksiyon
+							 // ismindeki tür fonksiyonun geri dönüş değeri türü.
+	};
+
+	int main()
+	{
+		Nec mynec;
+		int ival{};
+
+		ival = mynec;	// şuan örtülü dönüşüm oldu ve sentaks hatası yok. derleyici durumdan vazife çıkartır
+		// ival = mynec.operator int();
+	}
+
+
+-İsmi hedef tür olmak zorunda. Örneğin double'a çeviriyorsa operator double() olmalı.
+
+
+class Nec{
+	public:
+		explicit operator int()const; 
+	};
+
+	int main()
+	{
+		Nec mynec;
+		int ival{};
+
+		ival = mynec;	// operator explicit olduğu için örtülü dönüşüm yok
+						//fakat aşağıdaki dönüşümler implicit olmadığı için sorun yok.
+		ival = static_cast<int>(mynec);
+		ival = (int)mynec;	// ival = int(mynec);	böyle de yazabiliriz
+		ival = mynec.operator int();
+	}
+
+
+-Explicit anahtar sözcüğü daha öncesinden de vardı fakat bu anahtar sözcüğün tür dönüştürme operatör fonksiyonlarının
+nitelendirilmesi C++ 11 ile dile eklendi.
+
+
+
+Başka bir sınıf türüne dönüşüm yapabilir miyiz? - Kesinlikle.
+
+	class Erg{};
+
+	class Nec{
+	public:
+		explicit operator Erg()const;
+	}
+
+	int main()
+	{
+		Erg erg;
+		Nec mynec;
+
+		erg = mynec;
+		// erg = mynec.operator Erg();
+	}
+
+-Function pointer türüne de cast edebiliriz.
+
+	using fptr = int(*) (int);
+
+	class Nec{
+	public:
+		operator fptr()const;
+	};
+
+
+Tür Dönüştürme Operatörünü Neden Kullanırız?
+--------------------------------------------
+(1) Bazı sınıflarda bu zaten doğal olarak interface'e bizim eklemek istediğimiz bir api.
+
+Örneğin;
+
+	class Fraction{
+	public:
+		Fraction(int nom = 0, int den = 1) : m_nom(nom), m_den(den) {}
+		explicit operator double()const
+		{
+			return static_cast<double>(m_nom) / m_den;
+		}
+
+	private:
+		int m_nom, m_den;
+	};
+
+	int main()
+	{
+		Fraction f1(3, 5);
+		Fraction f2(3);
+
+		double dval = f1;
+	}
+
+
+
+
+(2) Standard kütüphanede en çok kullanılan senaryo bu. 
