@@ -1,0 +1,612 @@
+
+Hatırlatma: Tür dönüştürme operatör fonksiyonları free function olamazlar, sınıfın member fonksiyonu olmak mecburiyetindeler.
+
+---------------------------------------------------
+
+class Nec{
+	operator bool()const;
+};
+
+int main()
+{
+	Nec mynec;
+
+	int x = mynec;
+	// int x = mynec.operarot bool(); derleyici böyle yapıyor
+}
+
+Mülakat
+-------
+
+
+	class Nec{
+		operator bool()const
+		{
+			return true;
+		}
+	};
+
+	int main()
+	{
+		Nec n1, n2;
+
+		auto x = n1 + n2;
+	}
+
+Derleyici toplama operatörünün operandlarının Nec türünden olduğunu görünce toplama operatörünün operandı olabilecek bir dönüşüm
+mümkün mü ona bakıyor. Ve sınıfın operatör bool fonksiyonu olduğunu görüyor. Böylece her iki nesneyi de bu fonksiyona çağrı
+yaparak bool türüne dönüştürüyor.
+
+Bu durumda toplama operatörünün operandları bool türünden olacak. Burada integral promotion olacak ve bool türünden olan elemanlar
+int'e dönüşecek. Dolayısıyla true olan 1, false olan 0 olacak. İkisi de true olduğu için toplam 2 olacak ve x'in türü int.
+
+Fonksiyon explicit olursa bu şekilde örtülü dönüşüm söz konusu olmaz.
+
+İlginç olan durum ise:
+----------------------
+
+Fonksiyon explicit olsa dahi, lojik ifade gereken bağlamda kullanıldığında dönüşüm yapacak. Çağırılmasını engelleyen bir durum
+olmayacak. Yani implicit olsa dahi izin verecek.
+
+
+
+	class Nec{
+		explicit operator bool()const
+		{
+			return true;
+		}
+	};
+
+	int main()
+	{
+		Nec n1, n2;
+
+		if(n1 && n2)	// lojik bağlamda kullanıldığı için implicit dönüşüm yapılacak, sıkıntı yok.
+			//
+
+		int x = n1;		// burası lojik bağlam olmadığı için implicit dönüşüm yapılmayacak, hata
+
+		auto b = !n1;	// burası lojik bağlam, problem yok
+
+	}
+
+
+Enumaration Types İçin de Operatör Fonksiyonu Yazılabilir
+---------------------------------------------------------
+Free function olarak tanımlayabiliriz.
+
+
+Örneğin haftanın günlerini tutan bir enum class'ımız var. Ve ++ operatörünü kullandığımızda operator overloading olup örneğin
+gün monday ise 1 artıp tuesday olmasını isteyebiliriz.
+
+	enum class Weekday{
+		Sunday, Monday, Tuesday, Wednesday, Thursday, Friday, Saturday
+	};
+
+	std::ostream& operator<<(std::ostream& os, const Weekday& wd)
+	{
+		constexpr const char* wdays[] = { "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday" };
+
+		return os << wdays[static_cast<int>(wd)];
+	}
+
+	Weekday& operator++(Weekday& wd)	// prefix(önek)
+	{
+		return wd = (wd == Weekday::Sunday) ? Saturday : static_cast<Weekday>(static_cast<int>(wd) + 1 );
+	}
+
+	Weekday operator++(Weekday& wd, int)	// postfix (sonek)
+	{
+		auto ret = wd;
+		++wd;
+		return ret;
+	}
+
+	int main()
+	{
+		Weekday wd = Weekday::Monday;
+
+		std::cout << wd << '\n';
+
+		for(int i = 0; i < 30; ++i)
+		{
+			std::cout << ++wd;
+			(void)getchar();
+		}
+	}
+
+
+Operator overloading bitti.
+
+
+
+
+----------------------------------------------------------
+			Dinamik Ömürlü Nesnelere Giriş
+----------------------------------------------------------
+
+C'den hatırladığımız üzere malloc fonksiyonu bellekten alan tahsisi yapıyor. Yani dinamik ömürlü nesnemiz için bize yer
+verebiliyor.
+
+C++ dilinde dinamik ömürlü nesneleri oluşturmak için kullandığımız operatörler var.
+
+
+	new tür;
+
+	new Date
+	new int
+	new Fighter
+
+* Operator new ile new ifadesi farklı şeyler karıştırmayalım!
+
+	void* operator new(std::size_t)
+	void* malloc(size_t)
+
+* Derleyici bir new ifadesi ile karşılaştığında operator new fonksiyonuna bir çağrı yapıyor. Bu fonksiyona argüman olarak
+new'e operand olan türün sizeof değerini yani storage değerini geçiyor.
+
+* Nasıl malloc bir allocation fonksiyonu ise, operator new de malloc gibi bir allocation fonksiyonu.
+
+*** 
+	Malloc başarısız olduğunda NULL pointer döndürür fakat operator new başarısız olduğunda exception throw ediyor.
+
+* Operator new başarılıysa derleyici ürettiği kodda, operator new'dan aldığı adresi this pointeri olarak kullanılacak şekilde
+sınıfın constructoruna çağrı yapıyor.
+
+
+***
+
+YANİ new ifadesi derleyicinin sırasıyla iki ayrı kodu üretmesini sağlıyor;
+
+	new Date
+
+(1) Dinamik ömürlü Date nesnesinin yerinin elde edilmesi için standard kütüphanenin operator new fonksiyonuna çağrı yapmak
+
+(2) Allocate edilen bellek bloğunda Date nesnesini oluşturmak için sınıfın constructor'una çağrı yapmak.
+
+
+O zaman aslında biz bu ifade ile construct edilmiş Date nesnesinin adresini elde etmiş oluyoruz. Eğer herhangi bir şekilde
+ilave bir initialization söz konusu değilse, default initialize edilmiş Date nesnesi için default constructor çağırılacak.
+Ancak burada parantez veya küme parantezi kullanark sınıfın parametreli bir ctor'una çağrı yapmak mümkün.
+
+	new Date{ 2, 1987 };
+
+	auto p = new Myclass(12);  veya  Myclass* p = new Myclass(12);
+
+
+* delete operatörü de operand olarak dinamik ömürlü bir nesnenin adresini alıyor. Dinamik ömürlü bir nesnenin hayatını
+sonlandırmak için bunu yazıyoruz.
+
+
+	Myclass *p = new Myclass(12);
+
+	delete p;
+
+* Allocate edilmiş bir bellek bloğu varsa onun deallocate edilmesi gerekir, geri vermek free etmek gerekir. C de free
+fonksiyonu ile free ederiz. C++'da da delete operatörü var.
+
+* delete operatörü ile operator delete fonksiyonunu karıştırmayalım!
+
+	void free(void *vp)
+	void operator delete(void *vp)
+
+***
+Derleyici delete ifadesi karşılığı, önce delete operatörünün operandı olan adresteki sınıf nesnesi için sınıfın destructoruna
+çağrı yapıyor. Destructor çağırdıktan sonra operator delete fonksiyonuna adresi argüman olarak geçiyor ve böylece operator delete
+fonksiyonu hayatı bitmiş nesnenin bellek alanını free ediyor.
+	
+	delete p;
+
+	// p->~Date();
+	// operator delete(p);
+
+
+Dolayısıyla 
+	new 	ifadesi 	==> allocation + construction
+		delete 	ifedesi		==>	destruction + deallocation
+
+
+ÖNEMLİ SORU VE CEVAP
+--------------------
+Dinamik ömürlü bir nesneyi delete etmezsek ne olur?
+
+-Memory leak ve resource leak.
+
+delete ifadesi kullanılmadığı için derleyici operator delete fonksiyonunu çağırmıyor. Dolayısıyla allocate edilen blok geri
+verilmiyor. Bu Memory Leak.
+
+Aynı zamanda destructor da çağırılmıyor. Destructor'un çağırılması ise resource leak. Resource'ın kendisi sadece memory olmak
+zorunda değil. 
+
+
+	auto p = new std::string(10'000, 'A');
+	///
+
+	// delete p;
+
+Operatör delete çağırılmayacak dolayısıyla sizeof string kadar bellek bloğu geri verilmemiş olacak. Eee 10.000 tane A karakteri
+nerede duruyor? - O da allocate edilmiş bir bellek bloğunda duruyor. String'in kendisi de heap'te / free storage'da tutuluyor.
+Peki o heap'te kapasite olarak kullanılan bellek bloğunu kim geri veriyor? String sınıfının çağırılan destructor'u. Fakat
+destructor çağırılmıyor. Yani buradaki resource leak'in kendisi de memory leak.
+
+Yani yukarıdaki örnekte resource'ın kendisi de memory fakat her zaman resource memory olmak zorunda değil.
+
+
+Dinamik ömürlü nesneler konusuna geldiğimizde neden tipik olarak bir C++ programında Smart Pointer'lara ihtiyacımız oluyor
+bunu inceleyeceğiz.
+
+
+
+* new ifadelerinin farklı biçimleri var. Şuana kadar kullandığımız new ve delete ifadelerine yalın yani tek bir nesne oluşturmak
+için kullanılan ifadeler diyebiliriz.
+
+
+	class Myclass{
+	public:
+		Myclass()
+		{
+			std::cout << "ctor this = " << this << '\n';
+		}
+
+		~Myclass()
+		{
+			std::cout << "dtor this = " << this << "\n";
+		}
+
+	private:
+		char buff[16]{};
+	};
+
+	int main()
+	{
+		std::size_t n;
+
+		std::cout << "kac eleman: ";
+		std::cin >> n;
+
+		auto p = new Myclass[n];
+
+		delete p; // böyle delete edemeyiz UB olur
+
+		delete []p; // böyle delete ediyoruz.
+	} 
+
+
+
+
+
+__________________________________________________
+
+		Static Members & Static Functions
+__________________________________________________
+
+Sınıfların statik elemanları instance ile ilgili değil sınıf ile ilgili.
+
+	class myclass{
+	public:
+		static int x;
+	};
+
+Aslında bakıldığında global değişkenlerden pek farkı yok. Adeta global fonksiyonun ehlileştirilmiş hali gibi.
+
+Ortada herhangi bir sınıf nesnesi olmadan myclass'ın x'ini kullanabilir miyiz? -Evet.
+
+Bir veri elemanını statik anahtar sözcüğü ile bildirmek;
+- Bunu sınıfın değişkeni yapıyor,
+- Class Scope'a alıyor,
+- Üzerinde erişim kontrolü sağlanıyor.
+
+Statik anahtar sözcüğü ile değişkenin sadece bildirimini yapmış oluyoruz.
+
+* Sınıfın kendi türünden bir non-static veri elemanı olamaz.
+
+	class myclass{
+	public:
+		myclass mx; // sentaks hatası, çünkü şuan bu incomplete type. incomplete type türünden nesne oluşturulamaz.
+	};
+
+* Sınıfın kendi türünden bir static veri elemanı olabilir.
+
+	class myclass{
+	public:
+		static myclass mx;
+	};
+
+---------------------------
+
+class Nec;
+
+class myclass{
+	public:
+		static Nec x; // statik olduğu için incomplete type olsa da bildirimi legal. definition yapsak complete olması gerekir.
+};
+
+
+--------------------------
+
+	class Account{
+	private:
+
+	public:
+		static double rate;
+	};
+
+	double Account::rate = 12.;
+
+	int main()
+	{
+		using namespace std;
+
+		Account a1, a2, a3, a4;
+
+		a1.rate // derleyici dot operatorünün sol operandının ilişkin olduğu sınıfta arayacak.
+		a2.rate // bu da aynı değişken
+		Account::rate // bu da aynı değişken
+
+
+	}
+
+
+* Genellikle sınıfların statik veri elemanlarının özellikle public yapılması (const değillerse) çoğunlukla sakıncalı bir durum.
+
+	class Account{
+	private:
+
+	public:
+		static double rate;
+	};
+
+	Örneğin burada rate statik public veri elemanını herhangi bir kod değiştirebilir. Dolayısıyla bu tür değişkenler genelde
+	private olurlar. Public olanlar ise çoğunlukla const ya da constexpr niteleyicisiyle tanımlanmış olurlar.
+
+
+
+* C++ 17 öncesinde sınıfları statik veri elemanlarını sınıf içinde tanımlama olanağı yoktu, sentaks hatasıydı. Bunun özel bir 
+istisnası vardı. Diyor ki : eğer sınıfın statik veri elemanı const ise ve integral type ise sınıf içinde bu şekilde
+tanımlanabilir.
+
+	class myclass{
+		const static int x = 10; // legal
+		const static double y = 10. // sentaks hatası
+	};
+
+* Bir .h dosyasına şöyle bir definition koyarsak ODR çiğnenmiş olur;
+
+	//nec.h - header file
+
+	int x = 10; // problem
+	inline int x = 10; // sıkıntı yok
+
+Fakat inline keyword ile tanımlama yaparsak, bu durumda ODR çiğnenmemiş oluyor. Bu başlık dosyasını kaç tane kod dosyası include
+ederse etsin, link aşamasına gelindiğinde bir tane x olacak.
+
+* Aynı kural sadece global değişkenler için değil, sınıfların statik veri elemanları için de geçerli.
+	
+	class myclass{
+
+		inline static double x = 10.;
+
+	};
+
+Bu şekilde .cpp dosyasına ilave tanımını yapmadan sınıfların static veri elemanlarının tanımını yapabiliriz.
+*** Yanlış anlaşılma olmasın, burada integral type olma zorunluluğu da yok.
+
+
+-----------------------------------
+
+* Üye fonksiyonu içinde statik veri elemanını doğrudan kullanabiliriz.
+
+	class myclass{
+	public:
+		void foo()
+		{
+			x = 5;
+			Myclass::x = 5;
+		}
+		static int x;
+	};
+
+
+
+-----------------------------------
+
+*** 
+
+	class myclass
+	{
+	public:
+		void foo()const
+		{
+			x = 5;
+		}
+	}
+
+	static int x;
+
+Geçerli. Yani üye fonksiyonunun const olması aslında gizli parametre değişkeninin Myclass* değil const Myclass* olması demekti. 
+Bunun statik veri elemanıyla herhangi bir ilişkisi yok. Yani const üye fonksiyon sınıfın statik veri elemanını değiştirebilir.
+
+
+
+
+
+Statik Veri Elemanına Tipik Bir Örnek
+-------------------------------------
+Örneğin sınıfın tüm veri elemanlarının kullanacağı bir lookup table'a ihtiyacımız var. Bunu statik olarak tanımlamak uygun 
+olacaktır.
+
+Yani sınıfın genelini ilgilendiriyor ama doğrudan sınıf nesnesi ile ilgili değil.
+
+	class myclass{
+	public:
+
+	private:
+		static std::vector<int> svec;
+	};
+
+
+
+
+
+
+______________________________________________________
+
+		Sınıfların Statik Üye Fonksiyonları
+______________________________________________________
+
+	//myclass.h
+
+	class myclass{
+	public:
+		static int foo();
+	private:
+
+	};
+
+
+	//myclass.cpp
+
+	#define STATIC // sadece okuyucuyu bilgilendirme amacıyla, koda bir etkisi yok.
+
+	STATIC int Myclass::foo()
+	{
+
+	}
+
+
+* Sınıfın statik üye fonksiyonları inline olarak sınınf içinde de tanımlanabilir.
+
+	class myclass{
+	public:
+		static int foo()	// örneğin burada sınıf içinde tanımladık. Implicitly inline.
+		{
+
+		}
+	};
+
+
+Sınıf içinde tanımlarsak inline anahtar sözcüğünü kullanmasak bile implicitly inline olur.
+
+
+
+* Statik üye fonksiyonların const veya non-const olması gibi bir durum söz konusu değildir. Çünkü onlar this pointerına sahip
+değildir. Object ile ilgili değil, sınıfla ilgililer. Yani biz bu fonksiyonları nesnenin kendisi için değil, sınıfın geneli için çağırıyoruz.
+
+Pekala bu fonksiyonu global de yapabiliriz fakat o zaman isim arama kuralları değişir, class scope'ta olmaz ve erişim kontrolü
+olmaz. O yüzden statik üye fonksiyonu var.
+
+
+Non-static üye fonksiyonları object için çağırılıyorlar ve bir nesneye ihtiyaç var. Bu fonksiyonların gizli bir parametre değişkeni var.
+Fakat static üye fonksiyonlarında gizli parametre değişkeni yok.
+
+
+* Bir üye fonksiyon içinde this keywordünü kullandığımızda, o fonksiyon hangi nesne için çağırılmışsa o nesnenin adresini
+kullanmış oluyoruz. Ancak statik üye fonksiyonu bir nesne için çağırılmıyor. Dolayısıyla statik üye fonksiyonunda this pointeri
+kullanılması her zaman sentaks hatası.
+
+ÖZET
+
+Statik Üye Fonksiyonu 
+-Nesne için değil sınıf için çağırılıyor.
+-Hayatta olan hiçbir nesne olmasa dahi bu fonksiyonu çağırabiliriz.
+-Gizli parametre değişkeni yok.
+-Const niteleyicisiyle nitelemek sentaks hatası.
+-Statik üye fonksiyonu içinde this pointeri kullanılması sentaks hatası.
+
+---------------------------------------------
+
+
+	class myclass{
+	public:
+		static int foo()
+		{
+			mx = 5;	// 
+		}
+
+	private:
+		int mx;
+	};
+
+Sentaks hatası var. Fakat mx isminin bulunamaması değil bu hata. mx ile ilişkilendirilecek bir nesnenin olmayışı hata. 
+
+
+
+* ÖNEMLİ
+
+	class myclass{
+	public:
+		void foo()
+		{
+
+		}
+
+		void bar()
+		{
+
+			foo();
+
+		}
+
+	private:
+		static int mx;
+	};
+
+Bar fonksiyonu içinde foo fonksiyonu çağırılmış. Derleyici burada bar'ın gizli parametre değişkenini argüman olarak foo 
+fonksiyonuna gönderiyor. Yani bar fonksiyonu hangi nesne için çağırılmışsa foo fonksiyonu da o nesne için çağırılmış olacak.
+
+Fakat eğer bar fonksiyonu statik olursa sentaks hatası olur. Çünkü bunun bir this pointeri yok. Foo' ya çağrı yapmak için bir
+nesneye ihtiyaç var.
+
+Yani sınıfın statik üye fonksiyonu, sınıfın non-statik üye fonksiyonunu nesne olmadan bu şekilde çağıramaz.
+
+
+
+
+
+SORU:
+
+	class myclass{
+	public:
+		static int foo()
+		{
+			return 1;
+		}
+
+		static int mx;
+	};
+
+	int foo()
+	{
+		return 7;
+	}
+
+	int Myclass::mx = foo();
+
+	int main()
+	{
+		std::cout << Myclass::mx << '\n';
+	}
+
+Output = 1
+
+Çünkü statik veri elemanlarına ilk değer veren ifadedeki isimler önce class scope'ta aranır. Dolayısıyla burada çağırılan
+fonksiyon sınıfın statik üye fonksiyonu, global fonksiyon değil.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
