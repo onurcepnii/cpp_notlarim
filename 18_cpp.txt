@@ -1,0 +1,410 @@
+
+Hatırlatma : 
+
+-Sınıfların in-complete type türden statik değişkenleri olabilir fakat non-static değişkenleri olamaz.
+-Sınıfın kendi türünden veri elemanı olamaz ancak sınıfın kendi türünden static veri elemanı olabilir.
+
+
+*** 
+
+	class Nec{
+	public:
+		static void foo();
+		static int mx;
+	};
+
+	int main()
+	{
+		Nec mynec;		
+		Nec* necptr{ & mynec };	
+
+		mynec.foo();	// bu yapılan çağrıların mynec nesnesinin kendisi ile ilişkisi yok. sadece namespace için
+		mynec.mx;		// kullandık. çünkü zaten foo() fonksiyonu ve mx değişkeni nesneye ait değil, statik yani sınıfa ait.
+	}
+
+
+* Bir sınıfın ctor'u private olabilir.
+
+
+	class myclass{
+	private:
+		Nec(int x);
+
+	};
+
+	int main()
+	{
+		myclass x(19);	// hata, ctor private olduğu için erişim hatası.
+	}
+
+/////////////////
+
+
+	class myclass{
+	private:
+		myclass(int x);
+
+	public:
+		static void foo()
+		{
+			myclass x(19);
+		}
+
+	};
+
+	int main()
+	{
+
+	}
+
+
+---------------------------------------
+
+Bir sınıf türünden nesnelerin sadece dinamik ömürlü olarak oluşturulmasını istiyoruz diyelim. Bu tür temalarda şöyle bir yapı
+kullanılır;
+
+	class DynamicOnly{
+		DynamicOnly();
+
+	public:
+		static DynamicOnly* create_object()
+		{
+			return new DynamicOnly;
+		}
+	};
+
+	int main()
+	{
+		auto p = DynamicOnly::create_object();
+	}
+
+
+
+
+-------------------------------------------
+
+_________________________
+
+		Singleton
+_________________________
+
+	Bir sınıf türünden tek bir nesne olacak ve o nesneye global bir erişim olacak.
+
+
+class Singleton{
+public:
+	Singleton(const Singleton&) = delete;
+	Singleton& operator=(const Singleton&) = delete;
+
+	static Singleton* get_instance()
+	{
+		if(!mp)
+			mp = new Singleton;
+
+		return mp;
+	}
+
+	void foo();
+
+private:
+	Singleton();
+	inline static Singleton* mp{};
+}
+
+
+int main()
+{
+	Singleton::get_instance()->foo();
+}
+
+
+
+////////////// Scott Meyers
+
+class Singleton{
+	public:
+		static Singleton& get_instance()
+		{
+			static Singleton instance;
+
+			return instance;
+		}
+	void foo();
+
+	private:
+		Singleton();
+};
+
+int main()
+{
+	Singleton::get_instance()->foo();
+	
+}
+
+
+_____________________________________________
+
+				Namespaces
+_____________________________________________
+
+
+
+namespace nec{
+	
+}
+
+* İsim alanları Lokal düzeyde oluşturulamaz. Bütün namespace'ler ya global namespace içinde olacak veya  başkabir namespace 
+içinde olacak.
+
+	namespace nec{
+		namespace erg{
+			namespace projects{
+
+			}
+		}
+	}
+
+
+* Bir namespace'in içindeki bir namescape'ten bahsettiğimiz zaman kullanılan terim nested'dir.
+
+* İdentifier olmadan oluşturulan namespace'lere unnamed namespace denir. Tabi özel kuralları var.
+
+	namespace{
+		
+	}
+
+* Bir namespace içinde global namespace'de yazabileceğimiz herşeyi yazabiliriz.
+
+	namespace nec{
+		int nec;
+	}
+
+
+* Namespace içindeki bir ismi, isim aramayla buldurmak için "Scope Resolution" operatörünü kullanıyoruz.
+Bu operatörün birden fazla kullanım şekli vardır.
+
+
+Örneğin burada sınıf içindeki bir isme erişmek için kullanıldı;
+
+	class Myclass{
+		void foo();
+	};
+
+	int main()
+	{
+		Myclass::foo
+	}
+
+///////////////////////
+
+	namespace nec{
+		int x;
+	}
+
+	int main()
+	{
+		nec::x
+	}
+
+
+
+///////////////////////
+
+ Bir de bu operatörün unary kullanımı var. Direk global namespace'de arar.
+ 	
+ 	::x
+
+
+
+***
+C'de de olduğu için burada da geçerli olan örneğin size_t'yi nitelemeden kullanmak bir sentaks hatası oluşturmaz. Veya
+malloc() fonksiyonunu cstlib.h include edildiği zaman nitelemeden kullanabiliriz fakat bunları böyle kullanmak yerine
+qualified(nitelenmiş) şeklinde kullanmamız daha isabetli olacaktır.
+
+
+	malloc();
+	size_t t = 10;
+
+
+* Önemli Kural
+
+Eğer derleyici bir namespace definition ile karşılaştıktan sonra yine aynı isimli namespace definition ile karşılaştığında
+bunları kümülatif şekilde ele alır. Yani bunlar farklı namespace'ler değil, aynı namespace'ler.
+
+	namespace nec{
+		int x = 10;
+	}
+
+	namespace nec{
+		int y = 29;
+	}
+
+	namespace nec{
+		int z = 123;
+	}
+
+
+
+*
+
+	namespace nec {
+		namespace erg {
+			namespace proj {
+				double x = 5.4;
+			}
+		}
+	}
+
+	int main()
+	{
+		nec::erg::proj::x
+	}
+
+
+*
+	İleri standardlarda C++'a bu şekilde bir yazım eklendi;
+
+	namespace nec::erg::proj {
+		double x = 5.4;
+	}
+
+	int main()
+	{
+		nec::erg::proj::x
+	}
+
+--------------------------------------
+
+	namespace xyz {
+		int a = 5;
+	}
+
+	int xyz = 5;
+
+	// burada çakışma var. namespace'in de bir ismi var ve çakışıyor.
+
+
+--------------------------------------
+
+
+	namespace nec{
+		int x;
+	}
+
+	int main()
+	{
+
+	}
+
+Bir ismi nitelemeden ismin yine de namespace içinde aranmasını sağlayan birden fazla araç var.
+
+	-> using declaration
+	-> using namespace directive
+	-> adl
+
+
+Not : Using anahtar sözcüğü C++'ın çok fazla overload edilen anahtar sözcüklerinden birisi, çok farklı kullanımlara sahip.
+Hepsi aynı değil, dikkat.
+
+
+_________________________
+
+	Using Declaration
+_________________________
+
+Bir namespace içindeki ismi nitelemeden kullanmak için yapabileceğimiz bildirimlerden birisi Using Declaration.
+
+	using nec::x;
+
+Bu bir bildirim. Bunun bir bildirim olması bu bildirimin de bir scope'a sahip olduğu anlamına geliyor. Örneğin global alanda
+bildirim yaparsak global namespace içinde bu etki geçerli olacak. Ancak yerel bir blokta bildirim yaparsak bu blok içinde 
+etkili olacak.
+
+Using bildirimi ile tanıtılan isim bildirimin olduğu kapsama(scope'a) enjekte edilir.(inject) Ne demek kapsama enjekte edilmesi?
+-Yani adeta o scope'ta tanımlanmış gibi bir etki yapar.
+
+	namespace nec{
+		int x;
+	}
+
+	int main()
+	{
+		using nec::x;
+		int x = 4;		// sentaks hatası
+	}
+
+/////////////
+
+	namespace nec{
+		int x = 10;
+	}
+
+	void foo()
+	{
+		using nec::x;
+		x = 10;			// legal
+	}
+
+	void bar()
+	{
+		x = 7;			// sentaks hatası
+	}
+
+	void baz()
+	{
+		x = 10;			// sentaks hatası
+	}
+
+
+
+/////////////////
+
+	namespace nec{
+		int x = 10;
+	}
+
+
+	namespace erg {
+		using nec::x;
+	}
+
+
+
+	int main()
+	{
+		erg::x 	// geçerli, valid
+	}
+
+
+
+
+/////////////////////////
+
+
+
+Modern C++'dan önce using bildirimleri comma seperated list ile yapılamıyordu.
+
+	namespace nec {
+		int x, y, z;
+	}
+
+	using nec::x;
+	using nec::y;
+	using nec::z;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
