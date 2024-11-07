@@ -392,6 +392,8 @@ Modern C++'dan önce using bildirimleri comma seperated list ile yapılamıyordu
 	using nec::y;
 	using nec::z;
 
+	using nec::x, nec::y, nec::z;
+
 
 
 
