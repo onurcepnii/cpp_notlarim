@@ -1,0 +1,940 @@
+
+
+	void f();
+
+	namespace A
+	{
+		void g();
+	}
+
+	namespace X{
+		using ::f;		// global f is now visible as ::X::f
+		using A::g;		// A::g is now visible as ::X::g
+	}
+
+	void h()
+	{
+		X::f();			// calls ::f
+		X::g();			// calls A::g
+	}
+
+
+
+
+
+
+___________________________________
+
+	Using Namespace Directive
+___________________________________
+
+	using namespace nec;
+
+	using namespace nec::erg::pro;
+
+
+Direktifin kendisi doğrudan global namespace'de veya bir namespace'in içinde yapılabilir ya da bir fonksiyon tanımlamasında fonksiyon bloğu içinde de yapılabilir. Ancak bir class definition içinde kullanımı sentaks hatası.
+
+* Sınıf içinde using namespace direktifini kullanamayız sentaks hatası fakat örneğin o sınıfın member fonksiyonu içinde 
+kullanabiliriz.
+
+* Bu direktifin kendi scope'u var. Yani aslında 2 tane namespace scope söz konusu.
+ 
+***
+	using namespace direktifi ile bildirilen namespace içindeki isimler (örn std namespace içindeki isimler) sanki bu isim alanı
+	içinde değilmiş gibi görünür durumda oluyorlar(sanki bu isim alanı içinde değilde doğrudan o isim alanını kapsayan isim alanı içinde görünür durumda oluyor.).
+
+
+Örneğin;
+
+
+
+
+* Using Namespace direktifini kullanırken çok dikkatli olmak gerekiyor.
+
+	namespace nec{
+		int x = 34;
+	}
+
+	namespace erg{
+		int x = 10;
+	}
+
+	int main()
+	{
+		x = 5; 	// ambiguity
+	}
+
+
+
+* using bildirimi ile using namespace direktifinin farklı olduğu noktalar var. 
+
+using direktifi, using direktifine konu olan isimleri using direktifinin bulunduğu scopa enjekte etmiyor.
+
+
+	namespace nec{
+		int x = 34;	// bu x global namespace içinde görünür durumda
+	}
+
+	int main()
+	{
+		using namespace nec;
+		int x = 56;		// burada sentaks hatası yok, çünkü yukarıdaki satırda nec namespace'de ki isimler enjekte edilmiyor.
+						// bu bildirim söz konusu en dar scope'da bildirilmiş gibi yapıyor.
+	}
+
+
+-----------------------------------
+
+	namespace nec{
+		int x = 34;
+	}
+
+	int x = 56;
+
+	using namespace nec;
+
+	int main()
+	{
+		x = 45;	// ambiguity. fakat ::x = 45 veya nec::x = 67 yazsak hata olmaz.
+	}
+
+
+-----------------------------------
+
+NOT : Ya using namespace direktifini hiç kullanma ya da dar kapsamlı kullan.
+
+-----------------------------------
+
+	namespace nec{
+		void foo();
+		int ival{};
+		struct A{
+			static void bar();
+		}
+	}
+
+	void f1()
+	{
+		using namespace nec;
+
+		foo();
+		++ival;			// buralrda hiç problem yok
+		A::bar;
+	}
+
+	void f2()
+	{
+
+		foo();
+		++ival;			// burada bu isimleri bulamaz. hata
+		A::bar;
+	}
+
+
+--------------------------
+
+
+
+* using directive comma seperated list ile kullanılamaz.
+
+	using namespace nec, erg, pro; 	// sentaks hatası!
+
+
+--------------------------
+
+	namespace nec{
+		int a;
+		int b;
+	}
+
+
+
+	namespace erg{
+		int a;
+		int c;
+	}
+
+
+	using namespace nec;
+	using namespace erg;
+
+	int main()
+	{
+		a = 10;	// error. ambiguity
+		b = 20;	// legal
+		c = 30;	// legal
+	}
+
+
+--------------------------
+
+Enjekte etmiyor, isim aramada görünür yapıyor isimleri. O yüzden redeclaration olmuyor (?)
+
+dk 00.38
+
+
+---------------------------
+
+	namespace nec{
+		int a;
+		//...
+	}
+
+	namespace erg{
+		using namespace nec;
+
+		int b;
+		//...
+	}
+
+	using namespace erg;
+
+
+	int main()
+	{
+		a = 10;		// valid
+	}
+
+	"using namespace erg" direktifi ile erg isim alanı içerisindeki isimler global isim alanında görülür olur. Böylece isim
+	alanındaki "using namespace nec" direktifi de sanki global isim alanındaymış gibi etkiye sahip olur. Bu etki de nec isim
+	alanı içerisindekilerin global isim alanına enjekte edilmesine yol açar.
+
+-----------------------------
+
+	namespace nec{
+		int x = 10;
+		//..
+	}
+
+	namespace erg{
+		using namespace nec;
+
+		int y = 20;
+
+		//...
+	}
+
+	int main()
+	{
+		std::cout << erg::x << '\n';
+	}
+
+
+-------------------------
+
+
+
+
+
+___________________________________________
+
+	ADL ( Argument Dependent Lookup )
+___________________________________________
+
+
+
+	namespace nec{
+		class Myclass{};
+
+		void foo();
+		void bar(int);
+		void baz(Myclass);
+	}
+
+	int main()
+	{
+		foo();		// sentaks hatası, ismi bulamaz
+		bar(34);	// aynı sentaks hatası
+
+		nec::Myclass m;	// myclass nesnesi oluşturduk
+
+		baz(m);			// sentaks hatası yok, ADL
+	}
+
+
+
+***
+ 	Bir fonksiyon çağrısında fonksiyon ismi nitelenmeden kullanıldığında eğer fonksiyona gönderilen argümanlardan biri 
+ 	bir namespace içinde bildirilen bir türe ilişkin ise fonksiyon ismi o namespace içinde de aranır.(sadece orada değil.
+ 	orada da aranır)
+
+Kritik noktalar: Parantez içinde belirttiğimiz üzere  sadece orada aranmıyor, hem normalde arandığı yerlerde aranıyor hem de
+o namespace de aranıyor. Bunu da şöyle gösterebiliriz;
+
+	namespace nec{
+		class Myclass{};
+
+		void foo();
+		void bar(int);
+		void baz(Myclass);
+	}
+
+	void baz(nec::Myclass);
+
+	int main()
+	{
+		nec::Myclass m;
+		baz(m);				// ambiguity. Çünkü hem nec namespace içinde arandı hem de normalde aranması gereken yerlerde arandı.
+							// fakat bu sefer ambiguity oldu.
+	}
+
+
+--------------------------
+
+
+	class Myclass{
+		friend void foo(Myclass);
+	};
+
+	int main()
+	{
+		Myclass m;
+		foo(m);		// sentaks hatası yok, ADL. Yani geçerli
+	}
+
+
+
+--------------------------
+
+
+
+
+Neden Böyle Bir Kural Var?
+--------------------------
+
+Örneğin aşağıdaki koda bakalım.
+
+	int main()
+	{
+		std::cout << "hello";
+	}
+
+Aslında burada da ADL var. Operator<< sınıfın global operator fonksiyonu olarak yazılmış. Eğer üye operatör fonksiyonu olsaydı;
+
+	std::cout.operator <<("hello");
+
+burada çağırılan fonksiyonun da aynı fonksiyon olması lazımdı. Fakat burada hello yazdırmaz, çünkü üye operatör fonksiyonu bu
+işi yapmıyor. Global operatör fonksiyonu yapıyor. Bu member operatör fonksiyonu onun adresini döndürür.
+
+Yani burada çağırılan fonksiyon sınıfın üye fonksiyonu değil, global operator fonksiyonu.
+
+Başka örnek;
+
+	std::cout << 'A';				// stdout'a A yazdırır.
+	std::cout.operator <<('A');		// stdout'a A'nın ASCII karakter kodu olan 65'i yazdı.
+
+	Çünkü ilk çağrılan fonksiyon global operatör fonksiyonu. İkinci çağrılan fonksiyon ise üye operatör fonksiyonu. Yani farklı
+	fonksiyonlar, aynı değil.
+
+
+// power of adl
+
+ #include <iostream>
+ #include <vector>
+ #include <algorithm>
+
+ int main()
+ {
+ 	std::vector<int> ivec{ 1, 5, 6, 7, 2};
+
+ 	//std::sort(std::begin(ivec), std::end(ivec)) böyle yazmasak da aşağıdaki gibi yazsak?
+ 	sort(begin(ivec), end(ivec)); // herhangi bir sentaks hatası yok. ADL
+ }
+
+Tamam begin ve end ADL ile bulunuyor fakat sort nasıl bulunuyor? - begin ve end fonksiyonlarının geri dönüş değeri.
+
+	begin() in geri dönüş değeri ==>  std::vector<int>iterator
+	end() 	in geri dönüş değeri ==>  std::vector<int>iterator
+
+bunlardan dolayı sort ismi de std namespace içinde aranır.
+
+
+----------------------------
+
+Sınıfın üye fonksiyonu da sınıfın interface'i içinde, global fonksiyon da(namespace içindeki) sınıfın interface'i içinde.
+Eğer ADL olmasa bu ikisi farklı muamele görürdü.
+
+	namespace nec{
+		class Myclass{
+		public:
+			void foo();
+		};
+
+		bool is_equal(const Myclass&, const Myclass&);
+
+	}
+	
+	int main()
+	{
+		nec::Myclass m1, m2;
+
+		m1.foo();
+		is_equal(m1,m2);
+	}
+
+
+----------------------------
+
+
+namespace nec{
+	class Duration{
+	public:
+		Duration(int hour, int min, int sec);
+	};
+
+	void print(const Duration&);
+}
+
+namespace erg{
+	class Duration{
+	public:
+		Duration(double min);
+	};
+
+	void print(const Duration&);
+}
+
+int main()
+{
+	nec::Duration x{ 2, 12, 51 };
+	erg::Duration y{ 3234.5243 };
+
+	print(x);	// nec::print
+	print(y);	//erg::print
+}
+
+
+
+
+--------------------
+
+	std::cout << endl;	// sentaks hatası.
+
+Burada neden ADL devreye girmiyor? -Çünkü endl bir fonksiyon. Ancak burada çağrılan endl fonksiyonu değil, operator<< fonksiyonu
+(sınıfın üye fonksiyonu). Dolayısıyla endl'nin nitelenmeden kullanılması sentaks hatasına yol açıyor.
+
+	endl(std::cout);	// burada bir sentaks hatası yok
+
+--------------------
+
+	namespace A{
+		class B {};
+		void func(std::vector<B>)
+		{
+			std::cout << "A::func(std::vector<A::B>\n";
+		}
+	}
+
+	int main()
+	{
+		std::vector<A::B> x;
+
+		func(x);	// ADL works here
+	}
+
+Hatırlayalım, 
+	
+	(Bir fonksiyon çağrısında fonksiyon ismi nitelenmeden kullanıldığında eğer fonksiyona gönderilen argümanlardan biri 
+ 	bir namespace içinde bildirilen bir türe ilişkin ise fonksiyon ismi o namespace içinde de aranır.(sadece orada değil.
+ 	orada da aranır))
+
+ 	buradaki ".. türe ilişkin ise " ifadesini burada görüyoruz.
+
+
+ --------------------
+ //bu örnek Herb Sutter'in blogundan alınmıştır;
+
+namespace A {
+	struct X {};
+	struct Y {};
+	void f(int);
+	void g(X);
+}
+
+namespace B {
+	void f(int i)
+	{
+		f(i);	// calls B::f (endless recursion)
+	}
+
+	void g(A)
+	{
+		g(x);	// Error: ambiguous between B::g (ordinary lookup) and A::g (argument-dependent lookup)
+	}
+
+	void h(A::Y y)
+	{
+		h(y);	// calls B::h (endless recursion): ADL examines the A namespace but finds no A::h, so only B::h from ordinary
+	}
+}
+
+
+-------------------------------------
+
+namespace A {
+	enum color {black, white, red};
+
+	void foo(color);
+}
+
+int main()
+{
+	foo(A::red);
+}
+
+
+-------------------------------------
+
+namespace nec {
+	class NA {
+
+	};
+	void foo(int);
+	void bar(NA);
+}
+
+namespace erg {
+	using EB = nec::NA;	// eş isim verilmiş
+	void func(EB);
+}
+
+int main()
+{
+	foo(0);			// invalid no ADL
+	nec::foo(0);	// valid, no ADL
+	erg::EB b;
+	// func(b);		// invalic, there is n func in nec
+	bar(b);			// valid, bar found in nec
+}
+
+
+-------------------------------
+
+
+* Prototipi bir namespace içinde olan bir fonksiyonu, o namespace içinde ya da onu kapsayan namespace içinde tanımlayabiliyoruz.
+
+	namespace nec {
+		namespace erg {
+			int foo(int)
+		}
+
+		int erg::foo(int x)
+		{
+			return x * x;
+		}
+	}
+
+
+
+-------------------------------
+
+
+
+
+__________________________
+
+	Unnamed Namespace
+__________________________
+
+
+	namespace {
+		int x;
+	}
+
+Biz unnamed namespace oluşturduğumuzda aslında derleyici ona  arka planda bir isim verir ve using direkitifi koyar.
+
+	namespace xyz_98 {
+		int x;
+	}
+
+	using namespace xyz_98;
+
+	// böyle olur gibi düşünebiliriz.
+
+	int main()
+	{
+		x = 10;	
+	}
+
+* Bunun aslında sağladığı fayda şudur: Sadece bir kaynak dosyaya ilişkin isimlerin diğer kaynak dosyalardan gizlenmesi.
+
+
+	// ali.cpp
+
+	namespace {
+		int x = 5;
+		void foo(int x)
+		{
+
+		}
+
+		class Myclass{
+
+		};
+	}
+
+* Unnamed Namespace, statik globallere daha iyi bir alternatif.
+
+* Sadece modülde kullanılacak, diğer modülleri ilgilendirmeyen global varlıkları unnamed namespace içine koyabiliriz.
+
+* Unnamed namespace'ler de kümülatif.
+
+
+------------------------------
+
+
+	namespace ali {
+		namespace {
+			int x;
+		}
+	}
+
+	int main()
+	{
+		ali::x;		//legal
+	}
+
+
+------------------------------
+
+	namespace {
+		int x;
+
+		void foo()
+		{
+			std::cout << "foo()\n";
+		}
+	}
+
+	int main()
+	{
+		x = 10;
+		foo();
+
+		std::cout << x << '\n';
+		::x = 5;
+		::foo();
+	}
+
+
+
+------------------------------
+
+
+	namespace nec {
+		namespace {
+			int x;
+			// ..
+		}
+	}
+
+	int main()
+	{
+		nec::x = 5;		//valid
+	}
+
+
+
+------------------------------
+
+	namespace {
+		int x = 5;
+	}
+
+	int x = 34;
+
+	int main()
+	{
+		std::cout << ::x << '\n';	//valid
+		std::cout << x << '\n';		//error
+	}
+
+
+
+------------------------------
+
+
+
+
+
+____________________________
+
+		Name Lookup
+____________________________
+
+
+Modern C++'da namespace için inline anahtar sözcüğü ile nitelenebilir hale geldi.
+
+Inline keyword ile bir namespace oluşturduğumuz zaman, onun içindeki isimler onu kapsayan namespace içinde görünür hale geliyor.
+
+	namespace nec {
+		namespace erg {
+			namespace asl {
+				int x;
+			}
+		using namespace asl;
+		}
+	using namespace nec;
+	}
+
+	using namespace nec;
+
+	int main()
+	{
+		// nec::erg::asl::x = 10;
+		nec::erg::x = 10;
+		nec::x = 10;
+
+		x = 10;
+
+	}
+
+burada hem adl ile ilgili bazı problemler var hem de böyle yapmak yerine inline kullanırsak kod çok daha basit hale geliyor.
+
+	inline namespace nec {
+		inline namespace erg {
+			inline namespace asl {
+				int x;
+			}
+		}
+	}
+
+* Bunun dile eklenmesinde iki temel amaç var: birincisi adl ile ilgili, ikincisi versiyon kontrolü.
+
+	namespace nec {
+
+		namespace version_1 {
+			struct A {
+				A()
+				{
+					std::cout << "nec::version_1::A()\n";
+				}
+			};
+		}
+	
+		namespace version_2 {
+			struct A {
+				A()
+				{
+					std::cout << "nec::version_2::A()\n";
+				}
+			}
+		}
+
+	}
+
+	int main()
+	{
+		// nec::version_1::A ax;
+		// nec::version_2::A ax;
+	}
+
+
+
+
+bu şekilde yapmak yerine şöyle yaparız;
+
+
+
+
+	namespace nec {
+
+		inline namespace version_1 {
+			struct A {
+				A()
+				{
+					std::cout << "nec::version_1::A()\n";
+				}
+			};
+		}
+	
+		namespace version_2 {
+			struct A {
+				A()
+				{
+					std::cout << "nec::version_2::A()\n";
+				}
+			}
+		}
+
+	}
+
+	int main()
+	{
+		nec::A ax;	// inline olan version 1 olduğu için o kullanılacak.
+	}
+
+eğer version 2'yi inline yaparsak o kullanılacak.
+
+
+Hatta conditional compiling de yapabiliriz.
+
+
+	#define VERSION_1
+
+	namespace nec {
+
+	#ifdef VERSION_1
+		
+		inline
+
+	#endif
+
+		inline namespace version_1 {
+			struct A {
+				A()
+				{
+					std::cout << "nec::version_1::A()\n";
+				}
+			};
+		}
+
+	#ifdef VERSION_2
+		
+		inline
+	
+	#endif
+
+		namespace version_2 {
+			struct A {
+				A()
+				{
+					std::cout << "nec::version_2::A()\n";
+				}
+			}
+		}
+	}
+
+	int main()
+	{
+
+	}
+
+Bu şekilde makrolar ve conditional compiling ile kullanım yapabiliriz.
+
+
+* C++ 20'de şu eklendi. altta ki bildirimde de inline kullanabiliyoruz.
+
+	namespace ali::veli:: inline gul {
+		int x = 5;
+	}
+
+
+Namespace Alias
+---------------
+
+Türler için alias oluşturabiliyorduk.
+
+	typedef (C'den geliyor)
+	using
+
+fakat bunlar türlere eş isim verebilir.
+
+Namespace Alias'ın sentaksı şöyle;
+
+	namespace nec {
+		int x = 5;
+	}
+
+	namespace erg = nec;
+
+	int main()
+	{
+		nec::x = 13;
+		erg::x = 35;
+	}
+
+Namespace Alias kullanmanın en az iki tane ihtiyaç noktası olabilir. Birincisi isim çakışması.
+
+Örneğin;
+
+	namespace nec_proj_ai {
+		namespace random {
+			namespace details {
+				int x = 10;
+			}
+		}
+	}
+
+	int main()
+	{
+		nec_proj_ai::random::details::x;	// böyle uzun yazmak yerine
+		namespace details = nec_proj_ai::random::details;	// böyle yaparız
+	}
+
+
+* Bazı namespace alias'ları standard kütüphane kendisi veriyor. Örneğin ranges kütüphanesi buna güzel bir örnek;
+
+	#include <iostream>
+	#include <ranges>
+	#include <algorithm>
+
+	int main()
+	{
+		std::ranges::views		demek yerin şöyle yazsak;
+
+		namespace views = std::ranges::views;
+
+		hatta
+
+		namespace rng = std::ranges;
+		namespace views = rng::views;	// böyle de kullanım legal
+	}
+
+
+_____________________________
+
+		Nested Types
+_____________________________
+
+
+Bir class definition içinde bir türün bildirimini yaparsak o bir nested type, type member, member type aşağı yukarı hepsi
+aynı anlamda kullanılıyor.
+
+	class Myclass{
+
+		class Nested{
+
+		};	
+	};
+
+Eğer bu şekilde bir sınıf oluşturursak, Nested sınıfı Myclass sınıfının bir nested class'ı / type member'i. Yani bu ismin kendisi
+Myclass scope'unda. Yani bu ismi diğer sınıflar gibi nitelemeden kullanamayız.
+
+	int main()
+	{
+		Myclass::Nested x;	//erişim kontrolü hatası var. çünkü sınıfın private kısmında. public kısmında bildirirsek hata kalkar
+	}
+
+Member function'lar gibi, member type'lar da erişim kontrolüne tabii.
+
+
+Nested Type oluşturmanın 3 tane biçimi var.
+
+- Birincisi bunun bir sınıf olabilir
+- İkincisi bir enumaration type olabilir. 
+- Tür eş isim bildirimi olabilir.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
