@@ -1,0 +1,669 @@
+
+	class Nec{
+	public:
+		class Nested{
+			//..
+		};
+
+		enum Pos {On,Off}; // enum class yani scoped enum da olabilir.
+
+		using Dollar = double.
+	};
+
+Eğer bunlar global namespace'de bildirilirlerse scopeları namespace scope olur. Oysa şimdi class scope.
+
+Class scope'da oldukları için sınıf ismiyle niteleyerek kullanmamız gerekiyor.
+
+	int main()
+	{
+		Nec::Nested x;
+		Nec::Pos mypos;
+		auto x = Nec::Off;
+	}
+
+
+Nec sınıfına enclosing class denir. Peki enclosing class nested class'ın private bölümüne erişebilir mi? -Hayır.
+Ancak friend class bildirimi yapabiliriz.
+
+	class Nec{
+	public:
+		class Nested{
+		private:
+			void foo();
+			int mx;
+			friend Nec;
+		};
+	};
+
+Nested Class, Enclosing Class'ın private bölümüne erişebilir.
+
+
+
+
+
+
+***
+ Üye fonksiyonun içinde kullandığımız isim arama kurallarıyla, bir ismi sınıfın içinde kullanmanız durumunda isim arama kuralları
+birbirinden farklı.
+
+	class Nec{
+
+		Nested mx;		// sentaks hatası oluşturur. Çünkü isim arama kurallarına göre Nec class'ının başından Nested mx; 
+		class Nested{	// satırına kadar aranacak ve bulamayacak çünkü class def. altta kaldı.
+
+		};
+	};
+
+Fakat
+
+	class Nec{
+
+		class Nested{
+
+		};
+
+		Nested mx;		// şuan sıkıntı yok örneğin
+	};
+
+
+
+
+
+
+
+***
+Örneğin aşağıdaki kodda Word wx; ifadesi yukardaki Word struct türünden mi yoksa using Word = int; türünden mi?
+-Cevap: yukarıdaki sınıf türünden.
+
+	struct Word {
+		short low_byte;
+		short high_byte;
+	};
+
+	class Nec{
+
+		Word wx;
+
+		using Word = int;
+	};
+
+
+
+
+
+***
+
+	class Nec{
+
+		void foo()	// inline function definition, sınıfın dışında tanımlanmış gibi aynı kurallara tabi.
+		{
+			wx = 6; // legal
+		}
+
+		using Word = int;
+		Word wx;
+	};
+
+
+
+***
+
+	Struct Data {
+		//...
+		int get()const;
+	};
+
+	class Nec{
+		Data mydata;		// Struct Data
+		void foo();
+		using Data = int;
+		Data mval{};		// int
+	};
+
+	void Nec::foo()
+	{
+		mdata = 5;				// invalid
+		mval = 5;				// valid
+		auto x = mdata.get();	// valid
+		auto y = mval.get();	// invalid
+	}
+
+
+
+
+
+
+
+***
+
+	class Myclass{
+	private:
+		class Nested{
+
+		};
+
+	public:
+		static Nested create_nested();
+	};
+
+
+	int main()
+	{
+		Myclass::Nested nx;									// illegal, private
+
+		Myclass::Nested nx = Myclass::create_nested();		// illegal, aynı problem devam ediyor
+
+		auto nx = Myclass::create_nested();					// legal
+	}
+
+Not: Erişim kontrolü ortada eğer bir isim varsa uygulanıyor. Yani Myclass::Nested yazdığımızda aldığımız hata erişim kontrolünden
+dolayı. Fakat eğer son satırda olduğu gibi yazmazsak erişim kontrolü hatası almayız. İlginç.
+
+
+
+
+
+***
+
+	int x, y;	// globals
+
+	class enclose{
+		// note: private members
+		int x;
+		static int s;
+	public:
+		struct inner { // nested class
+			void f(int i)
+			{
+				x = i;	// Error: can't write to non-static enclose::x without instance
+				int a = sizeof x;	// Error until C++11
+				// OK in C++11: operand of sizeof is unevaluated,
+				// this use of non-static enclose::x is allowed.
+				s = i;	// OK: can assign to the static enclose::s
+				::x = i;// OK can assign to global x
+				y = i;	// OK can assign to global y
+			}
+
+			void g(enclose* p, int i)
+			{
+				p->x = i;	// OK: assign to enclose::x
+			}
+		};
+	};
+
+
+
+
+***
+	class Enc {
+
+		class Nested {
+			void foo(int);
+		};
+
+		void Nested::foo(int) // burada tanımlayamayız geçerli değil, fakat fonksiyonu namespace içinde tanımlayabiliriz
+		{
+
+		}
+	};
+
+	void Enc::Nested::foo(int) // legal
+	{
+
+	}
+
+	//////////////
+
+	void Enc::Nested::foo(Nested x) // Parantez içinde de sentaks hatası yok, böyle kullanabiliyoruz
+	{
+		Nested y = x;	// class scope sayılır, sentaks hatası yok
+	}
+
+	Kritik yer***
+
+	Nested Enc::Nested::foo(Nested x)	// Şuan sentaks hatası, çünkü geri dönüş değeri türünün yazıldığı yer class scope
+	{									// değildir. Sık yapılan hata, dikkat edelim. Enc::Nested yazmalıyız.
+		return x;
+	}
+
+
+
+
+***
+	Forward declaration yaptığımız yer arasında fark olur mu? -Evet.
+
+	class Myclass{
+
+		class Nec;		// bu bir nested class'ın forward declaration'u
+	}				
+
+
+	ile
+
+
+	class Nec;	// bu namespace'de ki bir tür için forward declaration
+
+	class Myclass{
+
+	};
+
+
+	bunlar farklı.
+
+
+Pimpl Idiom	(Pointer Implemenation'dan uydurma bir sözcük)
+----------------------------------------------------------
+Sınıfın private bölümünü gizlemek.
+
+Bazı kodların değişmesi durumunda, bizim daha önceden yazılmış kodlarımızın artık doğru olmaması. Yani onları değiştiriyorsak
+bizim de bazı değişiklikler yapmamız veya re-compile yapmamız gerekiyor diyelim.
+
+	//nec.h
+
+	class Nec{
+
+	private:
+		struct pimpl;	// in-complete nested type
+		pimple* mp;		// std::unique_ptr<pimpl> uptr;  bu yeni implementasyon
+	};
+
+	//nec.cpp
+
+	struct Nec::pimpl {
+		A ax;
+		B bx;
+		C cx;
+	}
+
+Sınıfın ctor'u veya ctor'ları pimpl pointerini dinamik ömürlü bir pimpl nesnesi ile initialize edecek. Yani nec'in ctor'u
+aslında dinamik ömürlü bir pimpl nesnesi oluşturacak, dolayısıyla dinamik ömürlü pimpl nesnesinin elemanları aslında nec 
+sınıfının elemanları gibi kullanılacak. Tabii ki bunun da bir maliyeti var.
+
+Not: bu eski implementasyon.
+
+
+
+
+
+____________________________
+
+		Composition
+____________________________
+
+Nesne yönelimli programlamada sınıflar arasındaki ilişkiyi betimleyen bazı terimler var.
+
+	Association
+	-----------
+	Bir sınıfın birlikte bir işi görmesi. Yani o işin yapılması için o iki sınıfın birlikte olması gerekiyor.
+
+		Aggregation
+		-----------
+		Association'un özel bir biçimi. İki sınıf nesnesi birlikte işini görüyor fakat sınıflardan birisi diğerin sahibi
+		konumunda. Örneğin arabanın motoru var, bilgisayarın anakartı var gibi.
+		
+			Composition (has-a-relationship)
+			-----------
+			Aggregation'un bir alt kategorisi. Aggregation'un Composition haline gelmesi için, sahip olan nesne ile(owner)
+			sahip olunan nesne arasında ömürsel bir birliktelik olması gerekiyor. Mesela, insan ve insan beyni arasındaki ilişki.
+			Doğduğumuzda beynimiz ile doğuyoruz, ölürken beynimiz ile ölüyoruz.(Beyin nakli yok.)
+
+
+
+
+Her composition bir aggregation, her aggregation bir association.
+
+
+Örneğin aşağıda her Car nesnesi hayata geldiğinde onun Engine türünden m_eng veri elemanı da hayata gelecek. Car için dtor 
+çağırıldığında Engine için de çağırılacak.
+
+	class Engine {
+
+	};
+
+	class Car {
+
+	private:
+		Engine m_eng;
+	};
+
+Buna containment (içerme) denir. Bir nesnenin elemanının başka bir sınıf türünden nesne olması.
+
+
+Copy ve move ctor yazarken eksik yazarsak elemanlar default ctor edilir.
+
+	class Myclass{
+	public:
+		Myclass(Myclass&& other)	// initializer list kulanmadık boş bıraktık
+		{
+
+		}
+		Myclass(Myclass&& other)	// initializer list kulanmadık boş bıraktık
+		{
+
+		}
+	};
+
+...
+
+Eğer copy ctor ve move ctor'u kendimiz yazıyorsak elemanların da copy veya move edilmesinden biz sorumlu oluruz. Aslında böyle
+yazmamız lazım;
+
+	Myclass(const Myclass& other) : ax(other.ax), bx(other.bx), cx(other.cx)
+	{
+		...
+	}
+
+Assignment'lar için de aynı şey söz konusu, yine biz sorumluyuz.
+
+
+
+Örnek:
+
+	class Member {
+	public:
+		Member& operator=(const Member&)
+		{
+			std::cout << "Member copy assignment\n";
+			return *this;
+		}
+
+	};
+
+
+	class Owner {
+		Member mx;
+	};
+
+	int main()
+	{
+		Owner x, y;
+
+		x = y;
+	}
+
+
+Burada member copy assignment çağırılır. Fakat owner'in copy assignmentini derleyici yazdı. Eğer biz yazarsak;
+
+
+	class Member {
+	public:
+		Member& operator=(const Member&)
+		{
+			std::cout << "Member copy assignment\n";
+			return *this;
+		}
+
+	};
+
+
+	class Owner {
+		Member mx;
+	public:
+		Owner& operator=(const Owner& other)
+		{
+			return *this;
+		}
+	};
+
+	int main()
+	{
+		Owner x, y;
+
+		x = y;
+	}
+
+Örneğin şuan Owner'in copy assignmentini biz kendimiz yazdık fakat içini doldurmadık. Şuan kodu çalıştırdığımızda Member copy
+assignment çağırılmaz. Yazmamız gereken: 
+									
+									Owner& operator=(const Owner& other)
+									{
+										mx = other.mx;
+
+										return *this;
+									}
+
+***
+Genelde üretimdeki sınıfların veri elemanları çok fazla olabiliyor ve programcı özel bir ihtiyaç noktası olduğundan copy
+assignmenti kendisi yazıyor fakat bir tane elemana atama yapmıyor. Derleyiciler de tipik olarak uyarı mesajı vermiyor. Bunu 
+testte de tespit etmek zor oluyor. Dolayısıyla eski değerinde (unassigned) olarak kalacak.
+
+Eğer derleyiciye bırakmayacaksak her bir eleman için biz sorumluyuz, implementasyon bizde. 
+
+Aynı şekilde move assignment için de bu söylediklerimizin tümü geçerli.
+
+
+
+
+______________________________
+
+		String Sınıfı
+______________________________
+
+Data structure olarak baktığımızda bir Dynamic Array veri yapısı.
+
+Dynamic Array
+-------------
+Öğelerin bellekte ardışık olarak (contigious) olarak tutulduğu veri yapısı.
+
+
+Aslında string sınıfı da elemanları char türünden oluşan dinamik bir diziden başka birşey değil.
+
+***
+Dinamik dizi veri yapısının en az iki tane temel avantajı var;
+
+- Index ile elemana erişmek constant time. İlk elemanın adresini biliyorsak, elemanlardan herhangi birine pointer aritmetiği
+ile constant time'da erişebiliriz. Yani veri yapısındaki öğe sayısı arttıkça erişme maliyeti artmıyor. O(1)
+
+Dinamik Dizinin Size: Anlık olarak kaç öğe tutulduğu.
+
+Dinamik Dizinin Kapasitesi: Totalde kaç tane öğe tutulabileceği.
+
+Kapasite ve size eşit hale geldiğinde re-allocation yapmamız gerekebilir. Re-allocation dikkat etmemiz gereken bir nokta.
+Ciddi bir maliyeti var. Eski bellek alanındaki öğeler yeni bellek alanına kopyalanacak ve eski bellek alanı free edilecek.
+Bunun da maliyeti var.
+İkinci önemli problem ise Dangling Pointer. Eski bellek alanındaki nesneleri gösteren pointer'lar invalid olacak. Dolayısıyla
+onları dangling değil gibi dereference ettiğimizde UB'ye yol açar.
+
+Dinamik dizide tipik olarak 3 tane işaretçi kullanılır. 
+	(1) Başlangıç İşaretçisi
+	(2) Son Eleman Sonrası İşaretçisi
+	(3) Kapasite İşaretçisi
+
+-------
+
+Container Class
+---------------
+
+Birçok dilde collection deniyor fakat C++'da container diyoruz: Belirli bir türden öğeleri bir data structure kullanarak bir
+arada tutulmasını, kullanılmasını sağlayan sınıflara container class denir. Stl'in hazır sunduğu container sınıflar var örneğin
+vector.
+
+Her ne kadar string sınıfı yazı tutmak için olsa da aynı zamanda bir container class. Container olmak gereklerini yerine getiriyor ve stl containerlarının bazı ortak arayüzü var. Mesela bazı fonksiyonlar bütün stl containerlarında var. Dolayısıyla
+String sınıfının interface'inin bir kısmı container interface'i.
+
+
+	#include <iostream>
+	#include <string>
+
+	// string headerinden şöyle bir bildirim geliyor;
+	// using string = std::basic_string<char>;
+	// bu da tabi büyük bir yazım kolaylığı sağlıyor. --> std::string
+
+	int main()
+	{
+		std::string
+	}
+
+
+*** Çok Önemli ***
+
+String sınıfı çok büyük bir sınıf. (fat class) 
+Normalde container sınıfların interface'inde iterator denilen bir kavram kullanılıyor. Iterator aslında bir container'da tutulan
+öğelerin konum bilgisini tutan nesneler. 
+
+String sınıfı container olma gereklerini karşıladığı için hem containerların interface'
+ine sahip fakat hem de yazı işlemleri için özelleştirilmiş bir sınıf olduğu için aynı zamanda index index interface'ine sahip.
+
+Yani bazı durumlarda aynı fonksiyonun hem index interface'ini kullanan bir overloadu hem de iterator interface'ini kullanan bir
+overloadu var.
+
+Yani iki ayrı interface'e sahip.
+
+
+
+
+*** Çok Önemli ***
+
+Günümüzde string sınıfınının implementasyonunda hemen hemen bütün derleyiciler SBO(Small Buffer Optimization) - String sınıfı
+için kullanırsak terimi : "Small String Optimization" denilen bir implementasyon tekniğini kullanıyorlar.
+
+
+	int main()
+	{
+		using namespace std;
+
+		std::cout << "sizeof(string) = " << sizeof(string) << "\n";
+	}
+
+Şuanki ayarlarda bir pointer'in 4 bayt olduğunu düşünelim. Fakat burada ekrana bastırılan çıktı = sizeof(string) = 24
+
+Yani 3 tane pointer ile implemente edilebiliyorsa 4 + 4 + 4 = 12 bayt olması gerekirdi. Fakat neden öyle olmadı?
+	GCC veya Clang'de tipik olarak 32 bayt sizeof değeri. (?)
+
+Bunun nedeni Small String Optimization.
+
+___________________________________________
+
+		Small String Optimization
+___________________________________________
+
+Derleyici String sınıfı implementasyonunda String sınıf nesnesinin içinde bir bellek alanını buffer olarak kullanıyor. Yani
+yazı belirli bir uzunluk değerine gelmedikçe dinamik bir bellek alanı allocate etmiyor.
+
+Modern derleyicilerin hemen hepsi bundan faydalanıyor çünkü efficiency açısından çok büyük bir avantaj. Allocation ve deallocation yüksek maliyetli işlemler. Oysa yazıyı string nesnesinin fiilen içinde tutmak çok daha düşük maliyetli.
+
+
+
+
+Container sınıfların bazı nested type'ları var ve ortak bir şekilde isimlendirilmiş. Örneğin size_type isimli bir nested type'ı 
+var.
+	
+	using namespace std;
+
+	string::size_type
+
+Derleyiciye bağlı olarak string'in size_type'ı işaretsiz bir tamsayı türü. size_t türünün eş ismi.
+
+Çok önemli bir nested type'dır. Çünkü API'lerde, yani global fonksiyonlarda ya da sınıfların üye fonksiyonlarında, şu bilgiler
+her zaman stringin size_type'ı türünden değişkenlerle ifade ediliyor.
+
+	(1) Yazı Uzunluğu
+	Yazının uzunluğunu döndüren length ve size fonksiyonunun geri dönüş değeri String'ın size_type türünden.
+
+	(2) Karakterlerin İndeks
+	Bazı fonksiyonlar parametre olarak yaptıkları iş ile ilgili bir index değeri istiyorlar. Yani örneğin yazının hangi indeksli
+	karakterinden bahsediyoruz, ya da yazının hangi indeksli karakterinden başlayarak
+	String'in size_type'ı türünden.
+
+	(3) Kapasite
+
+	(4) Bazı API'ler, fonksiyonlar bizden tane, adet değeri istiyor. İşte buradaki adet değeri de yine size_type türü ile ifade
+	ediliyor.
+
+
+* String sınıfının implementasyonu herhangi bir şekilde yazıyı NTBS olarak tutmak zorunda değil.
+
+
+String'i ifade ederken std::string olarak ediyoruz başka stringler ile karıştırılmasın. 
+
+
+cstring
+-------
+öyle bir adres ki sonunda null karakter olan bir yazı var.
+
+
+
+
+_________________________________________
+
+		Accessor Fonksiyonları
+_________________________________________
+
+
+	.length()const 		
+
+	
+	.size()const 		// zaten bir stl container hariç, bütün containerların ortak üye fonksiyonu. Contanier'da tutulmakta
+						// olan öğe sayısını döndürür.
+	
+	.capacity()const 	// vector sınıfında da karşımıza çıkacak. allocate edilmiş bellek bloğunda kaç tane öğe tutulabilir 
+						// döndürür.
+
+	.empty()const 		// size'ın 0 olup olmadığını sınıyor.
+
+
+
+
+
+	int main()
+	{
+		using namespace std;
+
+		string str;
+
+		cout << "size= " << str.size() << '\n';
+		cout << "length= " << str.length() << '\n';
+		cout << "capacity= " << str.capacity() << '\n';
+
+		boolalpha(cout);
+
+		cout << "empty = " << str.empty() << '\n';
+		
+
+		####### OUT ########
+
+		size = 0
+		length = 0
+		capacity = 15
+		empty = true
+
+	}
+
+
+Sınıfın inserter'i sınıfın tuttuğu yazıyı stream'e veriyor. Yani ekstra kod yazmamıza gerek yok.
+
+*** Çok Önemli ***
+
+String sınıfının interface'inde fonksiyonların parametre değişkeni ya da değişkenleri olacka. ve parametre dğeişkeni veya değişkenleri için belirli kalıplar var. Hatta bu kalıplara karşılık gelen popüler terimler var.
+
+Bazı fonksiyonlar sizden yani çağıran koddan NTBS isteyecekler. Yani örneğin bir fonksiyonun parametresi sadece .(const char*)
+ise ve buna eşlik eden bir parametre yoksa bakar bakmaz bu fonksiyonun parametresinin cstring olduğunu anlayacağız. Yani bu
+fonksiyon bizden NTBS istiyor. Yani eğer bizim gönderdiğimiz adres NTBS değilse tanımsız davranışa yol açar.
+
+Eğer bir fonksiyonun parametresi yine bir adres ama onun yanında string'in size_type'ı türünden bir tamsayı değeri istiyorsa
+bu parametrik yapıya 
+
+.(const char*)					// cstring
+.(const char* p, size_t n)		// data - bu adresten(p) başlayarak bu kadar tane karakter(n)
+.(size_t n, char c)				// fill - bu kadar tane(n) bu bu karakterden(c)
+.(const string &)				// bir başka string nesnesinin tuttuğu yazıyı kullanacak demek, bizden bir string nesnesi istiyor
+								// string nesnesi hangi yazıyı tutuyorsa o yazının tamamını kullanacak
+
+.(const string &, size_t idx)	// substring - bu string nesnesinin tuttuğu yazının bu indeksi karakterinden başlayarak geriye 									   kalan bütün karakterlerinin oluşturduğu substring üzerinde işlem yapacak demek.
+
+.(const string&, size_t idx, size_t n) // substring - bu da substring fakat bu stringin bu indexinden başlayarak bu kadar tane 												karaketri üzerinde işlem yapacak demek
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
