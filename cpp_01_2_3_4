@@ -731,9 +731,9 @@ Bir operatör gibi düşünürsek, decltype'ın operandı isim formunda olacak. 
 	
 	int x{2432};
 	int &r = x;
-	decltype(x);	==> int&, çünkü int& ile initialize edilmiş. Yoksa x ifadesi int& türünde değil, zaten bir ifade referans türünde olamaz hatırla!
-	int &&r = x;
-	decltype(x);	==> int&&
+	decltype(r);	==> int&, çünkü int& ile initialize edilmiş. Yoksa x ifadesi int& türünde değil, zaten bir ifade referans türünde olamaz hatırla!
+	int &&r = std::move(x);
+	decltype(r);	==> int&&
 	
 	
 Structların memberleri için de geçerli.
