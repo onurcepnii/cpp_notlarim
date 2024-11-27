@@ -123,7 +123,11 @@ char parametreli ctor var mı?
 	bir diğeri initializer list ctor;
 
 		string s{ 'A' };
-
+DİKKAT!
+	string str{ 10, 'x' };  böyle yazdığımızda cotr çakışması oluyor ve derleyici bunu initializer_list türünde ele alıp ona göre initalizer_list ctor'una çağrı
+	yapıyor. yani iki elemanlı bir liste ile çağrı yapmışız gibi sanki. zaten o yüzden yazdırırken sadece tek harf yazdırıyor. 
+	Tek harf yazdırmasının sebebi de aslında '10' karakterini de yazdırıyor fakat biz görmüyoruz. Örneğin 10 yerinde 72 olsa, ASCII'de H karakterine denk geliyor
+	bu sefer Hx yazdırır. Yani bu iki elemanı yazdırıyor aslında, çünkü açıkladığımız karışıklıktan dolayı 2 eleman var elimizde sadece.
 
 Bunlar var ancak char parametreli ctor yok. Genelde şu karıştırılıyor: char parametreli ctor yok ama atama operatör fonksiyonu var. 
 
