@@ -195,7 +195,7 @@ Peki bu neden çok önemli?
 	{
 		using namespace std;
 
-		string s1{20,'a'};		// parantez olduğu için burada çağırılan ctor fill ctor. yani 20 tane a karakteri
+		string s1(20,'a');		// parantez olduğu için burada çağırılan ctor fill ctor. yani 20 tane a karakteri
 		string s2{53, 'x'};		// burada ise 53 tane x karakteri değil. burada init.list parametreli ctor çağırılır.
 
 		cout << s1.length() << '\n';	// 20 döndürür
