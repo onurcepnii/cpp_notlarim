@@ -569,8 +569,9 @@ Fonksiyonların geri dönüş değeri tıpki string compare fonksiyonunda olduğ
 
 Bütün overload'lara sahip. Örneğin substring ile de compare yapabiliyoruz;
 
+****** BU KODDA HATA VAR DÜZELTİCEM 
 	s1.compare(s2, 4, 3);	// s1'de ki yazıyla s2'nin bu substring'ini karşılaştırıyoruz.
-
+******
 
 	string s1{ "necmettin" }, s2{ "husamettin" };
 
