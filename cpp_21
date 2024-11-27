@@ -374,7 +374,7 @@ String'te ki öğeye erişmenin yolları birden fazla;
 - [ ]
 - .at
 - .front()		| Container'de ki ilk öğeye referans semantiği ile erişim sağlar.
-- .back()		| Container'de ki son öğeye referans semantiği ile erişim sağlar. begin ve end fonksiyonları ile karışmasın.
+- .back()		| Container'de ki son öğeye referans semantiği ile erişim sağlar. begin ve end fonksiyonları ile karışmasın. begin ve end iterator interface'ine ait.
 				| Onlar iterator döndüren fonksiyonlar. Oysa front ve back fonksiyonları sequence container'larda container'larda
 				| tutulan ilk öğeye ve son öğeye eriştiriyor.
 
