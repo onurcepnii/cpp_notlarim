@@ -307,7 +307,7 @@ Containerlarla ilgili en sık ihtiyaç duyulan işlemlerden biri: bir containerd
 	(a) ilk öğeyi silmek,
 	(b) bu öğelerin tamamını silmek
 
-C++20'den önce arrays remove ya da remove arrays denilen bir idiom kullanılıyordu.
+C++20'den önce erase-remove ya da remove-erase denilen bir idiom kullanılıyordu.
 
 		s.erase(remove(s.begin(), s.end(), 'a'), s.end());
 
