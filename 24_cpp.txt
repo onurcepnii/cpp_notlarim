@@ -1,0 +1,1070 @@
+class Base {
+public:
+	void foo(int);
+	void double(double);
+};
+
+class Der : public Base {
+public:
+	void foo(int,int);
+};
+
+int main()
+{
+	Der myder;
+	myder.foo(12);
+}
+
+
+Burada sentaks hatası olur çünkü foo() ilk olarak türemiş sınıfta aranır ve bulunur. Fakat parametrik yapısı farklı olduğu için 
+hata verir. Eğer taban sınıftaki foo'lar ile birlikte hepsinin overload olmasını istiyorsak taban sınıftaki foo'ları using 
+bildirimi ile Der sınıfı içinde visible hale getiririz. Bu şekilde tüm foo() fonksiyonları overload olmuş olur.
+
+	class Der : public Base {
+	public:
+		void foo(int,int);
+		using Base::foo;
+	};
+
+***
+Eğer şöyle olursa;
+
+
+
+	class Base {
+	public:
+		void foo(int);
+		void double(double);
+	};
+
+
+	
+	class Der : public Base {
+	public:
+		using Base::foo;
+		void foo(int);
+	};
+
+
+	int main()
+	{
+		Der myder;
+		myder.foo(12);
+	}
+
+
+burada sentaks hatası yok, maskeleme olur. isim önce türemiş sınıfta aranır ve bulunur. (hem taban sınıfta hem de türemiş 
+sınıfta void foo(int) fonksiyonları var, aynı fonksiyonlar) bu yüzden ambiguity oluşmaz.
+
+
+Inherited Constructor
+---------------------
+
+***
+	Buradaki using bildirimi modern cpp'den önce vardı. fakat modern cpp'den önce ctor için böyle bir bildirim yapılamıyordu. 
+	Sınıf içindeki using bildiriminin ctor içinde yapılabilmesi modern cpp ile gelen bir olanak ve buna "Inherited Constructor" 
+	deniyor.
+
+
+	class Base {
+	public:
+		Base(int,int);
+		void foo();
+		void bar(int);
+		void baz(double,double);
+	};
+
+	class Der : public Base {
+	public:
+		using Base::Base;
+		void func(int);
+		void bom(int);
+	};
+
+	int main()
+	{
+		Der myder;	// sentaks hatası. 
+	}
+
+Bu durumda derleyicinin türemiş sınıf için yazacağı ctor taban sınıfın default ctor'una çağrı yapacak, bu da sentaks hatası 
+oluşturduğu için derleyici türemiş sınıfın default ctor'unu delete edecek.
+
+Peki şöyle yazsak;
+	
+	Der myder(34, 67);
+
+Bu da sentaks hatası çünkü Der sınıfının böyle bir ctor'u yok. 
+
+Bu durum için Using bildirimi ile "Inherited Constructor" kullanabiliriz.
+
+
+	class Base {
+	public:
+		Base(int,int);
+		void foo();
+		void base();
+		void bar();
+		void baz();
+	};
+
+	class Der : public Base {
+	public:
+		usign Base::Base;
+		void func(int);
+		vuid bom(int);
+	};
+
+	int main()
+	{
+		Der myder(34,56);
+	}
+
+
+
+
+-----------------------------
+	Runtime Polymorphism
+-----------------------------
+
+Bir taban sınıfın üye fonksiyonlarını 3 kategoriye ayıracağız.
+
+1.kategori
+----------
+türemiş sınıflara hem bir interface veren hem de implementasyon veren fonksiyonlar.
+
+2.kategori
+----------
+türemiş sınıflara hem bir interface veren hem de bir (default) implementasyon veren fonksiyonlar.
+
+3.kategori
+----------
+türemiş sınıflara sadece(only) bir interface veren, bir implementasyon vermeyen fonksiyonlar.
+
+
+Bir sınıfın en az 2.kategoride bir fonksiyonu varsa ya da 3.kategoride bir fonksiyonu varsa, böyle sınıflara polymorphic class
+deniyor.
+
+Eğer bir sınıfın en az bir tane 3.kategoride fonksiyonu varsa, böyle sınıflara abstract class deniyor.
+
+	// base class
+	class Airplane {
+	public:
+		void take_off(); 			// 1.kategori
+		virtual void fly();			// 2.kategori
+
+	};
+
+// burada 2.kategoride olan yani default bir implementasyon sunan fakat türemiş sınıflarında kendi implementasyonunu yapmasına
+imkan sağlar. türemiş sınıf "hayır ben airplane'in koduyla uçmak istemiyorum, kendi kodumla uçmak istiyorum" deyip bu amaçla 
+kendi kodunu sağlamasına "virtual fonksiyonu override" etmesi deniyor. Function Overriding
+
+Taban sınıfın sanal fonksiyonunun türemiş sınıf tarafından implemente edilmesi == > Function Overriding
+
+Not
+Burada Airplane sınıfının sadece void take_off() fonksiyonu olsaydı (virtual void fly() yok), bu sınıfa polymorphic class 
+diyemezdik. Fakat en az 1 tane virtual fonksiyonu varsa bu durumda polymorphic class'tır.
+
+Taban sınıfının Virtual Fonksiyonunun olması durumunda türemiş sınıfa kendi implementasyonunu sağlama olanağı vermiş oluyor, eğer
+eğer bunu yaparsa bunu yapmasına taban sınıfın sanal fonksiyonunu override etmesi deniyor. 
+
+
+	class Airplane {
+	public:
+		void take_off();
+		virtual void fly();			// virtual function
+		virtual void land() = 0;	// pure virtual function
+	};
+
+
+virtual void land() = 0  3.kategoride. implementasyon sunmaz, override edip kendi implementasyonumuzu yapmamız lazım.
+
+3.kategoride en az bir fonksiyonu varsa böyle sınıflara "abstract class" deniyor.(soyut sınıf)
+abstract olmadığını vurgulamak için kullanılan terim ise "concrete class".
+
+***
+Abstract olmanın yaptırımı şudur: bir abstract class türünden nesne oluşturamaz. yani instantiate edilemezler.
+
+
+	class Airplane {
+	public:
+		void take_off();
+		virtual void land() = 0; // pure virtual
+	};
+
+	int main()
+	{
+		Airplane a; // sentaks hatası, " 'Airplane' : cannot instantiate abstract class"
+	}
+
+
+
+Bir durum daha var;
+
+
+
+
+	class Airplane {
+	public:
+		void take_off();
+		virtual void land() = 0; // pure virtual
+	};
+
+	class Boeing : public Airplane {
+	public:
+		//... örneğin şuan Boeing sınıfı abstract class, çünkü virtual function'ları override etmedi.
+	};
+
+	int main()
+	{
+
+	}
+
+Türetme(kalıtım) yoluyla oluşturulan sınıfın concrete olması(instantiable olması) için, taban sınıfın bütün pure functionlarını
+override etmesi gerekiyor.
+
+
+
+	class Base {
+	public:
+		virtual void foo() = 0;
+		virtual void bar() = 0;
+		virtual void baz() = 0;
+	};
+
+	class Der : public Base {
+		// ..
+	}
+
+	Der sınıfının concrete olabilmesi için Base den inherit ettiği tüm pure virtual function'ları override etmesi lazım.
+	Eğer bir tanesini bile override etmeden bırakırsa abstract sınıf olur.
+
+
+Nasıl Override Eder?
+--------------------
+
+	class Base {
+	public:
+		virtual void foo(int);
+	};
+
+	class Der : public Base {
+	public:
+		void foo(int);
+	};
+
+***
+Taban sınıfın pure virtual fonksiyonu ile geri dönüş değeri türü ile aynı geri dönüş değeri türü olması lazım (bir istisna 
+haricinde). İmzanın da aynı olması lazım. 
+
+	class Base {
+	public:
+		void foo(int);
+	};
+
+	class Der : public Base {
+	public:
+		int foo(int); //  sentaks hatası yok, geçerli
+	};
+
+Yukarıdaki kodda int foo(int) geçerli yani sentaks hatası yok fakat tabi iyi bir kod olarak kabul edilmez. Fakat eğer taban
+sınıftaki foo virtual olsaydı o zaman türemiş sınıftaki foo geçersiz olurdu. Çünkü geri dönüş değeri türü farklı.
+
+	class Base {
+	public:
+		void foo(int);
+	};
+
+	class Der : public Base {
+	public:
+		int foo(int); // override değil ve geçerli de değil
+	};
+
+
+
+Modern CPP ile yeni bir kavram daha geldi.	
+
+keyword
+* contextual keyword (bağlamsal anahtar sözcük)
+identifier
+
+Contextual Keyword
+------------------
+Belirli bir bağlamda(context) kullanıldığı zaman keyword etkisi yapıyor yani ona önceden biçilmiş bir özel anlam var ancak
+o context'in dışında keyword değil doğrudan identifier olarak kullanılabilir.
+
+	override ve final contextual keyword'dür.
+
+Hatta bunu gösterebiliriz:
+
+	int main()
+	{
+		int override = 5;	// gerçek anlamda keyword olsaydı bunun sentaks hatası olması lazımdı
+		int final{};
+	}
+
+*
+Yani bir bağlamda anahtar sözcük(keyword) etkisi yaparkan o bağlamın dışında anahtar sözcük etkisi yapmıyor.
+
+
+Contextual Keyword neden eklendi?
+- Çünkü örneğin final keyword olarak eklense eski kodlar kırılabilirdi. Çünkü eski kodlarda eğer final isimli değişkenler varsa
+bu sentaks hatası oluştururdu. Eski kodların geçerliliğine zarar gelmesin diye böyle bir kavram getirdiler.
+
+--------------------------
+
+
+	class Base {
+	public:
+		virtual void foo(int);
+	};
+
+	class Der : public Base {
+	public:
+		void foo(int)override;	// yazmasak da birşey olmaz fakat mutlaka yazılmalı modern cpp ile kod yazarken
+	};
+
+Peki neden yazmalıyız?
+----------------------
+-Bazen programcılar acele kod yazdıkları için ya da dökümantasyon okumadıkları için sanal olmayan bir fonksiyonu override
+ ettiklerini düşünüyorlar.
+
+	class Base {
+	public:
+		void foo(int);
+	};
+
+	class Der : public Base {
+	public:
+		void foo(int);
+	};
+
+Burada override yok çünkü foo virtual function değil. Ama sentaks hatası da yok.
+
+	class Base {
+	public:
+		virtual void foo(long long);
+	};
+
+	class Der : public Base {
+	public:
+		void foo(long);	// burada imzalar farklı olduğu için bu override değil, fakat hata ile böyle yapılmış olabilir.
+						// aynı zamanda sentaks hatası da oluşturmaz.
+	};
+
+
+//////////////
+
+	// base.hpp
+	class Base {
+	public:
+		virtual void foo(int,int);
+	};
+
+Örneğin bu fonksiyonu override eden onlarca sınıfımız var diyelim. Fakat bir nedenle biz bu fonksiyona bir parametre daha 
+ekledik diyelim. Bu sefer bu fonksiyonu override eden tüm sınıflara bakıp, override kodunu bulup düzeltmemiz gerekir.
+Fakat override keyword kullanılmadığı için sentaks hatası da oluşturmuyor. O halde bunları tespit etmemiz epey zor.
+Bu nedenden dolayı da kullanmalıyız.
+
+
+Eğer türemiş sınıfın override'ında override keyword'ünü kullanırsak, artık derleyici taban sınıfta gerçekten override 
+edilebilecek böyle bir fonksiyon var mı, bu gerçekten taban sınıfın bir virtual fonksiyonunun override'ı mı diye kontrol
+etmekle sorumlu olur. Eğer uyuşmazsa sentaks hatası verir.
+	
+	class Base {
+	public:
+		void foo(long long);
+	};
+
+	class Der : public Base {
+	public:
+		void foo(long)override;	//sentaks hatası
+	};
+
+///////////
+
+	class Base {
+	public:
+		virtual void foo(long long);
+	};
+
+	class Der : public Base {
+	public:
+		void foo(long long)override;	//sentaks hatası yok
+	};
+
+
+
+override ve virtual sadece fonksiyon bildiriminde olacak, tanımında olmayacak yoksa sentaks hatası. tabi tanımı inline olursa
+sıkıntı yok.
+
+
+
+Overloading ile Overriding birlikte de olabilir.
+
+	class Base {
+	public:
+		virtual void foo(int);		|
+		virtual void foo(double);	| burada 3 tane overload var
+		virtual void foo(long);		|
+	};
+
+	class Der : public Base {
+	public:
+		void foo(int) override;
+		void foo(double) override;	
+		void foo(long) override;
+	};
+
+
+Override Ediyorum da Ne Oluyor?
+-------------------------------
+
+	class Car {
+	public:
+		virtual void start(){ std::cout << "Car::start()\n"; }
+		virtual void run(){	std::cout << "Car::run()\n";     } 
+		virtual void stop(){ std::cout << "Car::stop()\n";   }
+	};
+
+	class Volvo : public Car {
+	public:
+		void start() { std::cout << "Volvo::start"};
+		void run() { std::cout << "Volvo::run"};
+		void stop() { std::cout << "Volvo::stop"}
+
+	};
+
+	class Renault : public Car {
+	public:
+		void start() { std::cout << "Renault::start"};
+		void run() { std::cout << "Renault::run"};
+		void stop() { std::cout << "Renault::stop"}
+
+	};
+
+	class Mercedes : public Car {
+	public:
+		void start() { std::cout << "Mercedes::start"};
+		void run() { std::cout << "Mercedes::run"};
+		void stop() { std::cout << "Mercedes::stop"}
+
+	};
+
+	void car_game(Car& c)
+	{
+		c.start();
+		c.run();
+		c.stop();
+	}
+
+	// virtual dispatch deniyor bu duruma.
+
+	int main()
+	{
+		Mercedes m;
+		Volvo v;
+		Renault r;
+
+		car_game(m);
+		car_game(v);
+		car_game(r);
+	}
+
+Burada hangi araba türünden bir nesne girdi olarak verilirse onun fonksiyonu çalıştırılır. Fakat eğer start, run, stop 
+fonksiyonları taban sınıfta virtual olmasa, bu üç çağrı için de (car_game(m); car_game(v); car_game(r);) taban sınıfın 
+fonksiyonları çağırılır ve aynı çıktılar yazılır 3 çağrıda da.
+
+Programın çalışma zamanında burada hangi türemiş sınıf türünden nesne gönderirsek, çağırılan fonksiyon o sınıfın override'ı, 
+fonksiyonu oluyor. Burada devreye giren mekanizmaya "virtual dispatch"
+
+Hangi fonksiyonun çağırıldığı programın çalışma zamanında belli oluyor.
+
+
+static binding  / early binding	==> hangi fonksiyonun çağırıldığı derleme zamanında anlaşılır.
+dynamic binding / late binding  ==> hangi fonksiyonun çağırıldığı çalışma zamanında anlaşılır.
+
+
+Bu virtual dispatch mekanizmasının da bir maliyeti var.
+
+
+Virtual Dispatch, sadece bir interface'e bağlı olarak kodları yazma imkanı veriyor ve sonradan yazılan kodları eskiden yazılan kodların rahatlıkla kullanılması olanağını sağlıyor fakat tabi bir maliyeti var.
+
+
+
+Virtual Dispatch'in Devreye Girdiği Veya Girmediği Durumlar
+-----------------------------------------------------------
+
+Devreye Girdiği Durumlar:
+
+- Virtual Dispatch mekanizmasının devreye girebilmesi içinfonksiyon çağrısının taban sınıf pointeri veya referansı ile yapılması
+gerekiyor.
+	
+	..* burada yukardaki uzun virtual dispatch kodunun olduğunu varsayalım*..
+
+
+	int main()
+	{
+		Mercedes m;
+		Car* pcar = &m;
+
+		pcar->start();		|
+		pcar->run();		|	fonksiyon çağrısı taban sınıf ptr ile yapılıyor. bu durumda taban sınıf ptr'ı hangi türemiş
+		pcar->start();		|	sınıf türünden nesneyi gösteriyorsa o sınıfın override'ı çağırılacak.
+
+		Volvo v;
+		pcar = &v;
+		pcar->start();
+
+		Mercedes m;
+		Car& rcar = m;
+
+		rcar.start();		|
+		rcar.run();			|	burada da referans semantiği ile uyguladık
+		rcar.stop();		|
+
+	}
+
+
+Bir senaryo daha var;
+Base class'ta şöyle bir non-static member function olsa,
+
+	class Car {
+	public:
+		virtual void start();
+		virtual void run();
+		virtual void stop();
+		
+		void test()	// hatırlayalım gizli parametre olarak Car*
+		{
+			start();	// bu fonksiyonlar da gizli parametre olarak test() hangi nesne için çağrılmışsa onun adresini alır.
+			run();
+			stop();
+		}
+	};
+
+Dolayısıyla burada da Virtual Dispatch devreye girecek.
+
+
+	int main()
+	{
+		Mercedes m;
+		m.test();	// aslında test() in virtual fonksiyon değil ancak test virtual fonksiyonları çağırılıyor.
+
+		Renault r;
+		r.test();
+	}
+
+*Özetle*
+3 tane tipik senaryo var:
+
+- Çağrının doğrudan taban sınıf ptr ile yapılması
+- Çağrının doğrudan taban sınıf referansı ile yapılması
+- Çağrının aslında sanal olmayan bir üye fonksiyonun içinde yapılması(yani sanal olmayan bir üye fonksiyonun kendi içinde sanal
+  olan üye fonksiyonu/fonksiyonları çağırması)
+
+
+**Önemli
+
+Az önceki koda geri dönelim
+
+	class Car {
+	public:
+		virtual void start();
+		virtual void run();
+		virtual void stop();
+
+		void test()
+		{
+			Car::start();
+			Car::run();
+			Car::stop();
+		}
+	};
+
+Bu durumda Virtual Dispatch mekanizması devreye girmez. Taban sınıf ismi ile fonksiyon çağrısı nitelenerek yapılırsa bu mekanizma
+devreye girmez.
+
+Öyle durumlar var ki biz bir sanal fonksiyon çağrısında türemiş sınıfın override'ını yazarken önce taban sınıfın kendi 
+fonksiyonunun çağrılmasını da isteyebiliyoruz. Yani override eden fonksiyon önce taban sınıfın sanal fonksiyonunu çağırıyor ondan
+sonra kendi kodunu verebiliyor. Öyle durumlarda böyle bir mekanizma gerekli olacak.
+
+Fakat sanallığın devreye girmediği en önemli yer "object slicing" dediğimiz durum. Up-casting: türemiş sınıftan taban sınıfa
+doğru yapılan dönüşüm. Taban sınıf pointeri türemiş sınıf nesnesini göstereiblir, taban sınıf referansını türemiş sınıf nesnesine
+bağlayabilirsiniz. ve hatta taban sınıf nesnesine türemiş sınıf nesnesini atayabiliriz ama tipik olarak atamayız. buna object 
+slicing denir.
+
+Eğer sanal fonksiyona yapılan çağrı taban sınıf pointeri değil, taban sınıf referansı değil, doğrudan taban sınıf nesnesi ile
+yapılırsa o zaman Virtual Dispatch mekanizması devreye girmiyor. Ancak dikkat! Taban sınıf nesnesi ile çağrının yapılabilmesi 
+için taban sınıfın abstract olmaması gerekiyor. zaten taban sınıf abstract class ise taban sınıf nesnesinden bahsedemeyiz.
+
+
+	class Car {
+	public:
+		virtual void start() { std::cout << "Car::start()\n"}
+		virtual void run() { std::cout << "Car::run()\n" }
+		virtual void stop() { std::cout << "Car::stop()\n" }
+
+		void test()
+		{
+			Car::start();
+			Car::run();
+			Car::stop();
+		}
+	};
+
+
+	int main()
+	{
+		Mercedes m;
+
+		Car mycar = m;
+
+		mycar.start(); //  Car::start() çağırılır
+
+		Renault r;
+
+		mycar = r;
+
+		mycar.run();	// Car::run() çağırılır
+	}
+
+------------------------------------------------------------
+
+***
+Taban sınıfın sanal fonksiyonunu override eden türemiş sınıf fonksiyonunda Virtual keyword'ü kullanılmasa da virtual 
+fonksiyondur.
+
+	class Base {
+	public:
+		virtual void foo()
+		{
+			std::cout << "Base::foo()\n";
+		}
+	};
+
+	class Der : public Base {
+	public:
+		void foo()override 		// virtual keyword koysak da koymasak da bu fonksiyon bir virtual function
+								// yani bu demek ki bu sınıftan inherit edilen sınıflar da bu fonksiyonu override edebilir.
+		{
+			std::cout << "Der::foo()\n";
+		}
+
+	};
+
+	class Sder : public Der {
+	public:
+		void foo()override
+		{
+			std::cout << "Sder::foo()\n";
+		}
+	};
+
+	void bar(Base& r)
+	{
+		r.foo();
+	}
+
+
+	void baz(Der& r)
+	{
+		r.foo();
+	}
+
+	int main()
+	{
+		Sder x;
+
+		bar(x);
+		baz(x);
+	}
+
+
+
+////////////////////////
+
+
+	class Base {
+	public:
+		virtual void foo();
+	};
+
+	class Der : public Base {
+	private:
+		void foo()override
+		{
+			std::cout << "Der::foo()\n";
+		}
+	};
+
+	void func(Base* baseptr)
+	{
+		baseptr->foo();
+	}
+
+	int main()
+	{
+		Der myder;
+		func(&myder);	// legalite açısında problem yok ve virtual dispatch devreye girecek
+		myder.foo();	// şimdi erişim kontrolüne takılır
+	}
+
+
+Taban sınıfın da private virtual fonksiyonu olsa onu da override edebiliriz.
+
+Not: Pure Function => programda herhangi bir state değişikliğine neden olmayan, aynı input için aynı outputu üretme garantisi
+					  olan fonksiyonlara deniyor.
+Pure Virtual Function ise bu bölümde bahsettiğimiz, ikisi farklı.
+
+
+	class Base {
+	private:
+		virtual void foo();
+	};
+
+	class Der : public Base {
+	public:
+		void foo()override;
+	};
+
+Sorun yok.
+
+
+
+	class Base {
+	public:
+		void bar()
+		{
+			foo();
+		}
+
+	private:
+		virtual void foo()
+		{
+			std::cout << "Base::foo()\n";
+		}
+	};
+
+	class Der : public Base {
+	private:
+		void foo()override
+		{
+			std::cout << "Der::foo()\n";
+		}
+	};
+
+	int main()
+	{
+		Der myder;
+		myder.bar();	// herhangi bir sorun yok, virtual dispatch mekanizması da devreye girer.
+	}
+
+
+
+----------------------------
+
+
+
+
+Static Type vs Dynamic Type
+---------------------------
+C++, Java vb. diller -> Static Type
+Python vb. -> Dynamic Type
+
+Fakat runtime polymorpishm'i C++ gibi bir dile dynamic tür kavramını sokuyor.
+
+		
+	void car_game(Car* p)
+	{
+		*p // compile time açısından bakarsak bu ifadenin türü Car'dır.
+			 // fakat buraya gelen nesne Car sınıfından kalıtım ile üretilmiş herhangi bir nesne olabilir.
+Yani compile time da kontroller Car türüne göre yapılacak (örneğin isim arama gibi), ama runtime da davranış dinamik türe göre
+yapılacak. Örneğin;
+
+			p->foo();
+
+	}
+
+Davranışı belirleyen tür dinamik tür polimorfik sınıflar söz konusu olduğunda. Ancak compile time'da ki kontorllerin yapıldığı 
+tür statik tür.
+
+
+
+Örneğin;
+
+Base sınıfında open_sunroof() fonksiyonu olmasa fakat bazı türetilmiş sınıflarda olsa;
+
+	void car_game(Car* p)
+	{
+		p->open_sunroof();	// sentaks hatası
+	}
+
+Bu sentaks hatası olur çünkü buradaki ismin aranması statik türe göre yapılacak. Bunu belirleyen statik tür, yani compile time'da
+derleyicinin gördüğü tür. İsim arama o türe göre yapılıyor.
+
+-----------------------
+***
+
+	class Base {
+	public:
+
+	private:
+		virtual void foo();
+	};
+
+
+Bu fonksiyonun Base pointeri ya da Base referansı ile çağırılması sentaks hatası oluşturur. Çünkü access control statik türe
+göre yapılıyor.
+Ancak bunu override eden fonksiyon ilgili türemiş sınıfın private fonksiyonu olabilir, onun erişim kontrolü ile alakası yok.
+
+-----------
+***
+
+	class Base {
+	public:
+		virtual void foo(int x = 5)
+		{
+				std::cout << "Base::foo(int x) x = " << x << "\n",
+		}
+	};
+
+	class Der : public Base {
+	public:
+		virtual void foo(int x = 77) override
+		{
+				std::cout << "Base::foo(int x) x = " << x << "\n";
+		}
+	};
+
+	int main()
+	{
+		Der myder;
+		Base* baseptr = &myder;
+
+		baseptr->foo();		
+	}
+
+
+	OUTPUT = 	5
+
+
+
+Derleyici koda baktı foo ismini aradı, Base'in sanal fonksiyonu olarak buldu. Virtual Dispatch kodu üretecek ancak gönderilen
+argümanın virtual dispatch ile alakası yok ki, argüman gönderilmediğini gördü. Nerden bilsin türemiş sınıftaki varsayılan
+argümanın ne olduğunu? Bu şekilde yaptı ve baseptr->foo(5) olarak kodu implemente etti.
+
+Yani statik türe göre belirlendi, runtime ile hiçbir alakası yok.
+
+
+02.11
+
+-------------------
+
+	class Base {
+	public:
+		virtual void foo()
+		{
+				std::cout << "Base::foo()\n";
+		}
+
+		void bar()
+		{
+				foo();
+		}
+	};
+
+	class Der : public Base {
+	public:
+			virtual void foo()
+			{
+					std::cout << "Der::foo()\n";
+			}
+	};
+
+	int main()
+	{
+			Der myder;
+			myder.bar();
+	}
+
+	OUTPUT: Der::foo() // virtual dispatch mekanizması devreye girdi.
+
+
+/////////////////////
+
+
+	class Base {
+	public:
+		Base()
+		{
+				foo();
+		}
+
+		virtual void foo()
+		{
+				std::cout << "Base::foo()\n";
+		}
+
+		void bar()
+		{
+				foo();
+		}
+	};
+
+	class Der : public Base {
+	public:
+			virtual void foo()
+			{
+					std::cout << "Der::foo()\n";
+			}
+	};
+
+	int main()
+	{
+			Der myder;
+			myder.bar();
+	}
+
+	OUTPUT: Base::foo()  // virtual dispatch mekanizması devreye girmez.
+
+
+Aslında yukarıdaki diğer senaryo ile görüntü olarak fark yok gibi fakat burada istisnalar var tabiki.
+
+
+***
+	Constructor içinde sanal fonksiyonlara yapılan çağrıda Virtual Dispatch mekanizması devreye girmez.
+
+	Türemiş sınıf nesnesi hayata gelirken önce taban sınıf nesnesi hayata geliyor. Yani eğer ctor içinde yapılan sanal fonksiyon
+	çağrılarına Virtual Dispatch uygulansa türemiş sınıf henüz daha oluşmasını tamamlamamış durumda oluyor. Mesela memberları hala
+	yok. Önce içindeki taban sınıf oluşturuluyor.
+
+	Destructor için de bu geçerli;
+
+			~Base()
+			{
+					foo();
+			}
+
+		Yani burada virtual dispatch devreye girseydi zaten elemanlar artık destroy olmuş olacaktı. Destructor içindeki kod 
+		çalıştığı için kaynaklar geri verilmiş olacaktı.
+
+	NOT: Bir nesneden söz edebilmemiz için constructor'un kodunun tamamlanması lazım. Ancak nesnenin destroy edilmiş olduğunu
+	kabul etmek için programın akışının destructor'un içine girmesi yeterli. Oraya girdi mi bizim için artık destroy edilmiş
+	konumda.
+
+
+Virtual Dispatch Devreye Girmediği Senaryolar
+---------------------------------------------
+- Fonksioyn çağrısı, sanal fonksiyon çağrısı taban sınıf nesnesi ile yapılırsa(pointer veya referans değil nesne ile)
+- Taban sınıfın sanal fonksiyonu taban sınıf ismi ile nitelenerek (qualified) yapılmışsa
+- Taban sınıfın ctor ve dtor içinde sanal fonksiyona çağrı yapılmışsa
+
+
+
+
+C++'da ctor fonksiyonlar virtual olamıyor. Diğer bazı dillerde olabiliyor.
+
+
+Virtual Constructor Idiom / Clone Idiom
+---------------------------------------
+
+Şunu yapmak istiyoruz. Car_game fonksiyonunda hangi araç çağırılırsa o araç için aynı markada bir araç da ona eskort edilecek
+bir araba daha oluşturulacak.
+
+	class Car {
+	public:
+		virtual void start(){ std::cout << "Car::start()\n"; }
+		virtual void run(){	std::cout << "Car::run()\n";     } 
+		virtual void stop(){ std::cout << "Car::stop()\n";   }
+		virtual Car* clone() = 0;
+
+	};
+
+	class Volvo : public Car {
+	public:
+		void start() { std::cout << "Volvo::start"};
+		void run() { std::cout << "Volvo::run"};
+		void stop() { std::cout << "Volvo::stop"}
+		Car* clone()override 
+		{
+				return new Volvo(*this);		// bilerek copy ctor ettik çünkü çağırıldığı arabayla aynı renkte, modelde vs. olmasını 
+																		 istiyoruz. yani eskortluk edeceği aracın tıpkısının aynısı olsun.
+		}
+
+	};
+
+	class Renault : public Car {
+	public:
+		void start() { std::cout << "Renault::start"};
+		void run() { std::cout << "Renault::run"};
+		void stop() { std::cout << "Renault::stop"}
+		Car* clone()override
+		{
+				return new Renault(*this);
+		}
+
+	};
+
+	class Mercedes : public Car {
+	public:
+		void start() { std::cout << "Mercedes::start"};
+		void run() { std::cout << "Mercedes::run"};
+		void stop() { std::cout << "Mercedes::stop"}
+		Car* clone()override
+		{
+				return new Mercedes(*this);
+		}
+
+	};
+
+	void car_game(Car& c)
+	{
+		Car* pnewcar = c.clone();
+		c.start();
+		pnewcar->start();
+		c.run();
+		pnewcar->run();
+		c.stop();
+		pnewcar->stop();
+		(void)getchar();
+	}
+
+	// virtual dispatch deniyor bu duruma.
+
+	int main()
+	{
+			for(int i = 0; i < 10; ++i) {
+					Car* p = create_random_car();
+					car_game(*p);
+			}
+	}
+
+
+
+Virtual Dispatch Nasıl İmplemente Ediliyor?
+-------------------------------------------
+Nasıl oluyor da bir fonksiyon çağrısını pointer yoluyla yapmama karşın adeta runtime da nesnenin türünün ne oludğu anlaşılıyor
+ve hangi override olduğu bir şekilde belirleniyor ve fonksiyon çağrısı yapılıyor?
+
+Derleyiciden derleyiciye değişebilir fakat örneğin Neco'nun derleyicisinde 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
