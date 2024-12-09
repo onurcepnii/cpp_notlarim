@@ -428,24 +428,24 @@ Override Ediyorum da Ne Oluyor?
 
 	class Volvo : public Car {
 	public:
-		void start() { std::cout << "Volvo::start"};
-		void run() { std::cout << "Volvo::run"};
+		void start() { std::cout << "Volvo::start"}
+		void run() { std::cout << "Volvo::run"}
 		void stop() { std::cout << "Volvo::stop"}
 
 	};
 
 	class Renault : public Car {
 	public:
-		void start() { std::cout << "Renault::start"};
-		void run() { std::cout << "Renault::run"};
+		void start() { std::cout << "Renault::start"}
+		void run() { std::cout << "Renault::run"}
 		void stop() { std::cout << "Renault::stop"}
 
 	};
 
 	class Mercedes : public Car {
 	public:
-		void start() { std::cout << "Mercedes::start"};
-		void run() { std::cout << "Mercedes::run"};
+		void start() { std::cout << "Mercedes::start"}
+		void run() { std::cout << "Mercedes::run"}
 		void stop() { std::cout << "Mercedes::stop"}
 
 	};
@@ -982,8 +982,8 @@ bir araba daha oluşturulacak.
 
 	class Volvo : public Car {
 	public:
-		void start() { std::cout << "Volvo::start"};
-		void run() { std::cout << "Volvo::run"};
+		void start() { std::cout << "Volvo::start"}
+		void run() { std::cout << "Volvo::run"}
 		void stop() { std::cout << "Volvo::stop"}
 		Car* clone()override 
 		{
@@ -995,8 +995,8 @@ bir araba daha oluşturulacak.
 
 	class Renault : public Car {
 	public:
-		void start() { std::cout << "Renault::start"};
-		void run() { std::cout << "Renault::run"};
+		void start() { std::cout << "Renault::start"}
+		void run() { std::cout << "Renault::run"}
 		void stop() { std::cout << "Renault::stop"}
 		Car* clone()override
 		{
@@ -1007,8 +1007,8 @@ bir araba daha oluşturulacak.
 
 	class Mercedes : public Car {
 	public:
-		void start() { std::cout << "Mercedes::start"};
-		void run() { std::cout << "Mercedes::run"};
+		void start() { std::cout << "Mercedes::start"}
+		void run() { std::cout << "Mercedes::run"}
 		void stop() { std::cout << "Mercedes::stop"}
 		Car* clone()override
 		{
