@@ -1,0 +1,1311 @@
+Virtual Dispatch Mekanizması
+----------------------------
+
+Burada maliyet etkin. Bağlama göre karar vermemiz lazım, Kalıtım/Inheritence tek seçeneğimiz değil.
+
+
+	class Base {
+	public:
+		int x{};
+		int y{};
+	};
+
+	int main()
+	{
+		std::cout << "sizeof(Base) = " << sizeof(Base) << "\n";
+	}
+
+
+OUTPUT : sizeof(Base) = 8
+
+
+	class Base {
+	public:
+		int x{};
+		int y{};
+		void f1();
+		void f2();
+		void f3();
+	};
+
+	int main()
+	{
+		std::cout << "sizeof(Base) = " << sizeof(Base) << "\n";
+	}
+
+
+OUTPUT : sizeof(Base) = 8 // yani sınıf nesnesinin sizeof unda bir değişiklik yok
+
+
+	class Base {
+	public:
+		int x{};
+		int y{};
+		virtual void f1();
+		void f2();
+		void f3();
+	};
+
+	int main()
+	{
+		std::cout << "sizeof(Base) = " << sizeof(Base) << "\n";
+	}
+
+OUTPUT : sizeof(Base) = 12 // fonksiyonlardan birisi virtual olduktan sonra sizeof'da 4 byte lık bir artış oldu. Hatta diğer bütün
+						      fonksiyonları da virtual yapsak yine değer 12 olarak kalacak.
+
+
+Diyebiliriz ki aslında o 4 byte lık fark sınıfın polymorphic olup olmaması ile ilgili. Sınıf polymorphic olduktan sonra 4 byte lık
+bir artış oldu.
+
+
+	class Base {
+	public:
+		int x{};
+		int y{};
+		virtual void f1();
+	};
+
+	class Der : public Base { };
+
+	int main()
+	{
+		std::cout << "sizeof(Base) = " << sizeof(Base) << "\n";		// 12
+		std::cout << "sizeof(Der) = " << sizeof(Der) << "\n";		// 12
+	}
+	
+
+Şimdi gelelim sadede..
+
+Sınıf polymorphic hale gelince derleyici taban sınıf nesnesinin içine bir tane pointer gömüyor. Yani o 4 byte bir tane pointer
+elemana sahip olduğu için artıyor. Polymorphic sınıfların taban sınıflarının içinde bir tane pointer var.
+
+Bu pointerlara "Virtual Function Table Pointer" veya "Virtual Pointer" deniyor. Derleyicinin ürettiği kodla programın çalışma
+zamanında kalıtım hiyerarşisindeki her sınıf için run time da bir veri yapısı oluşturuluyor. Bu veri yapısına "Virtual Function 
+Table" deniyor.
+
+***
+	Her sınıf başına bir tane sanal fonksiyon tablosu var, her nesne başına değil.
+
+	Her sınıf nesnesinin içinde bir vptr(virtual function table pointer) var.
+
+
+
+carptr taban sınıf türünden bir pointer olsun.
+
+	carptr->run();
+
+	derleyici isim aramayı compile time da yapıyor. Tabi ki Car sınıfında arayacak. Böylece Car sınıfında bulduğu run isminin bir
+	virtual function'a ait olduğunu biliyor(compile time da). Derleyici run'ın sanal fonksiyon olduğunu anladığında bunun için 
+	compile time da bir indeks elde edebilir değil mi? -evet. Yani o tablodaki indeksi aslında compile time'da elde ediyor.
+	Yani örneğin start'ın indeksi 0, run'In indeksi 1, stop'un indeksi 2 gibi.. DOlayısıyla derleyici daha compile time'da elde
+	ettiği indeks ile sanal fonksiyon tablosunda kullanacağı indeksi elde etmiş oluyor. Peki bunu nasıl bir koda dönüştürüyor?
+	Semblik olarak;
+		carptr taban sınıf pointeri
+
+		carptr->vptr	bu adresten sanal fonksiyon tablosunun adresini elde ediyor. ve compile time'da elde ettiği indeksi 
+						kullanarak bu indeksteki fonksiyon adresine erişiyor. ve o adresteki fonksiyonu çağırıyor.
+
+		carptr->vptr[idx]()
+
+	derleyici aslında ürettiği kodla derleme zamanında hangi fonksiyonun çağırıldığını bilmiyor.
+
+maliyet(cost)
+=============
+işlemsel maliyet ( yapılan işlem sayısı olarak )
+kullanılan bellek alanı ( storage )
+
+İşlemsel maliyet
+----------------
+-2 tane ilave (additional) dereferencing var. -> taban sınıf nesnesinin içindeki vptr'a erişim, tablonun belirli indeksindeki 
+fonkisyon adresine erişim.
+
+-Sanal fonksiyon tabloları da runtime'da oluşturulacak, onun da bir maliyeti var ve bir kere ödenir.
+
+-her polimorfik nesne için vptr'ın initialize edilmesi
+
+***
+ Ayrıca derleyici virtual fonksiyonların hangi kodun çağırılacağını compile time'da bilemeyeceği için bazı optimizasyonları 
+ yapamaması olumsuz yönleri arasında sayabileceğimiz bir konu. 
+
+ Hatta bu normal fonksiyonlar için de geçerli. Örneğin bir 
+ fonksiyonu bir function pointer ile çağıralım bir de fonksiyonu ismi ile çağıralım, arada çok büyük bir fark var. Fonksiyonu
+ ismi ile çağırdığımız zaman yani hangi fonksiyonun çağırıldığını derleyici bildiği zaman, çağrılan fonksiyonun da derleyici
+ kodunu gördüğünde inline expansion yapabiliyor. Ama diyelim ki fptr bir fonksiyon pointer olsun, biz fptr'nin gösterdiği
+ fonksiyonu çağırırsak derleyici fptr'nin değerinin hangi fonksiyonun adresi olduğunu bilemeyeceğine göre (çok büyük çoğunlukla)
+ burada, çağırıldığı noktada çağırdığı fonksiyonun kodunu görmesi bilmesi söz konusu değil. Aslında en önemli optimizasyon
+ inline expansion kısmı. Yani derleyici eğer hangi fonksiyonun çağırıldığını bilseydi, fonk. çağrısının üstündeki kodlar ile altındaki kodları bir bütün olarak ele alıp burada ilave optimizasyonlar da yapabilecekti. 
+
+ //codes
+ fptr(2,4);
+ //codes
+
+*** 
+ Dikkat! Çok büyük çoğunlukla Virtual Dispatch dinamik ömürlü nesneleri gerektiriyor. Bu da dinamik ömürlü nesneler için 
+ yapılacak olan allocation - deallocation işlemlerinin maliyeti demek.
+
+-Her polimorfik nesne bir pointer büyüyor. ( bellek maliyeti )
+
+
+carptr->run();		| böyle bir fonksiyon çağrısı yaptığımızda aslında gerçekte olan: bu ptr'ın gösterdiği Car nesnesi içindeki
+					  sanal fonksiyon tablosundan önce vptr'ye eriş, sonra onun vasıtası ile sanal fonk. tablosundaki belirli
+					  bir indeksteki fonksiyon adresine eriş.
+
+
+RTTI
+----
+Runtime Time Information veya Runtime Time Identification kısaltması.
+
+Programın çalışma zamanında türün ne olduğunun belirlenmesi. 
+
+Örnek verecek olursak;
+	
+	void car_game(Car* p)
+	{
+		??		örneğin buraya gelecek olan arabanın bir mercedes olup olmadığını sınamamız gerekiyor. Yani nesnenin dinamik
+				türünü anlamamız gerekiyor. Yoksa *p statik tür olarak baktığımız zaman, yani derleyicinin yaptığı kontrollere
+				konu tür olarak baktığımız zaman bu Car türünden bir nesne. Ama davranışı esas tür olarak baktığımızda yani
+				eğer Car polimorfik bir sınıfsa *p runtime'da Dacia da olabilir Renault da olabilir.
+	}
+
+00.34
+
+Peki buraya gelen nesnenin runtime'da Mercedes olup olmadığı nasıl anlaşılıyor? Bunu anlamanın yolu ile Virtual Dispatch 
+mekanizmasının yolu aynı. Yine sanal fonksiyon tablosundan faydalanılıyor.
+
+Özetle RTTI'da sanal fonksiyon tablosunu kullanıyor.
+
+
+
+
+
+
+Variant Return Type / ya da / Covariance
+----------------------------------------
+Normalde virtual function'larda override işlemi yapmak için imzası aynı, geri dönüş değeri türü aynı ve parametreleri aynı
+olması gerekir. Eğer geri dönüş değeri türü farklı, parametreleri ve imzası aynı olursa bu sentaks hatası olur.
+
+Fakat bir istisna var demiştik.. İşte o istisna Covariance.
+
+
+Türemiş sınıfın, sanal sınıfın virtual fonksiyonunu override etmesine rağmen taban sınıfın sanal fonksiyonunun geri dönüş 
+değeri türünü farklı yapabilmesi seçeneğine ilişkin bir istisna.
+
+
+	class B {};
+	class D : public B {};
+
+	class Base {
+	public:
+		virtual B* foo();
+		virtual B& bar();
+	};
+
+	class Der : public Base {
+	public:
+		D* foo()override;		// B* yerine B'nin child class'ı olan(public inheritence yoluyla elde edilmiş) D sınıfı türünden 							adres döndürebilir. Çünkü her D bir B olduğuna göre 
+		D& bar()override;		// bu da aynı şekilde.
+	};
+
+
+***
+	Yalnız birşeye dikkat. Bunun olması için fonksiyonun geri dönüş değerinin ptr veya ref olması gerekiyor. Örneğin şöyle bir
+	fonksiyon daha olsaydı;
+
+		..
+		virtual B bom();	// ptr veya ref semantiği yok. covariant olmaz
+
+
+
+*** Hatırlayalım ***
+--------------------
+	Hatta bunu bir önceki derste gördük aslında. Virtual Constructor Idiom'unda.
+
+	class Car {
+		virtual void start();
+		...
+		virtual Car* clone() = 0;
+	};
+
+	class Mercedes : public Car {	
+	public:
+		Mercedes* clonde()override  // aslında burada covariant var. return value Car* değil, Mercedes*
+		{
+			return new Mercedes(*this);
+		}
+	};
+
+--------------------
+
+
+	class B {};
+	class D : public B {};
+
+	class Base {
+	public:
+		virtual B* foo();
+		virtual B& bar();
+	};
+
+	class Der : public Base {
+	public:
+		B* foo()override;
+		{
+			return new D;
+		}
+
+		B& bar()override;
+	};
+
+	int main()
+	{
+		Der myder;
+		D* dp = myder.foo();	// D nesnesi döndürmesine rağmen sentaks hatası. static cast yapmamız lazım
+
+		D* dp = static_cast<D*>(myder.foo());
+
+	}
+
+
+Başka bir örnek;
+
+	#include "car.h"
+
+	int main()
+	{
+		Renault r;
+
+		///
+
+		r.clone(); // Renault* döndürür.
+				   /// Covariant kullanılmasaydı ve Car* döndürülseydi;
+
+		Renault* rp = r.clone(); // sentaks hatası olurdu.. bunu legal kılmak için tür dönüştürme op. kullanmamız gerekirdi.
+
+		Fakat şimdi diyoruz ki Renault'un clone'u Renault döndürüyor, gereksiz tür dönüşümlerini böylece Covariant ile 
+		elimine etmiş oluyoruz.
+
+	}
+
+
+
+------------------------------------------------
+
+
+
+
+	class Car {
+	public:
+		virtual void start(){ std::cout << "Car::start()\n"; }
+		virtual void run(){	std::cout << "Car::run()\n";     } 
+		virtual void stop(){ std::cout << "Car::stop()\n";   }
+		virtual Car* clone() = 0;
+	};
+
+	class Volvo : public Car {
+	public:
+		void start() { std::cout << "Volvo::start"}
+		void run() { std::cout << "Volvo::run"}
+		void stop() { std::cout << "Volvo::stop"}
+		Volvo* clone()override
+		{
+			return new Volvo(*this);
+		}
+
+	};
+
+	class Renault : public Car {
+	public:
+		void start() { std::cout << "Renault::start"}
+		void run() { std::cout << "Renault::run"}
+		void stop() { std::cout << "Renault::stop"}
+		Renault* clone()override
+		{
+			return new Renault(*this);
+		}
+
+	};
+
+	class Mercedes : public Car {
+	public:
+		void start() { std::cout << "Mercedes::start"}
+		void run() { std::cout << "Mercedes::run"}
+		void stop() { std::cout << "Mercedes::stop"}
+		Mercedes* clone()override
+		{
+			return new Mercedes(*this);
+		}
+
+	};
+
+	class VolvoXC90 : public Volvo {	// multiple inheritence
+	public:
+		VolvoXC90* clone()override
+		{
+			return new VolvoXC90(*this);
+		}
+
+		void start()
+		{	
+			std::cout << "VolvoXC90::start()\n";
+		}
+
+		void run()override
+		{
+			std::cout << "VolvoXC90::run()\n";
+		}
+
+		void stop()override
+		{
+			std::cout << "VolvoXC90::stop()\n";
+		}
+
+	};
+
+	void car_game(Car* p)
+	{
+		p->start();
+		p->run();
+		p->stop();
+		(void)getchar();
+	}
+
+	VolvoXC90 nesnesi oluşturduğumuzda;
+
+		VolvoXC90::start()
+		VolvoXC90::run()
+		VolvoXC90::stop()
+
+		ekrana yazar.
+
+
+Ancak şimdi şöyle yapalım: VolvoXC90 fonksiyonlardan birini override etmesin;
+
+
+	class VolvoXC90 : public Volvo {	
+	public:
+		VolvoXC90* clone()override
+		{
+			return new VolvoXC90(*this);
+		}
+
+		void start()
+		{	
+			std::cout << "VolvoXC90::start()\n";
+		}
+
+		void run()override
+		{
+			std::cout << "VolvoXC90::run()\n";
+		}
+
+		//void stop()override
+		//{
+		//  	std::cout << "VolvoXC90::stop()\n";	| bu fonksiyonu yorum satırına aldık
+		//}
+
+	};
+
+Şimdi tekrar deneyelim;
+
+	VolvoXC90::start()
+	VolvoXC90::run()
+	Volvo::stop()
+
+***
+	Yani eğer türemiş sınıf, taban sınıfın sanal fonksiyonunu override etmezse burada taban sınıfınki çağırılıyor.
+	Bu da aslında implementasyon tarafında ne demek? -VolvoXC90'ın sanal fonksiyon tablosunda o indeksinde normalde
+	override etseydi VolvoXC90'ın stop fonksiyonunun adresi olacaktı ama orada taban sınıfın stop fonksiyonunun adresi var.
+
+
+
+
+	Virtual Destructor
+--------------------------
+
+	class Base {
+	public:
+		virtual void foo();
+		~Base()
+		{
+			std::cout << "Base destructor\n";
+		}
+	};
+
+	class Der : public Base {
+	public:
+		void foo()override;
+		~Der()
+		{
+			std::cout << "Der destructor\n";
+			//
+		}
+	};
+
+	int main()
+	{
+		Der* derptr = new Der;
+
+		delete derptr;	// işimiz bittiğinde bu nesneyi a) destroy etmek için b) bu nesne için operator new ile allocat edilen
+						   bellek bloğunun geri verilmesi için, bellek alanını free etmek için delete ifadesini kullanıyoruz.
+	}
+
+OUTPUT : 	Der destructor
+			Base destructor
+
+Böyle yaptığımızda türemiş sınıfın destructor'u da taban sınıfın destructor'u da çağırılacak. Base'in dtor'u neden çağırıldı?
+-Çünkü Der içindeki Base nesnesi için.
+
+Bir çok durumda biz kalıtımı runtime polimorfizm ile kullanıyoruz ama runtime polimorfizminden faydalanırken türemiş sınıf 
+nesnelerini taban sınıf pointeri ile yönetiyoruz
+
+
+	...
+
+	int main()
+	{
+		Base* baseptr = new Der;	// her Der zaten bir Base olduğu için..
+
+		baseptr->foo();				// Virtual Dispatch'den faydanalıyoruz, Der'in foo() su çağırılacak.
+
+									// fakat şimdi biz bunu delete ettiğimizde bu UB olacak.
+
+		delete baseptr;	// UB, sadece Base dtor çağırıldı, Der dtor çağırılmadı. Normalde Der dtor çağırılması gerekiyordu.
+
+		***
+		// Compile time'da baseptr'nin türü Base* olduğu için derleyici Base sınıfının dtor'unu çağıracak.
+	}
+
+
+Derleyici statik olarak compile time'da delete operatörünün operandı Base* olduğu için doğrudan Base sınıfının dtor'unu 
+çağırıyor. Yani burada problematic bir durum var ve bu bir tanımsız davranış.
+
+
+Fakat şimdi aynı diğer sanal fonksiyonlarda ki gibi Destructor'da da virtual keywordünü kullanıyoruz;
+
+	class Base {
+	public:
+		virtual void foo()
+		{
+			std::cout << "Base::foo()\n";
+		}
+		virtual ~Base()
+		{
+			std::cout << "Base destructor\n";
+		}
+	};
+
+	class Der : public Base {
+	public:
+		void foo()override
+		{
+			std::cout << "Der::foo()\n";
+		}
+
+		~Der()
+		{
+			std::cout << "Der destructor\n";
+		}
+	};
+
+	int main()
+	{
+		Base* baseptr = new Der;
+
+		baseptr->foo();
+
+		delete baseptr;
+	}
+
+
+
+Bir taban sınıf pointeri bir delete operatörünün operandı olduğu zaman burada derleyici şimdi Der sınıfının dtor'Unu çağıracak.
+çağrılar sırayla şöyle olacak;
+
+	Der::foo()
+	Der destructor
+	Base destructor
+
+Bu şu demek;
+	O  zaman iki tane ihtimal var ;
+
+	(1) Eğer siz türemiş sınıf nesnelerini (bu örnekte, kodların çok büyük çoğunluğunda olduğu gibi) runtime polimorfizminin
+	kullanıldığı türemiş sınıf nesnelerini, taban sınıf ptr ı ile  delete edecekseniz yani böyle bir ihtimal, senaryo varsa
+	mutlaka taban sınıfın dtor'u virtual olmalı.
+
+	Polimorfik (taban) sınıfların
+		destructor'u
+			(a) public virtual
+			(b) protected non virtual 
+										olmalı
+
+***
+	Bir ihtimal daha var. Küçük bir ihtimal de olsa taban sınıf pointeri ile türemiş sınıf nesnesini hiçbir zaman delete
+	etmeyeceksek, o zaman bunu virtual yapmak yerine non virtual yapıp protected yapabiliriz.
+
+		class Base {
+		public:
+			virtual void foo()
+			{
+				std::cout << "Base::foo()\n";
+			}
+
+		protected:
+			~Base()
+			{
+				std::cout << "Base destructor\n";
+			}
+		};
+
+	Şimdi az önceki kodda yazdığımız delete baseptr; sentaks hatası olacak.
+
+
+	Peki şimdi şöyle yapsak;
+
+		int main()
+		{
+			Der* derptr = new Der;
+
+			delete derptr;	
+		}
+
+		Burada sentaks hatası olmaz çünkü türemiş sınıfın dtor'u public ama türemiş sınıfın dtor'u taban sınıfın protected
+		bölümüne erişebiliyor.
+
+
+NVI (non-virtual idiom)
+-----------------------
+Herb Sutter'in makalesinde anlatılan idiom.
+
+Taban sınıfların sanal fonksiyonları public olmasın. Yani interface de virtual function bulunmasın. 
+
+
+	class Base {
+	public:
+		void foo()
+		{
+			//
+			foo_impl();
+		}
+
+		void bar()
+		{
+			bar_impl();
+		}
+
+	private:
+		virtual void foo_impl();
+		virtual void bar_impl();
+	};
+
+
+Özetle: Polimorfik taban sınıfların destructorının virtual olması gerekiyor eğer virtualsa public, virtual olmasını 
+istemiyorsanız da protected non-virtual yapmalısınız deniyor.
+
+
+
+-----------------------
+Hatırlayalım;
+	
+	void car_game(Car* p);
+
+	int main()
+	{
+		for(int i = 0; i < 1000; ++i) {
+			Car* p = create_random_car();
+			car_game(p);
+			delete p;
+		}
+	}
+
+	Eğer burada Car sınıfının destructoru virtual olmasaydı bu durumda tanımsız davranış olacaktı.
+
+-----------------------
+
+
+Bazen bizim global fonksiyonları virtual yapacak yola başvurmamız gerekiyor.
+
+
+	for(int i = 0; i < 1000; ++i) {
+		Car* p = create_random_car();
+***		std::cout << *p << '\n';		// bu satırdaki kod aslında şu: operator<<(std::cout, *p); bu fonksiyon virtual olamaz
+											çünkü global bir fonksiyon. O zaman bunu nasıl yapıcaz?
+		p->start();
+		p->run();
+
+		delete p;
+	}
+
+	*** işareti olan satırdaki kodun polimorfik olmasını istiyoruz. Yani örneğin runtime'da bir önceki satırda oluşturulan nesne
+	Volvo ise burada örneğin "It's a Volvo" veya Renault ise "It's a Renault" yazısı çıksın. Ama şöyle bir problem var; buradaki 
+	inserter global bir fonksiyon  olabilir çünkü bu bir custom type. 
+
+	Yani burada adeta global fonksiyonu virtualize etmemiz gerekiyor.
+
+	Yapalım!
+
+	Base sınıfa gidip bu fonksiyonu friend olarak ekliyoruz.
+
+		class Car {
+		public:
+			virtual ~Car() = default;
+			virtual Car* clone() = 0;
+			...
+			virtual std::ostream& print(std::ostream&)const = 0;
+			friend std::ostream& operator<<(std::ostream&os, const Car& c)
+			{
+				c.print(os);	// car'ın print() isimli bir fonksiyonu var diyelim.
+				return os;
+			}
+		};
+
+		class Mercedes {
+		public:
+			virtual std::ostream& print(std::ostream& os)const override
+			{
+				return os << "I am a Mercedes";
+			}
+
+			Mercedes* clone()override
+			{
+				return new Mercedes(*this);
+			}
+
+			...
+
+		};
+
+		int main()
+		{
+			for(int i = 0; i < 1000; ++i) {
+				Car* p = create_random_car();
+				std::cout << *p << '\n';
+				p->start();
+				p->run();
+				(void)getchar();
+				delete p;
+			}
+		}
+
+
+
+
+---------------------------------------
+
+		final Contextual Keyword
+
+---------------------------------------
+
+bu keyword 2 farklı biçimde kullanılıyor.
+
+(1) bir sınıfın final class yapılması (final class)
+	
+(2) bir polimorfik sınıfın sanal fonksiyonunun final yapılması (final override)
+
+
+bazen oluşturduğumuz sınıfları
+
+	(a) doğrudan kalıtıma kapatmak istiyoruz
+
+	(b) bazen de kalıtımda belirli bir seviyeden sonra tekrar kalıtım yapılmasını istemiyoruz
+
+her ikisinde de daha önce bunu belirtmek için yorum satırı kullanılıyordu. yine final yazıyorlardı yorum satırına :)
+
+Modern C++ ise final contextual keyword eklendi.
+
+	
+	class Nec final{	// burada demiş oluyoruz ki "bu sınıftan kalıtım yapılmayacak."
+
+	};
+
+
+veya
+
+	class Nec { 
+
+	};
+
+
+	class Erg final : public Nec {
+
+	};
+
+	şuanda Erg'den inherit edemeyiz çünkü final durumda.
+
+
+
+Yani kısaca final demek kullanıldığı sınıfın kalıtımla alakası yok anlamında.
+
+
+***final override***
+Fakat bir de final override var. Bu ise ben türemiş sınıfın, taban sınıfın sanal fonksiyonunu override ediyorum ama benden
+kalıtım yoluyla elde edilen sınıflar benim override'ımı kullanacaklar, onlar tekrar override edemezler diyor.
+
+	class Base {
+	public:
+		virtual void foo();
+	};
+
+	class Der : public Base {
+	public:
+		void foo()final override;
+	};
+
+	class Foo : public Der {
+	public:
+		void foo()override;	// sentaks hatası, çünkü yukarıda final override edildi.
+	};
+
+*
+final override da yazabiliriz veya override final yazabiliriz.
+
+
+NOT:
+
+const keyword imzanın bir parçası olduğu için örneğin;
+
+		void foo() override final const; 	yazamayız.
+
+		void foo()const override final;		veya 		void foo()const final override; 		yazabiliriz.
+
+
+
+
+
+-----------------------------------------
+
+	Private ve Protected Inheritence
+
+-----------------------------------------
+
+Is-A relationship den daha çok Has-A relationship ile ilgili. 
+
+
+	class Base {
+	public:
+
+	};
+
+	class Der : Base {
+
+	};
+
+	class Der1 : private Base {
+
+	};
+
+	bu şekilde yapar ve  inheritence biçimini anlatan specifier'i yazmazsak buradaki default olarak private'dır.
+	yukarıdaki her ikisi de private inheritence.
+
+struct'larda ise durum default olarak public:
+	
+	struct Der2 : Base { };	// public inheritence
+	class Der1 : Base { };	// private inheritence
+
+
+Normalde public inheritence'da taban sınıfın public bölümünü türemiş sınıfın public interface'ine katıyoruz. Aynı zamanda 
+taban sınıfın protected bölümü de türemiş sınıfın protected bölümüne eklenir.Taban sınıfın private interface'i türemiş sınıf 
+tarafından ulaşılamıyor yani private öğeler hem client'lara kapalı hemde türemiş sınıflara
+kapalı. 
+
+Ancak protected bölümün özelliği client'lara kapalı ama türemiş sınıflara açık olması. 
+
+Fakat private inheritence böyle değil. Private inheritence'da  taban sınıfın public bölümü, türemiş sınıfın private bölümüne
+ekleniyor.
+
+
+	class Base {
+	public:
+		void foo_public();
+	protected:
+		void bar_protected();
+	private:
+		void bom_private();
+	};
+
+	class Der : private Base {
+
+		void derfunc()
+		{
+			foo_public();		// valid
+			bar_protected();	// valid
+			bom_private();	// invalid, zaten tüm inheritence çeşitlerinde taban sınıfın private bölümü kapalı.
+		}
+
+	};
+
+	int main()
+	{
+		Der myder;
+
+		myder.foo_public();		// invalid, çünkü private inheritence ile private interface'e geçti.
+		myder.bar_protected();	// invalid
+		myder.bom_private();	// invalid
+	}
+
+
+
+	Genelde private kalıtımında göz ardı edilen önemli bir özellik var
+
+	(1) private kalıtımında Is-A relationship artık clientlar açısından yok. 
+		Yani normalde public kalıtımı olsa her Der bir Base idi. Fakat şimdi öyle değil.
+
+		Der myder;
+		Base* baseptr = &myder;	// invalid
+		Base& baseref = myder;	// invalid
+
+		Is-A relationship söz konusu olmadığından, artık her Der bir Base olmadığından up-casting (yani türemiş sınıftan taban
+		sınıfa doğru dönüşüm)  yok.
+***
+Yalnız türemiş sınıfın üye fonksiyonları için durum böyle değil. Yani orada hala Is-A relationship var. Bu demektir ki;
+
+	yukardaki kodda;
+
+	class Der : private Base {
+
+		void derfunc()
+		{
+			Der myder;
+			Base* baseptr = &myder;	
+			Base& baseref = myder;
+		}
+		friend void gf();
+	};
+
+	void gf()
+	{
+		Der myder;
+		Base* baseptr = &myder;
+		Base& baseref = myder;
+	}
+***	
+Yani up-casting ve Is-A relationship hiç yok değil. Türemiş sınıfın üye fonksiyonlarına ve türemiş sınıfın friend'lerine var.
+
+
+
+
+Peki neden private kalıtımını kullanalım?
+
+Normalde private kalıtımı Containment'a bir alternatif. Containment'ten kasıt member olarak composition yapmak. Yani pointer
+yoluyla değil de member yoluyla composition yapmak.
+
+	//containment
+
+	class X {
+
+	};
+
+	class Nec {
+
+		X member;
+	};
+
+	bu bir containment yoluyla composition'dur. Private kalıtımı çok büyük çoğunlukla işte buna bir alternatif.
+
+	Her Nec nesnesinin içinde bir X var mı?
+	-Kesinlikle.
+
+	class Erg : private X {
+
+	};
+
+	Her Nec nesnesinin içinde bir X var mı?
+	-Kesinlikle.
+
+	Her Erg nesnesinin içinde bir X var mı?
+	-Yine evet.
+ 
+	Kalıtımda kalıtım biçimi private de olsa protected da olsa veya public de olsa türemiş sınıf nesnesinin içinde bir taban 
+	sınıf nesnesi var. O açıdan bir fark yok.
+
+
+
+	class X {
+	public:
+		void xfoo();
+
+	};
+
+	class Nec {
+
+		X member;
+	};
+
+	class Erg : private X {
+
+	};
+
+	int main()
+	{
+		Nec mynec;
+		Erg myerg;
+
+		mynec.xfoo();	// geçerli değil çünkü bu member'in bir fonksiyonu
+		myerg.xfoo();	// geçerli değil, çünkü taban sınıfın public bölümü benim private bölümümüm
+	}
+
+	Containment'da elemanımın xfoo() fonksiyonunu kendi interface'ime katabiliy miyim?
+	-Evet. Şöyle yapabilirim;
+
+		class Nec {
+		public:
+			void xfoo() 	// forwarding
+			{
+				member.xfoo();
+			}
+		};
+
+	-Erg için de yapabiliriz;
+
+		class Erg : private X {
+		public:
+			using X::xfoo;
+		};
+
+
+--------------------------
+
+	class Nec {
+	public:
+		void xfoo()
+		{
+			member.xfoo();
+		}
+
+		void bar()
+		{
+			member.xfoo();
+		}
+
+	private:
+		X member;
+	};
+
+	class Erg : private Nec {
+	public:
+		using X::foo();
+		void bar()
+		{
+			xfoo();
+		}
+	};
+
+
+
+
+BURADAN ŞU SONUÇ ÇIKIYOR;
+	Şuana kadar gördüğümüz özellikler açısından private kalıtımı yapmak ile member olarak almak açısından bir fark yok. Yani
+	member olarak aldığımda neler yapabiliyorsam private kalıtımında da onları yapabiliyorum. Ya da neleri yapamıyorsam
+	private kalıtımında onları yapamıyorum.
+
+Şimdi gelelim farklılıklarına;
+
+	X sınıfının bir sanal fonksiyonu olsaydı;
+
+
+		class X {
+		public:
+			void xfoo();
+			virtual void vbom();
+		};
+
+	eleman olarak aldığımda, elemanımın sanal fonksiyonunu override edebilir miyim? - Hayır böyle bir sentaks özelliği yok.
+	dolambaçlı yöntemlerle yapabiliriz fakat doğrudan override etmek gibi birşey yok. yani şöyle birşey yok;
+
+	void vbom()override;	//sentaks hatası, böyle birşey yok
+
+Ama şimdi private kalıtımını düşünelim.
+
+	class Erg : private X {
+	public:
+		using X::xfoo;
+		void bar()
+		{
+			xfoo();
+		}
+
+		void vbom()override;
+	};
+
+
+
+1.fark => private kalıtımını composition'a bir alternatif olarak kullanabiliriz. Ancak containment'dan farklı olarak taban
+sınıfın sanal fonksiyonlarını override edebiliriz. 
+
+2.fark => Türemiş sınıfın friendlerinde ve üye fonksiyonlarında up-casting yapabilirim. Friend'ler ve member fonksiyonlar için
+Is-A relationship hala korunuyor.
+
+O zaman private inheritence için 3 tane senaryo var.
+	(1) Sanal fonksiyonları override etmek
+	(2) Friend'lerin ve member'ların içinde up-casting yapmak.
+	(3) Taban sınıfın protected bölümüne kendi implementasyonumda erişebiliyorum. (inherited class)
+
+
+Private inheritence containment'e bir alternatif.
+
+---------------------
+
+	class A {
+
+	};
+
+
+	class Der : A, A {	// bunu yapamayız, yani aynı sınıfı multiple inheritence ile birden fazla kullanamayız.
+
+	};
+
+
+Ama containment'da örneğin class Nec'in A sınıfı türünden 2 tane elemanı olabilir.
+
+	class A {
+
+	};
+
+	class Nec {
+
+		A ax, bx;
+	};
+
+
+---------------------
+
+
+class Empty {
+	
+};
+
+int main()
+{
+	std::cout << "sizeof(Empty) = " << sizeof(Empty) << "\n";
+}
+
+Boş sınıflardan nesne oluşturduğumuzda bir adrese sahip olması için derleyici 1 byte yer ayırır.
+
+
+---------------------
+
+
+class Empty {
+	Empty e;
+};
+
+class Myclass {
+	Empty e;
+};
+
+int main()
+{
+	std::cout << "sizeof(Empty) = " << sizeof(Empty) << "\n";		// 1
+	std::cout << "sizeof(Myclass) = " << sizeof(Myclass) << "\n";	// 1
+}
+
+ikisi de 1 byte.
+
+///////////////////
+
+class Empty {
+	Empty e;
+};
+
+class Myclass {
+
+	int i;
+	Empty e;
+};
+
+int main()
+{
+	std::cout << "sizeof(Empty) = " << sizeof(Empty) << "\n";		// 1
+	std::cout << "sizeof(Myclass) = " << sizeof(Myclass) << "\n";	// 8
+}
+
+
+Hizalama nedeniyle böyle oldu. 4 byte int'den geldi, Empty e 'de 1 byte fakat alignment(hizalama) yüzünden 8 byte a çıktı.
+Fakat burada containment yoluyla composition yapmak yerine private kalıtım yaparsak derleyiciler "Empty base Optimization"
+(EBO) denilen bir optimizasyon kullanıyorlar ve taban sınıf nesnesi için, türemiş sınıf nesnesinde yer ayırmıyorlar.
+
+class Empty {
+	Empty e;
+};
+
+class Myclass : Empty {
+	int i;
+};
+
+int main()
+{
+	std::cout << "sizeof(Empty) = " << sizeof(Empty) << "\n";		// 1
+	std::cout << "sizeof(Myclass) = " << sizeof(Myclass) << "\n";	// 4
+}
+
+
+
+--------------------------------------
+
+Private kalıtımının kullanıldığı ilginç bir yapıya Herb Sutter "Restricted Polymorphism" diyor. 
+
+Birden fazla fonksiyon var fakat biz bu fonksiyonlardan seçtiğimiz fonksiyonlara polimorfizmden faydalanma olanağı vermek
+istiyoruz. Ama tüm fonksiyonlara değil.
+
+	class Base {
+	public:
+		virtual void vfunc();
+	};
+
+	class Der : public Base {
+	public:
+		void vfunc()override;
+		friend void f1();		// bu fonksiyon faydalansın
+	};
+
+	void foo(Base& baseref)
+	{
+		baseref.vfunc();
+	}
+
+	void f1()
+	{
+		Der myder;
+
+		foo(myder);
+	}
+
+	void f2()
+	{
+		Der myder;
+
+		foo(myder);
+	}
+
+	void f3()
+	{
+		Der myder;
+
+		foo(myder);
+	}
+
+
+
+
+--------------------------------
+
+class Base {
+public:
+	void foo();
+};
+
+class Der : private Base {
+	
+	void derfoo()
+	{
+		foo();
+	}
+};
+
+
+class SDer : public Der {
+	
+	void bar()
+	{
+		foo();	// illegal, çünkü bu Der'in private'ı
+	}
+};
+
+
+Şimdi kalıtımı private yerinden protectec yaparsak;
+
+class Base {
+public:
+	void foo();
+};
+
+class Der : protected Base {
+	
+	void derfoo()
+	{
+		foo();
+	}
+};
+
+
+class SDer : public Der {
+	
+	void bar()
+	{
+		foo();	// legal
+	}
+};
+
+Private kalıtımında taban sınıfın public bölümü, türemiş sınıfın private bölümüne eklenirken protected kalıtımında taban sınıfın
+public bölümü türemiş sınıfın protected bölümüne ekleniyor. Dolayısıyla tekrar türetme yaparak 3.bir sınıf elde ettiğimde artık 
+foo fonksiyonuna yapılan çağrı sentaks hatası değil çünkü taban sınıfının protected bölümüne erişiyor.
+
+Multi-level inheritence olmadığı sürece, protected kalıtımı ile private kalıtımı arasında hiçbir fark yok. Ne zaman fark ortaya
+çıkıyor? Multi-level inheritence ile yeni bir sınıf daha oluşturuğumuzda. 
+
+Bunun dışında hiçbir fark yok.
+
+
+
+
+Polimorfik Listeler
+-------------------
+
+Kalıtımda en çok kullandığımız yapılardan birisi : Polimorfik listeler.
+
+Runtime polimorfizminin en tipik uygulama alanı polimorfik listeler.
+
+Farklı türden nesneleri onların ortak bir interface'e sahip olduğunu varsayarak ya da bilerek onları aynı türdenmiş gibi
+bir kapta, bir container'da tutmak.
+
+Örnek;
+	Yarış oyunu programında diyelim ki arabalar yarışacak. Arabaların neler olduğu runtime'da belli oluyor. Fakat siz arabaları
+	bir container'da örneğin bir vector'da tutmak istiyorsunuz. Böylece vector'de arabaları tutacaksınız ama vektörde yani 
+	dinamik dizide tutulan arabaların herbirinin türünün ne olduğu programın çalışma zamanında belli oluyor. Ama siz ister 
+	Opel ister Ford olsun vs. bunların araba olma özelliğinden faydalanarak bunları container'da tutabiliyorsunuz.
+
+	#include "car.h"
+
+	int main()
+	{
+		using namespace std;
+
+		vector<Car*> carvec;
+
+		for(int i = 0; i < 50; ++i) {
+			carvec.push_back(create_random_car());
+		}
+
+		for ( auto cp : carvec) {
+			cout << *cp << "\n";	// böyle bir interface eklemiştik daha öncesinde car.h
+			cp->start();
+			cp->run();
+			cp->stop();
+			(void)getchar();
+		}
+
+		//code
+
+		for(auto cp : carvec) {
+			delete cp;
+		}
+	}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
