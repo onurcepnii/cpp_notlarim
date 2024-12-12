@@ -332,13 +332,14 @@ class Base {
   Private bölümü herkese kapalı sadece sınıfın kendisine açık. Fakat protected bölümü sınıfın kendi kodlarına açık, client'lara
 kapalı ancak kalıtım yoluyla elde edilecek sınıflara açık.
 
-Bir sınıfın protected bölümü olması bu sınıfın kalıtım niyeti olduğuna da delalet ediyor.
-
-01.07
+***
+Bir sınıfın protected bölümü olması, bu sınıfın kalıtım amacıyla tasarlandığının bir göstergesidir.
+Çünkü zaten protected, client (istemci) koduna açık değildir; eğer sadece sınıfın kendisine açık olmasını isteseydim private kullanırdım. 
+Bu durumda protected kullanmamın amacı, türetilmiş sınıfların bu alana erişmesini sağlamaktır.
 
 ***
-	Eğer Der sınıfı Base sınıfından public kalıtımı ile elde edilmiş ise her Der aynı zamanda bir Base nesnesidir.
-	(Her futbolcu bir sporcu, her anne bir kadın, her Mercedes bir araba.)
+Eğer Der sınıfı Base sınıfından public kalıtımı ile elde edilmiş ise her Der aynı zamanda bir Base nesnesidir.
+(Her futbolcu bir sporcu, her anne bir kadın, her Mercedes bir araba.)
 
 ***
 Derleyici bunu (Is-A Relationship) destekliyor -> Türemiş sınıftan taban sınıfa doğru (örtülü) dönüşüm var. Yani örneğin
