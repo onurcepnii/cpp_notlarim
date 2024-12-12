@@ -1,0 +1,1148 @@
+
+-----------------------------
+
+	Multiple Inheritence
+
+-----------------------------
+Multiple Inheritence is not Multi-level inheritence.
+
+
+Multilevel inheritence'de bir sınıftan kalıtım yoluyla yeni bir sınıf elde ederiz ama elde ettiğimiz sınıftan da tekrar kalıtım 
+yoluyla başka bir sınıf inherit ediyoruz.
+
+Multiple Inheritence bir sınıfı tek bir kalıtım işlemiyle birden fazla taban sınıf kullanarak elde etmek.
+
+Elimizde Printer sınıfı ve Scanner sınıfı var ve Combo sınıfını bu sınıflardan elde ediyoruz. Eğer her iki kalıtım da public
+kalıtımıysa  daha önce gördüğümüz herşey bu sefer iki taban sınıf için de geçerli olacak.
+
+Örneğin her Combo nesnesi bir printer'dır. Combo'dan printer'a örtülü olarak upcasting yapılabilir. Her Combo aynı zamanda bir 
+Scanner'dır. Combo'dan Scanner'a örtülü olarak upcasting yapılabilir. Yani Printer gereken yerde veya Scanner gereken yerde
+Combo kullanabiliriz. Is-A relationship her iki sınıf için de geçerli.
+
+Eğer bu kalıtımlar public kalıtımıysa, hem Printer sınıfının public interface'ini hem de Scanner sınıfının public interface'ini
+kendi interface'ine katacak. Yine aynı şekilde polimorfik olarak Combo sınıfı, Printer ve Scanner sınıflarının virtual 
+fonksiyonlarını override edebilecek.
+
+Taban sınıfı 2 ile sınırlı değil, daha fazla olabilir.
+
+
+Sentaks
+-------
+
+
+	class XBase {
+	public:
+		void foo();
+	};
+
+	class YBase {
+	public:
+		void bar();
+	};
+
+	class Der : public XBase, public YBase {	// public XBase, YBase şeklinde yazsak aynı anlamda olmaz dikkat! her taban sınıf 												 için kalıtım biçimini ayrı ayrı yazmak zorundayız.
+	public:
+		void bom();
+	};
+
+	int main()
+	{
+		Der myder;
+
+		myder.foo();
+		myder.bar();
+		myder.bom();
+	}
+
+
+
+
+-----------------------------
+
+
+	class XBase {
+	public:
+		void foo();
+	};
+
+	class YBase {
+	public:
+		void bar();
+	};
+
+	class Der : public XBase, public YBase {	
+	public:
+		void bom();
+	};
+
+	int main()
+	{
+		Der myder;	// Der sınıfının YBase ve XBase arasında Is-A relationship var. O halde onlar da temsil edebilir;
+
+		XBase* xp = &myder;	// örtülü up-casting
+		YBase* yp = &myder;	// örtülü up-casting
+
+		XBase& yy = myder; // örtülü up-casting
+		YBase& xx = myder; // örtülü up-casting
+	} 
+
+Yani örneğin parametresi XBase& olan bir fonksiyona veya parametresi YBase& olan bir fonksiyona argüman olarak myder nesnesini 
+geçebiliriz.
+
+-----------------------------
+
+	class XBase {
+	public:
+		virtual void foo();
+	};
+
+	class YBase {
+	public:
+		virtual void bar();
+	};
+
+	class Der : public XBase, public YBase {	
+	public:
+		void foo()override;	
+		void bar()override;	
+	};
+
+
+-----------------------------
+
+
+Yalnız burada isim arama konusu biraz beklentilerin dışında olabilir.
+
+
+
+
+	class XBase {
+	public:
+		void foo(int);
+	};
+
+	class YBase {
+	public:
+		void foo(double);
+	};
+
+	class Der : public XBase, public YBase {	
+	public:
+	};
+
+	int main()
+	{
+		Der myder;	 // #
+
+		myder.foo(12);		| ambiguity
+		myder.foo(1.2);		| ambiguity
+	}
+
+
+İsim arama önce Der sınıfında olacak. Eğer orada bulamazsa taban sınıflarda aranacak. Fakat taban sınıflar arasında bir öncelik
+yok. Dolayısıyla iki base class'ta da aynı isimde iki tane fonksiyon olursa ambiguity olur.
+
+
+Peki böyle bir isim çakışması varsa ben hala istediğim fonksiyonu çağırabilir miyim? - Evet. :: operator ile;
+
+	int main()
+	{
+		Der myder;
+
+		myder.XBase::foo(12);
+		myder.YBase::foo(1.2);
+	}
+
+
+///////////////////////
+
+***
+	Eğer şöyle yaparsak;
+
+
+
+	class XBase {
+	public:
+		void foo(int);
+	};
+
+	class YBase {
+	public:
+		void foo(double);
+	};
+
+	class Der : public XBase, public YBase {	
+	public:
+		using XBase::foo;
+		using YBase::foo;
+
+	};
+
+	int main()
+	{
+		Der myder;	
+
+		myder.foo(12);	
+		myder.foo(1.2);		
+	}
+
+
+Şimdi ise Function Overloading olur.
+
+
+
+
+Comma seperated list ile de using bildirimlerini yapabiliriz. Bu generic programlama için legal hale getirildi hatırlayalım. Özellikle
+Variadic Templates konusunda bazı gereklilikler yüzünden Modern C++ ile geldi.
+
+	using XBase::foo, YBase::foo;
+	
+
+
+---------------------
+
+
+Normalde kalıtımda türemiş sınıfın içinde bir de base sınıf oluyordu. Yani her türemiş sınıf aslında birer taban sınıftı aynı
+zamanda. Multiple inheritence'da da örneğin 2 taban var, türemiş sınıf içinde aynı zamanda bu iki base sınıf var.
+
+
+
+	class XBase {
+	public:
+		XBase() {	std::cout << "XBase default ctor \n";	}
+	};
+
+	class YBase {
+	public:
+		YBase() {	std::cout << "YBase default ctor\n";	};
+	};
+
+	class Der : public XBase, public YBase { // #
+
+	};
+
+	int main()
+	{
+		Der myder;
+	}
+
+	OUTPUT : 	XBase default ctor
+				YBase default ctor
+
+
+	İki taban sınıfın da ctor'u çağırılır. Çağrılma sırası ise işaretli satırda yazıldığı sıraya göre yapılır.
+
+	Örneğin kalıtım yaparken		class Der : public YBase, public XBase { ..	şeklinde yazarsak ilk YBase ctor çağırılır.
+
+
+
+***
+
+	class XBase {
+	public:
+		XBase(int);
+	};
+
+	class YBase {
+	public:
+		YBase(double);
+	};
+
+	class Der : public XBase, YBase {	// #
+	public:
+		Der() : YBase{2.3}, XBase{5} {}	
+	};
+
+
+Örneğin yukarıda işaretli satırda constructor initializer list'de ki sıraya göre çağrılmazlar. Kalıtımdaki sıralarına göre
+çağrılırlar. (# işaretli satır) Yani önce XBase ctor sonra YBase ctor çağrılır.
+
+
+
+--------------------------------------------
+
+
+	class X {
+	public:
+		void foo();
+	};
+
+	class Y {
+	public:
+		void bar();
+	};
+
+	class D : public X, Y {
+
+	};
+
+	int main()
+	{
+		D dx;
+
+		dx.foo();
+		dx.bar();	// hata, access control. private inheritence
+
+		Y* yp = &dx;	// hata, private inheritence. Is-A relationship yok(member veya friend function için değil) o yüzden 
+							örtülü dönüşüm söz konusu değil.
+		X* xp = &dx;
+	}
+
+-------------------------------------
+***
+
+	class X {
+	public:
+	};
+
+	class Y {
+	public:
+	};
+
+	class D : public X, public Y {
+
+	};
+
+
+	void foo(X&);
+	void foo(Y&);
+
+	int main()
+	{
+		D dx;
+
+		foo(dx);	// sentaks hatası, nedeni ise ambiguity
+	}
+
+
+
+Ama tabi bu tür durumlarda type casting operatörler ile sorunu çözebiliriz. Örneğin;
+		
+		foo(static_cast<X&>(dx));		// void foo(X&) çağrılır
+
+
+-------------------------------------
+
+-------------------------------------------------
+
+Diamond Formation
+DDD		dreadful(deathful) diamond of derivation
+
+-------------------------------------------------
+
+		Device
+		|    |
+    Printer	Scanner
+    	 |   |
+    	 Combo
+
+Device'dan 2 sınıf inherit edilmiş -> Printer ve Scanner
+
+Combo, Printer ve Scanner sınıflarından multiple inheritence ile elde edilmiş.
+
+Burada Combo'nun içinde 2 tane Device nesnesi oluyor. Birisi Scanner'dan gelen Device nesnesi, diğeri Printer'dan gelen.
+Peki bu durumda ikisinin de Device nesnesi aynı olursa bu sefer ambiguity olur. 
+
+Combo'nun içinde 2 ayrı Device olması yerine tek bir Device olması için dilin aracı var.
+
+Bizim modellememize kalmış, işimize nasıl gelirse öyle modeller ve kullanırız.
+
+Burada karşımıza yeni bir terim çıkıyor : Virtual Inheritence
+
+
+***
+	class B {
+	public:
+		void foo();
+	};
+
+	class X : public B {
+
+	};
+
+	class Y : public B {
+
+	};
+
+	class D : public X, public Y {
+	public:
+
+	};
+
+	int main()
+	{
+		D dx;
+
+		dx.foo();	// ambiguity
+
+	}
+
+Burada foo() fonksyionu B sınıfının non-static member fonksiyonu. Hatırlarsak member fonksiyonlarının içinde gizli parametre
+olarak o sınıfa ait bir nesne adresi alıyor. Fakat biz D sınıfından bir nesne oluşturduğumuzda ve bu nesne ile foo() fonksiyonuna
+çağrı yaptığımızda oluşan durum şudur: dx'in içinde 2 tane B nesnesi var. Biri X'den gelen B diğeri ise Y'dan gelen B. Burada
+o yüzden bir sentaks hatası / ambiguity oluşacak.
+
+NOT:
+	Her ambiguity senaryosunda ambiguty'i aşmanın yolu da var. Bu örnek için;
+		
+		D dx;
+		dx.X::foo();
+		dx.Y::foo();
+
+////////////////////////////
+
+	class B {
+	public:
+		void foo();
+	};
+
+	class X : public B {
+
+	};
+
+	class Y : public B {
+
+	};
+
+	class D : public X, public Y {
+	public:
+
+	};
+
+	int main()
+	{
+		D dx;
+
+		B* bptr = &dx;	// ambiguity, çünkü D'nin içinde 2 tane B nesnesi var.
+
+		B* bptr1 = static_cast<X*>(&dx);	// legal
+	}
+
+
+////////////////////////
+
+
+	class B {
+	public:
+		void foo();
+	};
+
+	class X : public B {
+
+	};
+
+	class Y : public B {
+
+	};
+
+	class D : public X, public Y {
+	public:
+
+		void bar(){
+			foo();	//ambiguity, yine 2 tane B nesnesi var ve hangisini gizli parametre olarak geçeceğini derleyici seçemiyor.
+			
+			X::foo();	//legal
+			Y::foo();	//legal
+		}
+
+	};
+
+---------------------------------------------------
+
+***
+
+	class EDevice {
+	public:
+		virtual ~EDevice = default;
+
+		bool is_on()const
+		{
+			return m_flag;
+		}
+		
+		void turn_on()
+		{
+			m_flag = true;
+			std::cout << "cihaz acildi.\n";
+		}
+		
+		void turn_off()
+		{
+			m_flag = off;
+			std::cout << "cihaz kapatildi.\n";
+		}
+
+	private:
+		bool m_flag{};
+	};
+
+	class Printer : public EDevice {
+	public:
+		void print()
+		{
+			if(!is_on()) {
+				std::cout << "cihaz kapali oldugundan print islemi yapilamiyor.\n";
+			}
+			else {
+				std::cout << "print islemi tamamlandi.\n";
+			}
+		}
+	};
+
+	class Scanner : public EDevice {
+	public:
+		void print()
+		{
+			if(!is_on()) {
+				std::cout << "cihaz kapali oldugundan scan islemi yapilamiyor.\n";
+			}
+			else {
+				std::cout << "scan islemi tamamlandi.\n";
+			}
+		}
+	}
+
+	class Combo : public Printer, public Scanner {
+	};
+
+	int main()
+	{
+		Combo mycombo;
+
+		mycombo.Printer::turn_on();
+		mycombo.print();
+		mycombo.scan();
+	}
+
+	OUTPUT : cihazi acildi
+			 print islemi tamamlandi
+			 cihazi kapali oldugundan scan islemi yapilamiyor
+
+
+	Neden? Çünkü tek bir cihaz yok, iki tane ayrı cihaz var. Biz printer tarafındaki cihazı açtık. O yüzden diğer cihaz açık 
+	değil.
+
+
+---------------------------------------------------
+
+
+İki tane yerine tek bir taban sınıf nesnesi olması için ne yapacağız?
+
+Multiple Inheritence'da taban sınıf olarak kullanılacak sınıflarda bu kararı vermemiz gerekiyor. Yani ortak taban sınıftan 
+yapılan kalıtımın "Virtual Inheritence" olması gerekiyor.
+
+	class B {
+
+	};
+
+	class X : virtual public B {	// #
+
+	};
+
+
+	class Y : virtual public B {	// #
+
+	};
+
+	class D : public X, public Y {
+		void bar()
+		{
+			foo();
+		}
+
+	};
+
+	int main()
+	{
+		D dx;
+		B* bptr = &dx;
+
+		dx.foo();
+	}
+
+
+Burada Virtual Inheritence yapmış olduk. Artık bu sınıflardan türetilen nesnelerin içinde bir tane B nesnesi olacak.
+Daha önceki bahsettiğimiz ambiguity durumları bu kullanımda sentaks hatası/ambiguity değil.
+
+
+/////////////////////
+
+
+	class EDevice {
+	public:
+		virtual ~EDevice = default;
+
+		bool is_on()const
+		{
+			return m_flag;
+		}
+		
+		void turn_on()
+		{
+			m_flag = true;
+			std::cout << "cihaz acildi.\n";
+		}
+		
+		void turn_off()
+		{
+			m_flag = off;
+			std::cout << "cihaz kapatildi.\n";
+		}
+
+	private:
+		bool m_flag{};
+	};
+
+	class Printer : public virtual EDevice {
+	public:
+		void print()
+		{
+			if(!is_on()) {
+				std::cout << "cihaz kapali oldugundan print islemi yapilamiyor.\n";
+			}
+			else {
+				std::cout << "print islemi tamamlandi.\n";
+			}
+		}
+	};
+
+	class Scanner : virtual public EDevice {
+	public:
+		void print()
+		{
+			if(!is_on()) {
+				std::cout << "cihaz kapali oldugundan scan islemi yapilamiyor.\n";
+			}
+			else {
+				std::cout << "scan islemi tamamlandi.\n";
+			}
+		}
+	}
+
+	class Combo : public Printer, public Scanner {
+	};
+
+	int main()
+	{
+		Combo mycombo;
+
+		mycombo.turn_on();	// mycombo.Printer::turn_on(); yazmaya gerek yok artık, çünkü tek nesne var 
+		mycombo.print();
+		mycombo.scan();
+	}
+
+
+------------------------------------------------------
+
+	class X {
+	public:
+		X(int);
+		X();
+
+	};
+
+	class Y : public X {
+
+	};
+
+	class Z : public Y {
+	public:
+		Z() : Y() { }	// ctor initializer list ile Z sınıfını init. edebilir miyiz? Ama Y'nin içindeki X'i init. edemeyiz.
+						// yani X(12) yazsak bu legal olmaz, illegal. Sadece direct-base class'ı init. edebiliriz.
+
+	};
+
+
+/////////////////////////
+
+
+	class X {
+	public:
+		X(const char *p)
+		{
+			std::cout << "X ctor" << p << "\n";
+		}
+
+	};
+
+	class Y : virtual public X {
+	public:
+		Y() : X("Y constructor\n") {}
+
+	};
+
+	class Z : virtual public X {
+	public:
+		Z() : X("Z constructor\n") {}
+	};
+
+	class D : public Y, public Z {	// D'nin içinde 1 tane X var, çünkü Virtual Inheritence yapıldı.
+	public:
+		D() : X("D ctor\n") {}	// normalde X, D'nin doğrudan taban sınıfı değil. Ama virtual inheritence'den dolayı D'nin 
+									içindeki X'i init. etmek D'nin görevi.
+
+	};
+
+	class E : public D {
+	public:
+		E() : X("E ctor\") {}	// E'nin içindeki (virtual inheritence'dan dolayı tek olan) X nesnesini init. etme görevi E'ye
+									ait.
+
+	};
+
+	int main()
+	{
+		Y yx;
+
+		E ex;
+	}
+
+D'nin içinde 1 tane X var, çünkü Virtual Inheritence yapıldı. Peki şimdi D'nin içindeki X'i kim Y mi init. edecek Z mi?
+-Hiçbiri. D'nin içindeki X'i (virtual base class nesnesini) init. etme görevi D'nin kendisinde.
+
+
+
+-----------------------------------------
+
+
+
+---------------------------
+
+Runtime Type Identification
+
+---------------------------
+
+Dinamik tür kavramı söz konusu olduğunda nesnenin türü programın çalışma zamanında belli oluyor.
+
+	#include "car.h"
+
+	void car_game(Car* p)
+	{
+
+	}
+
+Virtual Dispatch mekanizması, runtime polimorfizmi biz nesnenin gerçek türünü bilmeden ortak interface'e dayalı bir işleme 
+yapabiliyoruz. Yani örneğin yukarıda ki gibi, araba olsun da ne olursa olsun. Araba çalıştırılır, sürülür, istop edilir vs.
+
+Yani burada arabanın ne olduğundan bağımsız biz bu kodu yazabiliyoruz. Yani üst katmandaki kodlar, alt katmandaki kodlara bağımlı
+hale gelmiyor, hepsi ortak bir interface'e göre yazılıyor. 
+ 
+Ama öyle durumlar var ki bazen iş işten geçtiği için, bazen durumu kurtarmak için, bazen mecburiyetten bizim nesnenin dinamik
+türünü bilmemiz gerekiyor.
+
+Yani örneğin şu sorunun cevabını almamız gerekiyor:"Buraya gelen araba Mercedes mi?" Mesela eğer Mercedes ise diğer sınıflarda
+olmayan ona özel bir fonksiyonu çağıracağız. İşte böyle durumlar için dilin önemli bir araç seti var. Bu araç setine ise
+"Runtime Type Identification/Information" deniyor.
+
+Yani bir nesnenin dinamik türünün ne olduğunun programın çalışma zamanında anlaşılması.
+
+	pseudo code :	if(p mercedes nesnesini gösteriyor ise onu mercedes olarak kullan) 
+
+	yani artık runtime'da biz onun mercedes olduğundan emin olacağız ve emin olunca Car sınıfından mercedes sınıfına bir dönüşüm
+	gerçekleştireceğiz.
+
+Türemiş sınıftan taban sınıfa doğru yapılan dönüşümlere up-castin deniyor. Up-casting bir operatör vasıtası ile  yapılabilir ama
+zaten örtülü dönüşüm var. Is-A relationship'ten dolayı her mercedes bir arabadır.
+
+Ama taban sınıftan türemiş sınıfa doğru yapılan dönüşüme down-casting deniyor. Bu dönüşümün runtime hatası olmaması için, 
+tanımsız davranış olmaması için bizim runtime'da örneğin yukarıdaki kodda, p'nin gerçekten bir mercedes nesnesini gösterdiğinden
+emin olmamız gerekiyor. Bunun runtime'da kontrolünü yapmamız gerekiyor.
+
+Burada kullanılan operatörler:
+	-dynamic_cast
+	-typeid
+	-std::type_info sınıfı
+
+
+dynamic_cast Operatörü
+----------------------
+
+Her ne kadar up-casting için de legal olarak kullanılsa da, down-casting dönüşümün güvenli bir şekilde yapılıp yapılamayacağını
+gösteren operatör. Diğer tür dönüştürme operatörüyle sentaksı aynı.
+
+	dynamic_cast<target type>(expr)
+
+dynamic_cast operatörü pointer semantiği ile yani hedef türün bir pointer türü, operand olan ifadenin bir pointer türü 
+olması ile. ya da  referans semantiği ile yani hedef türün bir referans türü, operandın da bir l value expr. olması
+şeklinde kullanılabiliyor. bir başka kullanım biçimi de hedef türün void* olması.
+
+hedef tür:
+-pointer
+-referans
+-void ptr
+
+
+	class Base {
+
+	};
+
+	class Der : public Base {
+
+	};
+
+	int main()
+	{
+		Der myder;
+
+		Base* baseptr = &myder;
+
+		dynamic_cast<Der*>(baseptr); // sentaks hatası, çünkü bir constraint var. operand olan türün polimorfik olması gerekiyor.
+
+	}
+
+
+////////////////////
+
+
+	class Base {
+	public:
+		virtual ~Base();	// artık polimorfik sınıf. virtual int foo(); filan da yazsak yine polimorfik sınıf olur.
+
+	};
+
+	class Der : public Base {
+
+	};
+
+	int main()
+	{
+		Der myder;
+
+		Base* baseptr = &myder;
+
+		auto p = dynamic_cast<Der*>(baseptr);	// artık sentaks hatası yok, çünkü polimorfik sınıf
+	  //Der*									
+	}
+
+
+--------------------------------------------
+
+Operatörün ürettiği değer:
+
+	Hedef tür pointer türü ise down-casting başarılı olursa o zaman hedef türden adres elde ederiz.
+
+	Eğer dönüşüm başarılı olmazsa, örneğin Der sınıfından bir nesneyi değil de başka bir sınıf türünden nesneyi gösteriyor ise
+	o zaman down-casting başarısız olacak ve null pointer değeri üretilecek.
+
+
+	int main()
+	{
+		Der myder;
+		Base* baseptr = &myder;
+
+		if(Der* der_ptr = dynamic_cast<Der*>(baseptr)) {	// bu şekilde yaparak da scope leakage engellemiş oluruz.bu modern 
+																not: c++ ile gelmedi zaten vardı.
+			// programın akışı buraya girerse anlıyoruz ki Der nesnesi
+			der_ptr->foo();	// artık eminiz, güvenle bu çağrıyı yapabiliyoruz.
+		}
+
+		if(Der* der_ptr = dynamic_cast<Der*>(baseptr); derptr != nullptr;) // bu if with initializer, C++17 ile dile eklendi.
+
+	}
+
+
+----------------------------------------------------
+
+
+	class A {
+		
+	};
+
+	class B  {
+		
+	};
+
+	int main()
+	{
+		A* ptr = new A;
+
+		static_cast<B*>(ptr);	// sentaks hatası
+	}	
+
+
+AMA eğer bunlar aynı hiyerarşi içerisindeyse static_cast ile yapılan dönüşüm geçerli.
+
+
+	class A {
+		
+	};
+
+	class B : public A {
+		
+	};
+
+	int main()
+	{
+		A* ptr = new A;
+
+		static_cast<B*>(ptr);
+	}	
+
+
+Fakat bu runtime'a yönelik bir saptama değil. Derleme zamanında legal ama, gerçekten runtime da operand olan pointer hedef
+türden bir nesneyi gösteriyor mu sorusunun cevabını vermiyor;
+
+	class A {
+		
+	};
+
+	class B : public A {};
+
+	class C : public A{};
+
+	int main()
+	{
+		B bx;
+
+		A* ptr = &bx;
+		C* cptr = static_cast<C*>(ptr); // kodun legal olması ptr'nin gösterdiği nesnenin bir C nesnesi olduğunun garantisi mi?
+										// - hayır.
+	}	
+
+Yani static_cast operatörü ile yaptığımız dönüşümün derleme zamanında geçerli olması(aynı sınıf hiyerarşisi içindeki sınıflar 
+arasında) bu legal ama gerçekten runtime'da operand olan pointer hedef türden bir nesneyi gösteriyor mu sorusunun cevabını 
+vermiyor.
+
+Bazı kodlarda böyle bir dönüşüm gerektiği için legalite sağlanıyor.
+
+Dynamic cast operatörünü kullanarak yapsaydık buradaki sınama runtime'da yapılacaktı.
+
+
+-----------------------
+
+#include "car.h"
+
+	// diğer araba sınıflarında olmayan, sadece volvo'da olan open_sunroof() fonksiyonu var.
+
+int main()
+{
+	for (int i = 0; i < 1000; ++i) {
+		Car* carptr = create_random_car();
+		std::cout << *carptr << '\n';
+
+		Volvo* vptr = static_cast<Volvo*>(carptr); // #
+		vptr->open_sunroof();
+
+		delete carptr;
+	}
+}
+
+
+bu kod legal ama bu kod doğru değil. programın akışı # noktasına geldiğinde bu nesne gerçekten Volvo değilse yani örneğin Fiat
+ise bu noktada tanımsız davranış olacak, runtime error olacak.
+
+
+////////////////////////
+
+Gerçekten Volvo olduğundan eminsem onun sunroof'unu açacaksam, o zaman down-casting'in güvenli bir şekilde yapılıp 
+yapılamayacağını sınamak için seçeneklerimden biri dynamic_cast operatörünü kullanmak.
+
+#include "car.h"
+
+	// diğer araba sınıflarında olmayan, sadece volvo'da olan open_sunroof() fonksiyonu var.
+
+int main()
+{
+	for (int i = 0; i < 1000; ++i) {
+		Car* carptr = create_random_car();
+		std::cout << *carptr << '\n';
+
+		if(Volo* vp = dynamic_cast<Volvo*>(carptr)) { // yanlış ise nullptr döndürür ve if bloğuna girmez. auto vp = .. de 	
+														 yazabiliriz
+			vp->open_sunroof();
+		}
+
+		delete carptr;
+	}
+}
+
+Virtual Dispatch'de olduğu gibi bunun da bir runtime maliyeti var tabiki.
+
+VolvoXC90'ı gösteriyorsa dynamic_cast nullptr mi üretecek? - hayır, yine down-casting başarılı olacak.
+
+
+
+Dynamic_cast'de hedef türü referans türü olarak da seçebiliriz fakat işlemin başarısız olması sonucu null referans diye birşey 
+yok. yani nullptr döndürmüyor çünkü pointer değil referans hedef tür. fakat null ref. diye birşey de yok. Burada o yüzden
+exception throw ediyor. Burada throw edilen exception'un türü 
+
+	int main()
+	{
+		for(int i = 0; i < 100; ++i) {
+			Car* carptr = create_random_car();
+			std::cout << *carptr << '\n';
+
+			try {
+				Volvo& vr = dynamic_cast<Volvo&>(*carptr);
+				vr.open_sunroof();
+			}
+
+			catch(const std::bad_cast& e) {		// catch(const std::exception& ex) ikisiyle de yakalayabiliriz.
+				std::cout << "exception caught : " << ex.what() << '\n';
+			}
+		}
+	}
+
+
+------------------------------------
+
+
+3 çeşit casting var:
+
+Up-Cast
+Down-Cast
+Side-Cast
+
+
+	class Base {
+		virtual void foo() {}
+	};
+
+	class Xder : public virtual Base {};
+
+	class Yder : public virtual Base {};
+
+	class Mder : public Xder, public Yder {};
+
+	int main()
+	{
+		Mder mder;
+
+		Xder& dx = mder;
+
+		[[maybe_unused]]
+		Mder& r_mder = dynamic_cast<Mder&>(dx);	//downcast
+
+		[[maybe_unused]]
+		Yder& ry = dynamic_cast<Yder&>(dx);	// sidecast
+
+
+	}
+
+Aslında dynamic_cast ile upcasting de yapabiliyoruz fakat o dönüşüm zaten örtülü olarak yapılıyor. down casting ve side casting
+örtülü olarak yapılmadığı için kullanıyoruz.
+
+Bir de void* türüne yapılan casting var.
+
+	class Base {
+	public:
+		virtual void foo();
+	};
+
+	class Der : public Base {};
+
+	class Erg : public Der {};
+
+	int main()
+	{
+		Base* ptr = new Erg; // Erg nesnesinin adresi ile Base nesnesinin adresi aynı değil mi? -Aynı olmak zorunda değil.
+		// yani. baseptr'nin Erg'i göstermesi demek aslında baseptr'nin değerinin fiziksel olarak erg nesnesinin adresi
+		olması demek değil. erg'in içindeki base'in adresini tutuyor.
+
+		void* vptr = dynamic_cast<void*>(ptr);	// doğrudan Erg nesnesinin adresini elde etmiş olduk
+	}
+
+
+
+
+----------------
+
+typeid Operatörü
+
+----------------
+Bu operatörü kullanabilmek için typeinfo başlık dosyasını include etmemiz lazım.
+
+Nasıl sizeof operatörünün operandı bir tür veya bir ifade olabiliyor ve 2 şekilde kullanılabiliyorsa (sizeof(10); sizeof(int))
+typeid operatörünün operandı için de bu geçerli.
+
+	typeid(10) veya typeid(int)
+
+
+typeid operatörünün dynamic cast operatöründen birinci farkı, operandı olan ifadenin ya da türün polimorfik tür olma mecburiyeti
+yok.
+
+typeid operatörü ile oluşturulan ifade aslında bir const l value referans. Peki hani türe const l value referans? 
+- std::type_info isimli sınıfı türünden bir referans. Yani typeid operatörü ile oluşturulan bir ifadeyi bir değişkene
+bağlamak istersem;
+
+	const std::type_info&r r = typeid(10);
+
+	auto & r = typeid(10);
+
+
+type_info sınıfı ilgin bir sınıf çünkü bu sınıftan bir nesne oluşturmanın tek yolu typeid operatörünü kullanmak.
+
+	int main()
+	{
+		using namespace std;
+
+		type_info x;	// sentaks hatası çünkü sınıfın default ctor'u yok.
+
+		type_info x = typeid(int);	// sentaks hatası, copy member'lar delete edilmiş durumda. onlar delete edilmiş olduğu için
+									   dolayısıyla move member'lar da yok
+
+	}
+
+
+Kala kala typeid operatörü kaldı o halde.
+
+typeid'nin bizi ilgilendiren 2 tane önemli member fonksiyonu var.  operator == ve operator !=
+
+	class Myclass {
+
+	};
+
+	int main()
+	{
+		using namespace std;
+
+		Myclass m;
+
+		typeid(m) == typeid(Myclass);
+		typeid(m) != typeid(Myclass);
+
+		//aynı türe ilişkin ise boolean true, farklı türlere ilişkinse boolean false değeri üretir.
+
+Sınıfın bir de name isimli bir fonksiyonu var.
+
+		typeid(Myclass).name();	//cstring döndürür. hangi tür olduğuna dair bir yazı döndürüyor. fakat bu yazı standard değil.
+								// derleyiciden derleyiciye değişiyor. yazı ==> class Myclass
+
+	}
+
+
+Ne işe yarayacak?
+-Eğer polimorfik bir tür söz konusu değilse, yani operand polimorfik değilse typeid operatörü ile eriştiğimiz typeinfo
+nesnesi dinamik türe değil, statik türe ilişkin. Yani örneğin şöyle bir kod yazsak;
+
+	class Base {};
+
+	class Der : public Base {
+
+	};
+
+	int main()
+	{
+		using namespace std;
+
+		Der myder;
+		Base* baseptr = &myder; // normalde şuanda baseptr nin gösterdiği nesne Der sınıfı türünden.
+
+		typeid(*baseptr).name();	// eğer burada polimorfik bir tür olsaydı, runtime'a ilişkin türe yönelik olacaktı. ama şuan
+									statik türe ilişkin. ekrana class base yazacak. oysa baseptr der nesnesini gösteiyor.
+	}
+
+
+Eğer sınıfı polimorfik hale getirip yine aynı kodları yazarsak bu sefer aynı kod "class Der" yazacak.
+
+
+
+
+
+
+
+
+
+
+
+
