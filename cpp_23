@@ -328,8 +328,8 @@ class Base {
 
 	};
 
-
-Private bölümü herkese kapalı sadece sınıfın kendisine açık. Fakat protected bölümü sınıfın kendi kodlarına açık, client'lara
+***
+  Private bölümü herkese kapalı sadece sınıfın kendisine açık. Fakat protected bölümü sınıfın kendi kodlarına açık, client'lara
 kapalı ancak kalıtım yoluyla elde edilecek sınıflara açık.
 
 Bir sınıfın protected bölümü olması bu sınıfın kalıtım niyeti olduğuna da delalet ediyor.
