@@ -1167,7 +1167,7 @@ peki base'in protected fonksiyonunu kendi public interface'ime eklemek istesem a
 	{
 		Der myder;
 
-		myder.foo(12); // legal değil, çünkü protected bölüme erişimim yok.
+		myder.foo(12);
 
 	}
 
