@@ -856,6 +856,18 @@ argümanın ne olduğunu? Bu şekilde yaptı ve baseptr->foo(5) olarak kodu impl
 Yani statik türe göre belirlendi, runtime ile hiçbir alakası yok.
 
 
+---------------------------
+*chatgpt*
+
+Çağrılan fonksiyon: Der::foo(int x = 77)
+Kullanılan varsayılan değer: Base::foo(int x = 5)'ten gelen x = 5
+
+Varsayılan argümanlar derleme zamanında sabitlenir.
+Virtual dispatch mekanizması sadece hangi fonksiyonun çağrılacağını belirler, varsayılan argümanı etkilemez.
+Bu yüzden Der::foo() çağrılır ama x = 5 kullanılır.
+
+---------------------------
+
 02.11
 
 -------------------
