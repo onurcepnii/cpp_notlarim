@@ -1,0 +1,677 @@
+typeid operatörünün dynamic_cast operatöründen birinci farkı - sadece polimorfik türler ile kullanılmak sınırı olmayışı.
+polimorfik olsun veya olmasın typeid operatörü ile kullanabiliriz.
+
+	int main(){
+
+		int x = 10;
+
+		auto& r = typeid(x);
+	}
+
+type_info nesnesini kullanmanın tek yolu typeid operatörü.
+
+
+
+bizi ilgilendiren üye fonksiyonları:
+
+	int main()
+	{
+		int x = 10;
+
+		typeid(x).operator==() // başka bir typeinfo nesnesi ile eşitliğe sokabiliriz, true veya false döner. polimorfik türe 
+		bir sınıfa ilişkin kullanılmıyorsa statik türü bize verir, eğer polimorfik sınıfa ilişkin kullanılırsa dinamik türü
+		bize verir.
+
+	}
+
+
+///////////////
+
+	class Base{};
+
+	class Der : public Base {};
+
+	int main()
+	{
+		Der myder;
+		Base* baseptr = &myder;
+
+		boolalpha(std::cout);
+
+		std::cout << (typeid(*baseptr) == typeid(Der)) << '\n';	// statik türe ilişkin bilgi verecek çünkü polimorfik değil.
+	}
+
+
+FAKAT
+
+
+	class Base{
+		virtual ~Base() = default;
+	};
+
+	class Der : public Base {};
+
+	int main()
+	{
+		Der myder;
+		Base* baseptr = &myder;
+
+		boolalpha(std::cout);
+
+		std::cout << (typeid(*baseptr) == typeid(Der)) << '\n';	// şuan polimorfik sınıf olduğu için dinamik türe ilişkin
+
+		typeid(*baseptr).name(); //derleyiciye bağlı olarak türe ilişkin bir yazı döndürür
+	}
+
+
+***
+ typeid operatörü unevaluated context oluşturur. işlem kodu üretilmez.
+
+ 	int x = 5;
+
+ 	std::cout << typeid(x++).name() << "\n";
+
+ 	std::cout << "x = " << x << '\n';
+
+
+
+----------------------------------
+
+	class Base{
+		virtual ~Base() = default;
+	};
+
+	class Der : public Base {};
+
+	int main()
+	{
+		Base* baseptr{};	// nulptr
+
+		try{
+			std::cout << typeid(*baseptr).name() << '\n';
+		}
+
+		catch (const std::exception& ex) {	// catch (const std::exception& ex)
+			std::cout << "exception caught: " << ex.what() << '\n';
+		}
+	}
+
+
+BUNU
+	UNUTMAYALIM
+nullptr'ı dereference etme ifadesi polimorfik sınıflar için bad_typeid sınıfı türünden bir exception gönderilmesine neden oluyor.
+
+
+-----------------------
+#include <typeinfo>
+#include <iostream>
+#include "car.h"
+
+	int main()
+	{
+		for(int i = 0; i < 1000; ++i) {
+			Car* carptr = create_random_car();
+			if(typeid(*carptr) == typeid(Volvo)) {	// bu bloğa girmesi zaten bu nesnenin Volvo olduğunun kanıtı
+				std::cout << *carptr << "\n";
+				Volvo* vptr = static_cast<Volvo*>(carptr);	// static cast yaparız çünkü zaten biliyoruz Volvo olduğunu
+				vptr->open_sunroof();
+				(void)getchar();
+			}
+		delete carptr;
+		}
+	}
+
+
+Derleyicilerde genelde RTTI switchleri olur. Kapatılıp açılabilir. Hatta çok eskiden genelde kapalıydı sonradan default olarak 
+açık haline getirildi.
+
+
+
+
+
+
+------------------------------------------
+
+			EXCEPTION HANDLING
+
+------------------------------------------
+
+Error handling denilen konunun alt başlıklarından birisi.
+
+Error'dan kast edilen ne?
+-Burada kast edilen "Runtime Error(s)" yani Runtime Hataları.
+
+Bir de "Programming Error(s)" var. Yani kod yanlış o yüzden kod beklenen işi yapamıyor. Böyle hataları runtime hatalarından
+ayırmak için Programming Errors deniyor. Programlama hataları ile baş etmenin tipik araç seti => assertions
+
+Assertion'ları da 2 ayrı kategoriye ayırıyoruz.
+	- Static Assertions		(compile-time assertions) -> compile time'da yapılan kontroller
+	- Dynamic Assertions	(runtime assertions)
+
+
+pre-conditions
+post-conditions
+invariants
+
+Fonksiyonlar söz konusu olduğu zaman, fonksiyon işini yaptığında oluşması gereken durum => post-conditions
+eğer bu durumu sağlayamıyorsa bu bir error demektir.
+
+örneğin vektör sona bir eleman ekleyecek. eğer fonksiyon bir nedenden dolayı bu post-condition'u sağlayamamışsa bu bir hata
+durumudur.
+
+pre-conditions'u ikiye ayırabiliriz;
+	
+	(a) fonksiyon çağırıldığında oluşması gereken durum oluşmuş mu?
+
+	(b)
+
+double sqrt(double)
+{
+	// eğer buraya gelen sayı eğer negatif bir gerçek sayıysa örneğin, fonksiyonun pre-conditionsu sağlanmamış demektir.
+	// bu da fonksiyonun işini yapmasına engel bir durum
+}
+
+pre-conditions sağlanmıyorsa, yani fonksiyonu çağıran kod bunu gerçekleştirememişse burada  hata işleme açısından 2 farklı 
+yaklaşım var. birisi "narrow contract", diğeri "wide/broad contract".
+
+narrow contract: "ben dökümante ettim, senin bu fonksiyona ( fonksiyonu çağıran kod ) negatif değer gelmemeliydi. sen buna
+uymak zorundasın, ben bunu bir hata olarak görmüyorum, işimi yapıyorum ve eğer negatif sayı gelirse de sonucuna katlanmak 
+zorundasın."
+
+wide veya broad contract: "hayır fonksiyonu çağırana bırakmıyorum,  fonksiyon pre-conditions'un sağlanıp sağlanmadığını kendisi 
+kontrol ediyor."
+
+***
+fonksiyonun çağırdığı fonksyionun pre-conditionlarından biz sorumluyuz.
+
+	double foo(double)
+	{
+		bar(x);
+	}
+
+Özetle
+	Error demek
+	(1) post-conditions'un net olmaması yani karşılanmaması.
+	(2) fonksiyon içinde yapılan fonksiyon çağrılarında kullanılacak argümanların pre-condition'u sağlayamaması
+	(3) narrow ya da wide contract kullanılıp kullanılmadığına bağlı olarak fonksiyona gelen argümanların fonksiyonun istediği
+	aralıkta ya da özellikte olmaması.
+
+Invariant(Değişmez) nedir?
+Tipik olarak sınıfların public üye fonksiyonları için geçerli bir kavram.
+
+Fonksiyon işini yapmadan önce sınıf nesnesinin geçerli durumunu biliyor, işini yaptıktan sonra sadece işini yapmakla kalmıyor
+sınıf nesnesinin geçerli durumunu (valid state) devam ettiriyor, bundan emin.
+
+In-valid state ne olabilir? Örneğin;
+
+	size_t msize;
+	Node* pfirst;
+
+	void list::push_back(T x)
+	{
+		//..
+	}
+
+	örneğin liste boşsa pfirst pointeri null olacak ve msize 0 olacak. peki eğer biz bu operasyonda  bu invariantları 
+	koruyamıyorsak, işi yaptığımızda invarianlat hold etmiyorsa artık o sınıf nesnesi valid (geçerli) bir durumda olmayacak.
+
+
+Error = pre-conditionların, post-conditionların sağlanamaması ya da invariantların artık bir valid state'i işaret edecek halde
+tutulamaması.
+
+
+
+Error Handling
+==============
+
+Fonksiyonun üstlendiği görevi yapamadığı ve lokal olarak baş edemediği durumlara error denir. Burada kendisini çağıran kodların
+haberdar edilmesine "Error Handling" diyoruz.
+
+Bunu da 2'ye ayırmamız gerekiyor;
+
+(1) Traditional Error Handling
+(2) Exception Handling
+
+
+
+(1) Traditional Error Handling
+------------------------------
+-Fonksiyonun işini yapamaması durumunda, işini yapamadığına ilişkin bir hata değerini kendisini çağıran koda geri dönüş
+mekanizması ile iletmek.
+
+	int do_sth(params);	// örneğin atıyorum bu fonksiyonun geri dönüş değeri -1 ise işini yapamamış demektir.
+	FILE* fopen(params);
+
+-Diğer yöntem; global bir hata değişkeni olur ve bir fonksiyon bir hataya düşüp işini yapamadığında geri dönüş değerini
+kullanmak yerine ya da her ikisi birden gider errno değişkenini belirli bir değerle set eder. Böylece fonksiyonu çağıran kod,
+fonksiyonu çağırdıktan sonra errno değişkeninin değerine bakar, eğer 0 değilse(default hatasız durumu 0'dır) çağırdığı 
+fonksiyonun bunu set ettiğini anlar. Hatta errno'nun hangi değerle set edildiğine bağlı olarak hatanın ne ile ilgili olduğunu da 
+anlayabilir.
+
+
+tamam da burada (Traditional Error Handling) kötü olan ne?
+
+-forcing(zorlayıcı) bir mekanizma değil [yani fonksiyon işini yapamadım diyor fakat istersek duymayız bile. örneğin nullptr 
+döndürür hata vermek yerine]
+-ortalık if deyimi kaynıyor (buna bir örnek if deyimleri test sürecini uzatıyor.. her if yeni bir test case demek)
+- call chain:	f1 => f2 => f3 => ........ => f18 => f19 diyelim ki f19 da hata meydana geldi. kendini çağıran koda bunu iletecek
+fakat kendisini çağıran kod da f18 ve onu da çağıran başka bir kod. bu böyle böyle yukarıya gidiyor. 
+
+	Öyle birşey olsun ki f19 
+		işini yapamadığını anladığı zaman yukardaki kodları bu durumdan haberdar etsin ama programın 
+					çalışma zamanında programın akışı
+							hatayı tespit eden koddan hataya müdahale edecek koda göndermesi.
+	Örneğin f19'da bir hata olunca programın akışı runtime'da f1'e gitsin ve 10 yerde if deyimi olmak yerinde sadece hata olup
+	olmadığını anlamak f1'de ki bir kodda olsun. bu da testi son derece kolaylaştıracak.
+
+-hata işleyen kod ile iş gören kod iç içe geçmiş durumda
+-programın akışı bir hata olması durumunda hatayı tespit eden koddan hatayı işleyen koda doğrudan yönlendirilmiyor. herkes
+kendisini çağırana hata durumunu bildiriyor.
+-geri dönüş değeri ile yapılan bu mekanizmada constructor'da hata varsa ne olacak? constructor'un geri dönüş değeri mekanizması
+yok.
+-operator overloading. örneğin s1 + s2 diyelim ki gerçekleştirilemedi. ne yapacağız?
+
+
+Exception Handling
+==================
+
+	throw statement
+
+	try(try block)
+
+	catch block(s)
+
+try bloğu aslında semantik olarak: bu blok içinde runtime'da çalışan kodlardan biri bir exception gönderirse ben buradaki kodla
+bu exception'a müdahale etmek istiyorum anlamında.Ama gerçekte exception'u handle eden yani  exception'a müdahale eden kodu
+oluşturmak için catch anahtar sözcüğü ile oluşturulan blok ya da  blokları kullanıyoruz.
+
+to throw an exception nedir?
+----------------------------
+hata nesnesi gönderme diyebiliriz. 
+
+call chain'de ki bir fonksiyon error durumuna düştüğü zaman, error'a işaret eden bir hata nesnesi oluşturuyor. bu çok büyük
+çoğunlukla bir sınıf nesnesi(ancak olmak zorunda değil sentaks açısından). hatta çoğunlukla polimorfik bir sınıf nesnesi.
+bu sınıf nesnesi yukardaki kodlara gönderiliyor ve içinde try bloğu olan kodlardan biri bu hatayı yakalıyor veya yakalamaya
+çalışıyor. hatayı yakalarsa programın akışı exception'u throw eden koddan exception'u catch eden koda, ilgili catch bloğuna
+çekiliyor.
+
+
+	void foo()
+	{
+		//
+		// throw expr;
+	}
+
+	int main()
+	{
+		FILE* f = fopen("notexists.txt", "r");
+
+		perror("hata");
+
+		if(f == nullptr) {
+			printf("cannot open file\n");
+		}
+
+		fclose(f);
+	}
+
+
+throw ile nesnenin kendisi gönderilmiyor. yani örneğin;
+
+	void foo()
+	{
+		int x = 5;
+
+		throw x;
+		//int exception_object; derleyici oluşturacak diyelim. bu nesne değerini throw expression'dan alacak. yani üstteki ifade
+		// ve yukardaki katmanlara gönderilen nesne derleyicinin oluşturduğu nesne olacak.
+	}
+
+burada gönderilen x nesnesinin kendisi değil. throw ifadesi her zaman derleyicinin oluşturduğu hata nesnesini init. etmekte
+kullanılıyor.
+
+forcing bir mekanizmadır. eğer gönderilen hata nesnesi daha üst katmanlardan birinde yakalanmaz ise bu duruma yakalanamayan
+hata nesnesi anlamında "Uncaught Exception" denir. Bu durumda std kütüphanenin bir std fonksiyonu çağırılıyor. bu fonksiyonun
+ismi = std::terminate
+
+bu fonksiyon programı sonlandıran bir fonksiyondur. Eğer gönderilen bir hata nesnesi bilerek veya bilmeyerek yakalanmaz ise 
+std::terminate çağırılır ve program sonlandırılır.
+
+fakat burada bir de customization point'imiz de var. normalde std::terminate fonksiyonunun bir default davranışı var. bu default
+davranış std kütüphanenin C'den gelen abort() fonksiyonunu çağırmak. (abort fonksiyonu hiçbir önlem almadan programı anında 
+sonlandıran fonksiyon), exit ile karışmasın. exit normal termination fonksiyonu, abort abnormal termination fonksiyonu)
+Yani o halde biz hiçbir customization noktasından istifade etmemişsek terminate'in çağrılması demek abort'un çağrılması demek.
+
+	void foo()
+	{
+		std::cout << "foo called\n";
+		throw 1;
+		std::cout << "foo is still running\n";z
+	}
+
+	int main()
+	{
+		foo();
+	}
+
+foo called		ardından abort edilecek. std::terminate  abort'u çağırdı. çünkü customization yapmadık.
+
+terminate'in default davranışı değiştirmek için ismi set_terminate olan bir fonksiyonumuz var.
+
+Exception başlık dosyasında bir type-alias var. bu type-alias bir function pointer'a ilişkin.
+
+	using terminate_handler = void(*)();	// geri dönüş değeri olmayan, parametresi olan bir fonksiyon adresi türü
+	typedef void (*terminate_handler)();
+
+Exception başlık dosyası aynı zamanda bize set_terminate() isimli bir fonksiyon da sunuyor.
+	
+	terminate_handler set_terminate(terminate_handler)	// yani benden bir function pointer istiyor
+
+Örnek;
+
+	void my_terminate()
+	{
+		std::cout << "my_terminate called\n";
+		std::exit(EXIT_FAILURE);
+	}
+
+	void foo()
+	{
+		std::cout << "foo called\n";
+		throw 1;
+		std::cout << "foo is still running\n";
+	}
+
+	int main()
+	{
+		auto fptr = std::set_terminate(my_terminate);
+		foo();
+	}
+
+
+OUTPUT:
+		foo called
+		my_terminate called!
+
+
+set_terminate
+get-set yapıyor. yeni adresi set ediyor, eskisini get ediyor. set_terminate çağırılmadan önce hangi fonksiyonu çağırıyorsa
+fptr'ye onun adresini verir.
+
+
+Modern Cpp'de bir de get_terminate eklendi. En son set edilmiş terminate_handler hangisi ise onun adresini döndürüyor. Eğer 
+herhangi bir terminate fonksiyonu set edilmemişse o zaman da null pointer döndürür.
+
+	terminate_handler get_terminate();
+
+
+---------------------------
+
+Hata nesnesinin yakalanmaması durumunda(uncaught exception) forcing mekanizma programın sonlandırılması
+-Bazen kasıtlı olarak bu durumun olmasını isteyebiliyoruz fakat büyük çoğunlukla istemiyoruz.
+
+
+
+Exception handling iki ayrı biçimde kullanılıyor. 
+	Birincisi -> resumptive handling ( çoğunluk senaryosu ), hatadır olur diyoruz, programın çalışmasını devam ettiriyoruz.
+	İkincisi  -> terminative , program bir hataya düştüğünde o hatayı recovery yapılabilecek bir düzeyde bir durum olmayabilir.
+
+
+Tipik olarak yapmamız gereken exception'u yakalamak, exception'u yakaladığımızda;
+	(a) program in a valid state
+	(b) gerekli önlemler alınarak, bir kayıp olmadan mümkünse veya minimal olarak, program sonlanacak
+
+
+
+
+Exception'u Nasıl Yakalarız?
+============================
+***
+ try block bir scope oluşturur.
+
+try keyword ile bir block oluşturuyoruz. try block şu anlama geliyor: bu blok içinde çalışan kodlardan biri exception throw
+ederse ben bu hatayı burada yakalama niyetindeyim.
+
+	void baz()
+	{
+		foo();
+	}
+
+	void bar()
+	{
+		baz();
+	}
+
+	int main()
+	{
+		try {
+			bar();
+		}
+		catch(int) {
+
+		}
+	}
+
+
+catch de bir block. o da bir scope belirtir. hem try hem de catch block içinde oluşturduğumuz isimleri sadece o block'larda
+kullanabiliriz. Not: try ve catch block ayrı ayrı.
+
+1 tane catch parametresi olacak, birden fazla veya az olamaz. 
+
+tip:eğer catch parametresini o block'ta kullanmayacaksak parametreye
+isim vermeyelim
+
+
+try bloğunu izleyen birden fazla catch bloğu olabilir fakat bu durumda catch parametreleri farklı türden olmak zorunda.
+
+	void foo()
+	{
+		std::cout << "foo called \n";
+		throw 1;
+	}
+
+	int main()
+	{
+		try {
+			foo();
+		}
+
+		catch(int) {
+			std::cout << "exception caught catch(int)\n";
+		}
+
+		catch(double) {
+			std::cout << "exception caught catch(double)\n";
+		}
+
+		catch(char) {
+			std::cout << "exception caught catch(char)\n";
+		}
+
+		std::cout << "main devam ediyor\n";
+	}
+
+
+Eğer try bloğu içinde çalışan kodlardan biri bir exception throw ederse, gönderilen exception nesnesinin bir türü var.
+try bloğunu izleyen catch bloklarından biri exception nesnesinin türüyle aynı türden parametreye sahipse, programın akışı
+runtime'da exception'un handle edilmesi için bu bloğun içine girecek. daha sonra alttan devam eder.(main devam ediyor kısmı)
+
+nesnenin değerini de kullanabiliriz;
+
+	catch(int x) {
+		std::cout << "exception caught catch(int x) x = " << x << "\n";
+	}
+
+***
+Çok kısıtlı bir conversion söz konusu: türemiş sınıftan taban sınıfa yapılan dönüşüm.
+
+
+	class Base {
+
+	};
+
+	class Der : public Base {
+
+	};
+
+	int main()
+	{
+		try {
+			bar();
+		}
+		catch(const Base&) {
+			std::cout << "exception caught catch(Base&)\n";
+		}
+		std::cout << "main devam ediyor \n";
+	}
+	
+Sadece bu durumda conversion var. diğer durumlarda yok. Türemiş sınıf türünden gönderilen hata nesnelerini, taban sınıf türünden
+bir catch parametresi ile yakalayabiliriz.
+
+
+-----------------------
+
+throw ifadesi ile aslında gönderilen hata nesnesi ile birlikte biz kodlara iki farklı biçimde bilgi vermiş oluyoruz.
+	(1)
+	birincisi doğrudan throw edilen nesnenin türü.
+
+	(atipik uygulamalara bakmazsak) tipik olarak throw ifadeleri bu iş için özel olarak oluşturulmuş yani exception
+	handling de kullanmak amaçlı oluşturulmuş sınıflar türünde olacak. 
+	dolayısıyla örneğin;
+
+		class MathException {
+
+		};
+
+	bu sınıfın varlık nedeni exception handling de kullanılacak olması. ve eğer throw edilen exception bu türdense isminin de
+	ima ettiği gibi söz konusu hatanın örneğin matematik ile olduğu anlamına geliyor. yani birinci bilgiyi zaten türü ile vermiş
+	oluyoruz.
+
+
+	class FileReadError {
+	public:
+		std::string get_file_name()const;
+		int get_line_no()const;
+	};
+
+	örneğin bu şekilde bir sınıf da olabilir. hangi dosyayı okurken hata olduğu, kaçıncı satırı okurken hata olduğunu içinde
+	barındırıyor göründüğü gibi.
+
+
+---------------------------------
+
+1.gönderilen hata nesnesinin std::exception türünden olması. std kütüphanenin exception handling'de kullanılacak sınıfların taban
+sınıfları ve polimorfik bir sınıf. 
+
+dolayısıyla standard kütüphane diyor ki: ben size şu garantiyi veriyorum : eğer bir exception u bir std kütüphanenin bir 
+fonksiyonu gönderiyorsa ya da std kütüphanenin bir operatörünün kullanılması sonucunda o exception gönderiliyorsa mutlaka ve
+mutlaka bu exception ya std exception türünden olacak ya da  yine std exception türünden olacak ama Is-A relation olarak yani
+kalıtım yoluyla std::exception dan kalıtım yoluyla elde edilen sınıflardan birinden olacak.
+
+bu da şu demek; eğer siz bir try bloğu oluşturup std kütüphanenin gönderdiği hatalardan hangisi olursa olsun onu yakalamak 
+istiyorsanız bunun garantili yolu en tepedeki taban sınıf türünden catch parametrenizin olması.
+
+	try {
+
+	}
+
+	catch(std::exception &ex) {
+
+	}
+
+
+gönderilen hata nesneleri atipik senaryolar söz konusu olmaz ise, her zaman referans semantiği ile yakalanıyor. yani eğer catch 
+parametresi l-value referans türünden değilse ortada atipik bir senaryo vardır. dolayısıyal exception handling eden kodu 
+yazacaksak %99 yazmamız gereken parametrenin l value ref. olması.
+
+yine çok büyük çoğunlukla yakaladığımız hata nesnesi üzerinde set işlemi yapmıyoruz.(yapabiliriz ama yapmıyoruz genelde)
+eğer böyle bir durum söz konusu değilse parametreyi mutlaka const yapmalıyız.
+	
+	catch(const std::necexception &ex) {
+
+	}
+
+
+Exception sınıfının ismi what olan ve const char* döndüren bir virtual function'ı var. Bu şu demek: türemiş sınıflar bu 
+fonksiyonu  override ediyorlar. ve:
+	
+		catch(const std::exception &ex) {
+			ex.what();	// virtual dispatch devreye girer. gönderilen hata nesnesi örneğin std::exception sınıfından türetilen
+						// logicerror sınıfı türündense onun override'ı çağırılacak. veya logicerror sınıfından türetilen başka
+						// bir sınıftan ise onun override'ı çağırılacak.
+		} 
+
+***
+ diyelim ki biz kendi exception sınıfımızı yazıyoruz. örneğin base sınıf Exception Base, alt sınıfları MathExcept, 
+ DivideByZeroError olsun.
+bu şu demek: exception'U yakalamaya aday kodu yazan programcı olarak eğer exception base'den kalıtım yoluyla elde edilen
+herhangi bir sınıf türünden exception'u yakalamak istersem, parametresi ExceptionBase türünden olan catch kullanıcam.
+
+Eğer sadece MathExcept türünden hataları yakalamak istersem parametreyi o türden veya sadece DivideByZeroError için o türden
+parametre yazacağım.
+
+Bunların hepsi bir arada da olabilir fakat yukarıdan aşağıya doğru doğru şekilde yerleştirmek lazım.
+
+
+
+	//string sınıfının at() isimli fonksiyonu aslında geçersiz index olması durumunda std kütphanenin outofrange sınıfı türünden
+	exception gönderir. hatta [] operatör fonksiyonu indeksin geçersiz olması durumunda exception throw etmiyor, tanımsız 
+	davranış oluşturuyor. fakat at() fonksiyonu öyle değil, yukarıda açıkladığımız gibi hareket ediyor.
+
+	#include <string>
+
+	void foo(std::size_t idx)
+	{
+		std::string name{"onur cepni"};
+
+		auto c = name.at(idx);
+	}
+
+	int main()
+	{
+		foo(56);	//exception gönderir fakat yakalanamaz, uncaught exception ile terminate, terminate ise abort'u çağırır.
+		
+		//fakat diyelim ki;
+
+		try {
+
+		}
+
+		catch (const std::exception &ex) {	// std::logic_error veya std::out_of_range ile de deneyebiliriz. 
+			std::cout << "exception caught: " << ex.what() << '\n';
+		}
+
+		catch (const std::out_of_range& ex) {
+		    // En özel istisna
+		}
+		catch (const std::logic_error& ex) {
+		    // Daha genel bir istisna (std::out_of_range, std::logic_error'dan türemiştir)
+		}
+		catch (const std::exception& ex) {
+		    // En genel istisna (std::exception, tüm standart istisnaların temel sınıfıdır)
+		}
+	}
+
+
+***
+ Gönderilen hata nesnesinin referans semantiği ile yakalanması 2-3 nedenden dolayı çok önemlidir.
+
+ 		catch(MyException ex) {
+
+ 		}
+
+ 		// örneğin bu yazım eleştirilere maruz kalır. temelde yanlış olarak kabul edilir.
+		
+		Neden?
+		-MyException türü polimorfik bir sınıf türü ise burada "object slicing" gerçekleşecek. Yani dinamik türü zaten
+		kaybedilecek.
+		-bu sınıf için copy ctor çağırılacak, bunun bir maliyeti var/olabilir. çağırılan copy ctor'un kendisi de bir fonksiyon.
+		onun da exception throw etme ihtimali var.
+
+**NOT: referans olarak kullansak türetilmiş sınıfın özellikleri korunacak fakat referans değil de copy construct ettiğimiz için
+(inherit class'tan base class'a doğru) türetilmiş sınıfın bazı özellikleri slice edilecek yani gidecek. sadece bu bile bu şekilde
+catch kullanmamak için yeterli.
+
+
+
+
