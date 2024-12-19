@@ -531,7 +531,7 @@ _________________
 				// yani böyle olmuş olur ==> const int &r = x;
 
 ** int ar[5] = {1,2,3,4,5};
-   auto &x = ar;		// array decay uygulanır. &ar[0] olur. bu ifadenin türü adresi türüdür.
+   auto &x = ar;		// array decay uygulanmaz.
 				// bu ifade için yapılan tür çıkarımı ==> int(&)[5]. Yani şöyle olmuş olur ==> int(&r)[5] = ar;
 
 
@@ -567,8 +567,8 @@ _________________
 
 
 ***	int foo(int);
-	auto &r = foo;	// bu durumda foo için function decay uygulanmaz. foo ifadesinin türü int(int) olur.
-			// bu durumda auto için yapılan tür çıkarımı int(int).
+	auto &r = foo;	// bu durumda foo için function decay uygulanmaz. foo ifadesinin türü int(&r)(int) olur.
+			// bu durumda auto için yapılan tür çıkarımı int(&r)(int).
 
  	yani yerine koyarsak ==> int(&r)(int) = foo; Bu durumda r demek foo demek olmuş olur **
 	
