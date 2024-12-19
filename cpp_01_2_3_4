@@ -679,7 +679,7 @@ türüne bağlanıyor.
 |					 |
 |	T&	&	==>	T&	 |
 |	T&	&&	==>	T&	 |	
-|	T&	&	==>	T&	 |
+|	T&&	&	==>	T&	 |
 |	T&&	&&	==>	T&&    --|--> Sadece burada T&& oluşuyor.	
 |					 |
 |					 |
