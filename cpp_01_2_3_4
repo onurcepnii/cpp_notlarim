@@ -643,7 +643,7 @@ auto &&r = x;					auto &&r = 20;
 	
 auto için yapılan çıkarım ne?			
 						
-cevap : int&					cevap : int
+cevap : int&					cevap : int&&
 
 
 Yani R-Value ile ilk değer verirsek auto için yapılan çıkarım int olduğu için r R-Value referansı olacak.
