@@ -1,0 +1,1385 @@
+
+Standard kütüphanenin gönderdiği bütün exception'lar polimorfik bir sınıf hiyerarşisi içinde. en tepede std::exception isimli bir sınıf var. ve onun altında farklı farklı sınıflar var.
+
+Bazı exceptionlar operatatör seviyesindeki işlemlerin gönderdiği exceptionlar. örneğin new ifadesi kullandığımızda, operatör new'in başarısız olması durumunda gönderilen std::bad_alloc gibi.
+
+		std::exception
+
+std::bad_type_id	std::bad_alloc	// bunlar doğrudan exception sınıfından kalıtılıyor.
+
+
+-------------------
+
+TEKRAR - ÖZET
+
+eğer gönderilen bir exception varsa, bunu gönderen bir throw statement. 
+
+bu exception yakalanmazsa bu duruma un-caught exception denir. std kütüphanenin terminate fonksiyonu çağırılır. terminate ise std::abort()'u çağırır. terminate'in davranışını customize etmek istersek set_terminate() fonksiyonunu kullanarak kendi terminate handler'ımızı kaydedebiliriz.
+
+-------------------
+
+f1 ==> f2 ==> f3 ==> 		f20
+
+bir fonksiyonun içinde gönderilen exception fonksiyonun içinde handle ediliyor. 
+
+yani fonksiyon onu yakalıyor, handle ediyor ve fonksiyonun çalışması devam ediyor. ama eğer bu exception fonksiyonun içinde yakalanmazsa fonksiyondan dışarı çıkıyor.
+
+bir exception'un fonksiyon tarafından yakalanmadan muhtemelen call chain'de daha yukarıdaki fonksiyonlar tarafından yakalanabilecek şekilde fonksiyondan dışarı çıkması için kullanılan terimler:
+
+//emit (bazen kullanılan fiil bu)
+//exception propagate
+
+	#include <iostream>
+	#include <exception>
+	#include <stdexcept>
+
+	void foo()
+	{
+		throw std::runtime_error("error");
+	}
+
+	void bar()
+	{
+	    try{
+	        foo();
+	        //
+	    }
+	    catch (const std::exception& ex) {
+	        std::cout << "exception caught: " << ex.what() << "\n";
+	    }
+	}
+
+	int main() {
+	    bar();
+	}
+
+NOT : exception sınıflarının (hiyerarşideki sınıflar kast edliyor) bazılarının default constructor'u yok, bazılarının var. örneğin runtime_error'un default ctor'u yok, ya bir std::string ya da const char* ile initialize, construct edeceksiniz. bazı exception sınıfları için bu mecburi.
+
+
+Catch-All Bloğu
+---------------
+
+Peki gönderilen herhangi bir exception'u, türü ne olursa olsun yakalamak mümkün mü?
+-Evet, dilin buna ilişkin bir aracı var. Bu araca "catch all" bloğu veya parametresi deniyor. Hangi türden exception olursa olsun yakalamak anlamında. Sentaks biraz farklı. parantez içinde elipsis atomunu kullanıyoruz(...).
+
+(... ==> bu c++ dilinde bir token, 3 nokta. c'de sadece variadic fonksiyonlarda ve variadic makrolarda karşımıza çıkıyordu.)
+
+	try{
+		bar();
+	}	
+
+	catch(...) { // gönderilen hata nesnesi hangi türden olursa olsun yakalayacak.
+
+	}
+
+
+Catch All bloğu kullanıyorsak, bunun en son blok olması gerekir. Çünkü en başa koyarsak her hatayı ilk o yakalayacağı için hatanın diğer catch bloklarına girme ihtimali kalmaz. 
+Yani ya son blok olacak ya da tek başına tek blok olacak.
+
+
+ÖNEMLİ**
+	Gönderilen bütün exceptionları yakalamak mümkün olmayabilir. Çünkü en fazla main fonksiyonunun bütün kodunu bir try bloğu içine alabiliriz. Çünkü statik ömürlü sınıf nesnelerinin (mesela sınıfların statik veri elemanları) constructorları programın akışı main fonksiyonuna girmeden çalışıyor. Dolayısıyla onların ctor'larından gönderilen exceptionları main fonksiyonun içinde dahi yakalamak mümkün değil.
+
+	Dolayısıyla main bloğunun bütün ana bloğunu dahi try bloğu olarak kullansak gönderilen tüm exceptionları yakalayabilme garantisi yok.
+
+	En doğrusu global/statik ömürlü nesnelerden:
+	(a) uzak durmak
+	(b) onların ctorunun exception throw etmeyeceğinden emin olmak veya bunu normal bir durum olarak kabul etmek
+
+
+-----------------------------------------------
+
+
+
+
+Exception'u Neden Yakalıyoruz?
+-------------------------------
+Yani exceptionu yakaladığımızda ne yapıyoruz?
+
+En tipik hata şu:
+	Exception handling mekanizmasını geleneksel hata işleme metodolojisi gibi kullanmak.
+
+Ana fikir her zaman şu : Eğer yakaladığımızda ne yapacağımız konusunda bir fikrimiz yoksa o hataya müdahale etmek için bir fikrimiz yok demektir ve o zaman o hatayı yakalamayacağız. Bırakacağız başkası yakalasın, sorumluluk kimde ise o yakalasın.
+
+Yani exception gönderme ihtimali olan herhangi bir fonksiyona çağrı yaptığımızda o fonksiyonun çağrıldığı yerde o exception'u yakalamak zorundayız veya yakalamalıyız gibi yanlış bir algı olmasın.
+
+***
+	Dolayısıyla: Yapacak bir şeyin yoksa yakalama!
+
+
+
+Peki yakalayan, yakalayınca ne yapıyor tipik olarak?
+
+(1) terminative bir yaklaşım. exception yakalanır, gerekli bazı önlemler alınır ve program sonlandırılır.
+
+(2) exception yakalanır ve handle edilir. yani nerede yakalanıyorsa orada gerekli işlemler yapılır. resumptive bir yaklaşım söz konusudur.
+
+//rethrow | translate
+(3) exception yakalanır ve kısmen müdahale edilir ve exception tekrar gönderilir. işte gönderilen hata nesnesini yakalayıp kendi sorumluluğumuza ilişkin birşeyler yapıp, geri kalanını da yukarıdaki kodlara bırakabilir ve tekrar gönderebiliriz.
+Fakat exceptionu rethrow etmek başka translate etmek başka. Bu translate, rethrow değil. rethrow aynı exception nesnesini göndermektir.
+
+
+aşağıdaki kod bir rethrow statement değil.
+
+	#include <exception>
+	#include <stdexcept>
+
+	void foo()
+	{
+		throw 12;
+	}
+
+	void bar()
+	{
+		try {
+			foo(23);
+		}
+		catch (int& r) {
+			std::cout << "exception caught in function bar\n";
+			std::cout << "&r = " << &r << "\n";
+			throw r; 	//*** buraya focus
+		}
+	}
+
+	int main()
+	{
+		try {
+			bar();
+		}
+		catch (int& r) {
+			std::cout << "exception caught in main\n";
+			std::cout << "&r = " << &r << "\n";
+		}
+	}
+
+yazdırılan adresler farklı, yani rethrow etmiş olmadık.
+
+işte böyle olursa rethrow statement:
+
+
+	#include <exception>
+	#include <stdexcept>
+
+	void foo()
+	{
+		throw 12;
+	}
+
+	void bar()
+	{
+		try {
+			foo(23);
+		}
+		catch (int& r) {
+			std::cout << "exception caught in function bar\n";
+			std::cout << "&r = " << &r << "\n";
+			throw; 	//*** buraya focus
+		}
+	}
+
+	int main()
+	{
+		try {
+			bar();
+		}
+		catch (int& r) {
+			std::cout << "exception caught in main\n";
+			std::cout << "&r = " << &r << "\n";
+		}
+	}
+
+
+yani throw anahtar sözcüğü tek başına olacak ve onun yanında terminator atomu kullanılacak. şuan gösterilen nene adresi aynı, bu demek oluyor ki aynı hata nesnesini gönderdik ve rethrow yapmış olduk.
+
+
+***
+  O halde aslında diyebiliriz ki bizim 2 tane ayrı throw statementimiz var.
+
+  	throw expr;		// throw statement - yeni bir exception nesnesi oluşturup onu throw eder, dinamik tür kaybolur
+  	throw;			// rethrow statement - derleyicinin oluşturduğu exception nesnesinin kendisini throw eder
+
+
+Bu neden önemli?
+-Çünkü rethrow statementta aynı nesneyi gönderdiğimiz zaman bu polimorfik türü kaybetmiyoruz.
+
+	#include <exception>
+	#include <stdexcept>
+
+	void foo(int x)
+	{
+		throw std::out_of_range("out of range error\n");
+	}
+
+// hatırlatma: out_of_range, logic_error'den, logic error ise std::exception'dan kalıtım yoluyla elde edilmiştir.
+	
+	void bar()
+	{
+		try {
+			foo(23);
+		}
+		catch (const std::exception& ex) {
+			std::cout << "exception caught in bar()" << ex.what() << "\n";
+			throw ex; // !!! not rethrow. bu throw statementı kullandığımız zaman gönderilen hata nesnesinin hayatı bitiyor ve bu 
+			türden yeni bir hata nesnesi oluşturmuş oluyoruz. Dolayısıyla artık dinamik tür kayboluyor.
+		}
+	}
+
+	int main()
+	{
+		try {
+			bar();
+		}
+		catch(const std::out_of_range& ex) {
+			std::cout << "exception caught in main out_of_range: " << ex.what() << "\n";
+			std::cout << "&r = " << &r << "\n";
+		}
+		catch (const std::exception& ex) {
+			std::cout << "exception caught in main std::exception : " << ex.what() << "\n";
+		}
+	}
+
+
+
+şimdi kodu değiştirelim.
+
+
+	#include <exception>
+	#include <stdexcept>
+
+	void foo(int x)
+	{
+		throw std::out_of_range("out of range error\n");
+	}
+
+// hatırlatma: out_of_range, logic_error'den, logic error ise std::exception'dan kalıtım yoluyla elde edilmiştir.
+	
+	void bar()
+	{
+		try {
+			foo(23);
+		}
+		catch (const std::exception& ex) {
+			std::cout << "exception caught in bar()" << ex.what() << "\n";
+			throw; // !!! rethrow
+		}
+	}
+
+	int main()
+	{
+		try {
+			bar();
+		}
+		catch(const std::out_of_range& ex) {
+			std::cout << "exception caught in main out_of_range: " << ex.what() << "\n";
+			std::cout << "&r = " << &r << "\n";
+		}
+		catch (const std::exception& ex) {
+			std::cout << "exception caught in main std::exception : " << ex.what() << "\n";
+		}
+	}
+
+-----------------------------------------------------------------------------
+
+rethrow statement'in catch bloğu içinde olması gerekli/zorunlu değil.
+
+		void bar()
+		{
+			std::cout << "bar called\n";
+			throw;
+		}
+
+		void func()
+		{
+			throw std::out_of_range("error");
+		}
+
+		void foo()
+		{
+			try{
+				func();
+			}
+			catch(const std::out_of_range& ex){
+					std::cout << "exception caught: " << ex.what() << "\n";
+					bar();
+			}
+		}
+
+		int main()
+		{
+				try{
+					foo();
+				}
+				catch(const std::out_of_range& ex){
+						std::cout << "exception caught: " << ex.what() << "\n";
+				}
+		}
+
+***
+  Burada sorulması gereken soru : İyi de bar() fonksiyonu bir catch bloğu tarafından değil de doğrudan çağırılırsa ne olur?
+
+Bu fonksiyonun sadece catch bloğundan çağırılması lazım.
+
+Burada dilin bir kuralı devreye giriyor: rethrow statement yürütüldüğünde ortada gönderilmiş bir exception nesnesi yoksa doğrudan terminate fonksiyonu çağırılır.
+
+-----------------------------------------------------------------------------
+
+Basic Guarantee
+---------------
+
+Exception'u yakaladığımız zaman:
+- ya tamamen handle edeceğiz,
+- ya programı sonlandıracağız,
+- ya rethrow edeceğiz, kısmi müdahale edip daha yukarıdaki katmanlara aynı exceptionu göndermek için,
+- ya da başka bir kendimize uygun, client'lara uygun, muhtemelen daha yüksek seviyede başkab bir exception göndereceğiz.
+
+
+Exceptionu yakaladığımız zaman program valid state'da kalmalı. yoksa program kaynak ya da kaynakları sızdırırsa, ya da program
+geçerli state'ini kaybederse ( örneğin: exceptionu yakaladık fakat exceptionu yakaladıktan sonra halen kullanmakta olduğumuz 
+nesneler artık kullanılabilir nesneler değil. mesela onların invariant'Ları tutmuyor. örneğin bir string nesnesi kullanıyoruz, 
+tuttuğu yazıyı yazdırıyoruz. diyelim ki "onur" fakat uzunluk fonksiyonunu çağırıyoruz 0 döndürüyor. bu durumda program state'i
+bozulmuş demektir. yani artık bir in-valid state sözkonusu.) 
+
+yani exception'u yakalayıp programın çalışmasını devam ettireceksek, bir kaynak sızıntısı olmadığından ve programın geçerli bir
+durumda kaldığından emin olmalıyız. işte bunun sağlanmasına "Basic Guarantee" deniyor.
+
+		#include <iostream>
+		#include <exception>
+		#include <stdexcept>
+
+		void bar()
+		{
+				//
+		}
+
+		void foo(int n)
+		{
+				int* ptr = new int[n];
+				bar();
+				delete[] ptr;
+		}
+
+
+peki bar() fonksiyonu exception throw ederse nolur?
+-exception throw etmesiyle programın akışı foo'dan çıkar.
+programın akışı foo'dan çıktıktan sonra, daha yukarı katmanda exception yakalansa burada allocate edilmiş bellek bloğu geri verilmeyecek. bu tipik bir resource leak.
+
+Guarantees
+----------
+no guarantee
+		basic guarantee
+				strong guarantee (commit or rollback)
+						nofail(nothrow)
+
+strong guarantee
+----------------
+strong guarantee, basic guarantee'den daha yüksek ve basic'de ki tüm garantiler onda da var. ilaveten commit or rollback sağlar.
+
+bir örnek verelim:
+
+	ofs.write(const std::vector<int>&)
+
+	diyelim ki dosyalarla alakalı bir sınıfımızın böyle bir fonksiyonu var ve ona gönderilen elemanları yazdırıyor. ve bu fonksiyon basic guarantee veriyor olsun.
+
+	diyelim ki bu fonksiyon bir exception gönderildi ve biz yakaladık. ve gördük ki argüman olarak gönderdiğimiz vektörde 100 tane öğe varken sadece 50 tanesi yazılmış. herhangi bir kaynak sızıntısı yok. program state'inde bir sıkıntı yoksa bu halen basic guarantee'ye girer. 
+
+	ancak strong guarantee verseydi o zaman ya işin tamamını yapacaktı ya da işi yapmadan önceki hale geri dönecekti. 
+
+dolayısıyla strong guarantee çok ciddi bir garanti. sağlamak her zaman kolay değil.
+
+çünkü (çoğunlukla) önce nesne üzerinde değişiklik yapmak yerine ayrı bir nesne üzerinde(örneğin otomatik ömürlü bir nesne) işlem yapıyoruz. exception gönderilmediğinden emin olduğumuz zaman değişikliği nesneye tanıyoruz. böylece exception gönderilirse nesnenin kendisi üzerinde bir işlem yapmamış olduk, ancak exception göndermezse onu (burada da tipik olarak exception throw etmeyen swap fonksiyonları kullanılıyor) bir swap işlemi ile gerçek nesneye taşırız.
+
+örneğin vektör sınıfının pushback fonksiyonu strong guarantee.
+
+
+nothrow
+-------
+fonksiyonun işini yapma garantisi. eğer bir fonksiyon nofail garanti veriyorsa, onu çağıran kod 
+(a) o fonksiyonun exception göndermeyeceğine güvenerek yazılabilir.
+(b) derleyici de o fonksiyonun exception göndermeyeceğini görerek daha iyi optimizasyon yapma imkanına sahip.
+
+basic ve strong garantiyi gösteren herhangi bir sentaks yok. basic guarantee zaten default olarak vermemiz gereken bir garanti. strong garanti veriyorsak zaten dökümanda tipik olarak belirtiyoruz.
+
+ancak nofail/nothrow garanti zaten dilin sentaksında da yer alan bir öğe ile belirtiliyor.
+
+---------------------------
+
+		#include <iostream>
+		#include <exception>
+		#include <stdexcept>
+
+		void bar()
+		{
+				//
+		}
+
+		void foo(int n)
+		{
+				int* ptr = new int[n];
+				bar();
+				delete[] ptr;
+		}
+
+böyle bir fonksiyon yazarsak basic guarantee vermiş olmayız.
+
+fakat eğer bu tür kaynakları geri verme işini bir sınıf nesnesine bağlayıp RAII idiomunu kullnırsak, o zaman destructor çağrıldığında en azından kaynağın geri verilme garantisi olur.
+
+		#include <iostream>
+		#include <exception>
+		#include <stdexcept>
+
+		void bar()
+		{
+				//
+		}
+
+		void foo(int n)
+		{
+			FILE* f = fopen("onur.txt", "w");
+			bar();	
+
+			fclose(f);
+		}
+
+burada eğer bar çağırıldığında bir exception throw ederse dosya kapatılmamış olacak.
+
+fakat bu şekilde değil de File'ın kendisi bir sınıf olsaydı
+ve bu sınıfın dtor'u çağırıldığında eğer dtor çağırıldığında dosya hala açık ve daha önce kapatılmamışsa dosyanın dtor tarafından kapatıldığını düşünelim.
+
+		void foo(int n)
+		{
+				File myfile("onur.txt");
+				bar()
+		}
+
+***
+	Yani Exception Handling'de işin önemli kısmı RAII idiomunda. Kaynak kullanıyor olabiliriz, ancak kaynağı geri verme işini ayrı yapmak yerine onu bir sınıf nesnesine bağlamak(bazen bu da gerekmiyor) ve RAII idiomundan faydalanmak.
+
+		#include <iostream>
+		#include <exception>
+		#include <stdexcept>
+		#include <string>
+
+		class Person {
+		public:
+				Person(const char* pname) : m_name(pname) {
+						///
+						std::cout << m_name << "için kaynak edinildi.\n";
+				}
+
+				~Person()
+				{
+						std::cout << m_name << " için kaynak geri verildi.\n";
+				}
+		private:
+				std::string m_name;
+		};
+
+
+		void baz()
+		{
+				Person p3{"necati"};
+				throw std::runtime_error("person error!"\n);
+		}
+
+		void bar()
+		{
+				Person p2{"ali"};
+				baz();
+		}
+
+		void foo()
+		{
+				Person p1{"onur"};
+				bar();
+		}
+
+		int main()
+		{
+				foo();
+		}
+
+OUTPUT: onur icin kaynak edinildi.
+				ali icin kaynak edinildi.
+				necati icin kaynak edinildi.
+
+exception gönderildi, exception yakalanmadı. peki bu nesnelerin dtorları çağırıldı mı? - hayır.
+
+exception yakalamanın en önemli taraflarından birisi de;
+otomatik ömürlü sınıf nesneleri call chain içinde exception gönderilene kadar farkli fonksiyonlarda oluşturulmuş olabilir.
+
+baz içinde exception gönderildiği zaman foo'da oluşturulmuş p1 nesnesi, bar'ın stack frame'in(içinde yani, foo ile aynı) de oluşturulmuş p2 nesnesi ve baz'da oluşturulmuş p3 nesnesi hayattaydı. exception gönderildi fakat yakalanamadı ve bu nesnelerin destroy edilme garantisi yok.
+
+ama exception'u yakalarsak otomatik ömürlü nesneler programın akışı exception'u handle eden catch bloğuna girmeden, stack frame'lerde teker teker yani son oluşturulan ilk destroy edilecek şekilde destructorları çağırılıyor. bu sürece verilen bir isim var: "Stack Unwinding".
+
+//Stack Unwinding
+
+		#include <iostream>
+		#include <exception>
+		#include <stdexcept>
+		#include <string>
+
+		class Person {
+		public:
+				Person(const char* pname) : m_name(pname) {
+						///
+						std::cout << m_name << "için kaynak edinildi.\n";
+				}
+
+				~Person()
+				{
+						std::cout << m_name << " için kaynak geri verildi.\n";
+				}
+		private:
+				std::string m_name;
+		};
+
+
+		void baz()
+		{
+				Person p3{"necati"};
+				throw std::runtime_error("person error!"\n);
+		}
+
+		void bar()
+		{
+				Person p2{"ali"};
+				baz();
+		}
+
+		void foo()
+		{
+				Person p1{"onur"};
+				bar();
+		}
+
+		int main()
+		{
+				try{
+					foo();
+				}
+
+				catch(const std::exception& ex){
+						std::cout << "exception caught: " << ex.what() << "\n";
+				}
+
+		}
+
+exception caught yazısından önce p1, p2 ve p3 nesnelerinin dtorlarının çağırıldığını göreceğiz.
+
+Bu ne demek? Stack Unwinding'in verdiği garanti neden önemli?
+
+Eğer ben bir fonksiyon içinde bir kaynak kullanıyorsam fakat kaynağı bir sınıfa bağlarsam
+
+		class ResourceUser {};
+
+		void foo()
+		{
+				ResourceUser x;
+
+				//bar();
+				//baz();
+		}
+
+bu kodlardan herhangi biri(bar(),baz()) exception throw ederse nolur?
+bu exception yakalandığında stack unwinding sürecinde x'in dtoru çağırılır. böylece kaynaklar geri verilmiş olur.
+
+exception gönderilmezse zaten bu otomatik ömürlü bir nesne olduğu için scope sonunda zaten dtoru çağırılacak.
+
+aynı durum new ifadesi ile oluşturulan dinamik ömürlü nesneler için de geçerli.
+		
+		class Person {
+		public:
+				Person(const char* pname) : m_name(pname)
+				{
+						std::cout << m_name << " icin kaynak edinildi\n";
+				}
+
+				~Person()
+				{
+						std::cout << m_name << " icin kaynak geri verildi.\n";
+				}
+		private:
+				std::string m_name;
+		};
+
+		void foo()
+		{
+				Person* p = new Person("onur");
+				//some code here
+				throw 1;
+
+				delete p;
+		}
+
+		int main()
+		{
+				try{
+					foo();
+				}
+
+				catch(int) {
+						std::cout << "exception caught: " << ex.what() << "\n";
+				}
+		}
+
+bu bir pointer, otomatik ömürlü bir sınıf nesnesi değil. dolayısıyla buradaki kodlar exception gönderirse delete edilmeyecek.
+
+ancak öyle bir sınıf olsa ki dinamik ömürlü nesnenin adresini alsa ve sınıf da o adresi bir yerde tutsa, dtor da o adresi henüz delete edilmemişse delete etse. işte unique ptr bunu yapıyor.
+
+şimdi bu kodu raw pointer yerine unique ptr ile yazalım:
+
+
+		
+		class Person {
+		public:
+				Person(const char* pname) : m_name(pname)
+				{
+						std::cout << m_name << " icin kaynak edinildi\n";
+				}
+
+				~Person()
+				{
+						std::cout << m_name << " icin kaynak geri verildi.\n";
+				}
+		private:
+				std::string m_name;
+		};
+
+		void foo()
+		{
+				std::unique_ptr<Person> p(new Person("onur"));
+				//some code here
+				throw 1;
+		}
+
+		int main()
+		{
+				try{
+					foo();
+				}
+
+				catch(int) {
+						std::cout << "exception caught: " << ex.what() << "\n";
+				}
+		}
+
+exception gönderilirse stack unwinding sürecinde unique_ptr nesnesinin dtoru çağırılacak. exception gönderilmezse programın akışı closing brace'e geldiğinde yine unique ptr nesnesinin dtoru çağırılacak. yani artık kaynak sızdırma ihtimali kalmadı.
+
+exception handling görüldüğü üzere konusu büyük ölçüde RAII idiomu ile de ilgili. 
+
+Tekrar edelim - Özet
+--------------------
+Eğer exception gönderildiğinde call chain'de ki stack frame'lerde otomatik ömürlü nesneler oluşturulmuşsa exception yakalandığında programın akışı exception'u handle eden koda girmeden stack frame'lerde oluşturulan nesneler, son çağrılan fonksiyonlardan ilk çağrılan fonksyiona doğru hepsi için dtor çağırılma garantisi var. dolayısıyla dtor çağırıldığında kaynaklar geri verilmiş olacak böylece kaynak sızıntısı ihtimali kalmamış olacak.
+
+--------------------
+
+
+Exception göndermeye aday fonksiyonların başında Constructor geliyor.
+
+Sınıf nesnesini kullanılır hale sokan, onu nesne yapan constructor. Dolayısıyla ctor invariantları zaten ilk başında sağlaması gereken fonksiyon. Ve invariantları sağlayamazsa isteseniz de geri dönüş değeri olmadığı için iletme imkanımız yok.
+
+Bü yüzden aksi yönde karar almayı engelleyecek herhangi bir durum yoksa, ctor işini yapamıyorsa sınıf nesnesi için invariantları doğru hale getiremiyorsa, bu da sınıf nesnesinin başarılı bir şekilde hayata iş görecek bir sınıf nesnesi getirememesi demek. Bu durumda ne yapacak exception throw edecek.
+
+Bir sınıf nesnesinin hayata gelmiş olması için, çağrılan constructorun kodunun tamamının çalışması gerekiyor. Eğer ctor'un kodunun tamamı çalışmazsa o zaman hayata gelen bir sınıf nesnesi yok.
+
+		class Myclass {
+		public:
+				Myclass()
+				{
+						std::cout << "Myclass ctor called!\n";
+						throw std::runtime_error("error error");
+				}
+
+				~Myclass()
+				{
+						std::cout << "Myclass dtor called\n";
+				}
+		};
+
+		int main()
+		{
+				try{
+						Myclass m;
+				}
+
+				catch(const std::exception& ex){
+						std::cout << "exception caught: " << ex.what() << "\n";
+				}
+		}
+
+burada m nesnesi için dtor çağırılacak mı?
+-Hayır. Çünkü ortada zaten m nesnesi yok. Nesne hayata gelmedi.
+
+peki aşağıdaki koda bakalım.
+
+
+
+		class Myclass {
+		public:
+				Myclass()
+				{
+						std::cout << "Myclass ctor called!\n";
+						mp = new int[100];
+						throw std::runtime_error("error error");
+				}
+
+				~Myclass()
+				{
+						std::cout << "Myclass dtor called\n";
+						delete[] mp;
+				}
+
+				int* mp{};
+		};
+
+		int main()
+		{
+				try{
+						Myclass m;
+				}
+
+				catch(const std::exception& ex){
+						std::cout << "exception caught: " << ex.what() << "\n";
+				}
+		}
+
+burada kaynak edinildi fakat dtor çağırılmayacağı için bu kaynak geri verilemedi. bu durumdan kaçınmamız gerekiyor. RAII idiomunu kullanmak gerekiyor.
+
+
+bir durum daha:
+
+		class Myclass {
+		public:
+				Myclass()
+				{
+						std::cout << "Myclass ctor called!\n";
+						throw std::runtime_error("error error");
+				}
+
+				~Myclass()
+				{
+						std::cout << "Myclass dtor called\n";
+				}
+
+				char buf[1024];
+		};
+
+		int main()
+		{
+				try{
+						Myclass* p = new Myclass;
+				}
+
+				catch(const std::exception& ex){
+						std::cout << "exception caught: " << ex.what() << "\n";
+				}
+		}
+
+burada önce operator new fonksiyonu çağırılır ve sınıfın size'ı kadar bir yer ayırır. daha sonra ctor çağırılır.
+
+peki burada ctor yakalandığında operator delete'in çağırılma garantisi var mı?
+-evet var.
+
+dinamik ömürlü bir nesneyi new ifadesi ile oluşturduğumuz zaman, bu nesneyi oluşturacak ctor çağırıldığında zaten operatör new çağırılmış durumda. zaten operator new'in kendisi exception throw etseydi ctor çağırılmazdı. peki çağırılan ctor içinde exception throw edilirse allocate edilen bellek bloğu geri verilecek. bu dilin sağladığı bir garanti.
+
+
+
+--------------------------------------
+
+Constructor içerisinde exception throw etse, exception yakalansa dahi dtor çağırılmıyor çünkü ortada construct edilen bir nesne yok dilin kurallarına göre.
+
+ama eleman olan nesneler için durum böyle değil. çünkü zaten eleman olan nesneler constructor'un ana bloğu içinde oluşturulmuyorlar. onlar programın akışı ana bloğa gelmeden, ctor initializer list içerisindeki kodun çalışması ile init. ediliyorlar.
+
+		class Member {
+		public:
+				Member()
+				{
+						std::cout << "Member constructor\n";
+				}
+
+				~Member()
+				{
+						std::cout << "Member destructor\n";
+				}
+		};
+
+		class Nec {
+		public:
+				Nec()
+				{
+						std::cout << "nec ctor called\n";// burada zaten mx hayatta
+						throw 1;
+				}
+
+		private:
+				Member mx;
+		};
+
+		int main()
+		{
+				try{
+					Nec mynec;
+				}
+
+				catch(int) {
+						std::cout << "hata yakalandi\n";
+				}
+		}
+
+OUTPUT: 	Member constructor
+					nec ctor called!
+					Member destructor
+					hata yakalandi
+
+yani Member için dtor çağırıldı. Fakat member'in ctor'u exception throw ederse ne Nec için ne de Member için dtor çağırılır.
+
+Output: Member constructor
+				hata yakalandi
+
+
+
+Eğer Nec sınıfının elemanı Member sınıfı türünden bir pointer ise;
+		.
+		..
+		...
+		class Nec {
+		public:
+				Nec() : mp(new Member)
+				{
+						std::cout << "nec ctor called!\n";
+						throw 1;
+				}
+
+				~Nec()
+				{
+						delete mp;
+				}
+		
+		private:
+				Member* mp;
+		};
+
+
+ve Nec'in ctor'u exception throw ederse, eleman olan pointerin gösterdiği dinamik ömürlü member nesnesi hayata gelmiş olacak ama delete edilmeyecek. 
+
+böylesi bir senaryoda bu durumu ortadan kaldırmak için smart pointer kullanırız. çünkü zaten smart pointer'in kendisi de bir sınıf nesnesi.
+
+----------------------------
+
+Ctor kendi kodu içinde gönderilen exception'u yakalayabilir yani kendisi handle edebilir. önemli olan ctor'dan exception'un sızmaması,emit, propagate etmemesi.
+
+Ctor eğer kendisi handle ediyorsa zaten sorun yok.
+
+Ama özel bir durum var.
+
+		class Member{
+		public:
+			Member()
+			{
+					if(1) {
+							throw std::runtime_error{"error in member ctor\n"}
+					}
+			}
+		};
+
+		class Myclass {
+		public:
+				Myclass()
+				{
+						try{
+							//all code here
+						}
+
+						catch(cont std::exception& ex){
+								std::cout << "exception caught: " << ex.what() << "\n";
+						}
+				}
+		};
+
+
+burada exception yakalanamaz.
+
+dilin bu konu ile ilgili bir aracı var. buna function try block deniyor.
+
+//function try block
+
+Az önceki problemin çözümü.
+Modern C++'dan önce de bu araç vardı.
+
+Eğer ctor init. list kısmında construct edilen memberlardan birinin gönderdiği exceptionu sınıfın ctor'u içinde yakalamak istiyorsak o zaman böyke bir try block oluşturmak yerine "function try block" denilen bloğu oluşturmalıyız. 
+
+diyelim elimizde bir fonksiyon var ve  biz tüm fonksiyonu try bloğu kapsamına almak istiyoruz.
+
+böyle yazmak yerine;
+
+		void func(int x)
+		{
+				try {
+
+				}
+
+				catch(){
+
+				}
+
+		}
+
+
+böyle yazıyoruz;
+
+		void func(int x)
+		try{
+			//hem fonksiyonun ana bloğu hemde aynı zamanda try block
+		}
+		catch(int i)
+		{
+
+		}
+		catch(double d) {
+
+		}
+
+
+-----------------------------
+Soru:
+
+		void func(int x)
+		try{
+			int ival = 5;
+			if (x % 2 == 0)
+					throw .4;
+		}
+		catch(int i)
+		{
+				// # 
+				std::cout << "catch(int) i = " << i << "\n";
+		}
+
+		catch(double d) 
+		{
+				std::cout << "catch(double) d = " << d << "\n";
+		}
+
+		int main()
+		{
+				func(24);
+		}
+
+Soru 1: aşağıdaki kodda catch bloklarının içinde ival ismini kullanabilir miyiz?
+
+Cevap : Hayır.
+
+Soru 2: # işaretli satırda fonksiyonun parametre değişkenini kullanabilir miyiz?
+
+Cevap : Evet.
+
+Soru 3: void function olmasaydı ve geri dönüş değeri olsaydı, catch blokları içinde return statement'ları kullanabilir miyiz?
+
+Cevap : Evet.
+
+		class Myclass{};
+
+		int func(Myclass m)
+		try{
+
+		}
+		catch(int i)
+		{
+
+		}
+
+		int main()
+		{
+				Myclass mx;
+
+				func(mx);
+		}
+
+copy ctor çağırılacak. temporary object ile bu çağrıyı yapsak mandatory copy ellision olurdu ve default ctor çağırılırdı.
+
+peki copy ctor exception throw etse, function try block'u izleyen catch blokları bunu yakalayabilir mi?
+
+-Hayır. 
+
+Function try block içerisinde gönderilen exception'lar yakalanabilir ama parametre değişkeninin hayata gelmesi sürecindeki exceptionların function try block ile yakalanma imkanı yok.
+
+-------------------------
+
+problemimize dönelim.
+
+		class Member {
+		public:
+				Member()
+				{
+						if(1) {
+								throw std::runtime_error{"error in Member ctor\n"};
+						}
+				}
+		};
+
+		class Myclass{
+		public:
+				Myclass()
+				{
+						try{
+								//all code here
+						}
+
+						catch (const std::exception& ex) {
+								std::cout << "exception caught : " << ex.what() << "\n";
+						}
+						//...
+				}
+		Member mx;
+		};
+
+		int main()
+		{
+				Myclass m;
+		}
+
+burada gönderilen exception constructor tarafından yakalanamıyor. Çünkü bu şekilde try block oluşturursak ctor init. list'de çalışan kodlar bu try bloğu içinde kabul edilmiyor.
+
+ancak ctor'da function try block kullanırsak o zaman ctor init. list de yakalanma potansiyeline giriyor. o halde function try block kullanalım.
+
+		.
+		..
+		...
+
+		class Myclass{
+		public:
+				Member() try : mx(48)
+				{
+
+				}
+				catch (const std::exception& ex) {
+								std::cout << "exception caught: " << ex.what() << "\n";
+								// buraya derleyici throw; ekler.
+						}
+
+				Member mx;
+		};
+
+		.
+		..
+		...
+
+Ctor exceptionu throw etti. peki o zaman ne olacak?
+bu exception yakalanacak, programın akışı ctor'u izleyen catch bloğunun içine girecek. ama artık programın akışı buraya girdiğinde bizim bu myclass nesnesini construct etme imkanımız ne yazık ki yok. çünkü bir exception gönderilmek zorunda. eğer herhangi bir kod eklemezsek, ctor'un function try block'unu izleyen catch bloğunda, derleyici buraya doğrudan rethrow statement koyuyor.
+
+Burada biz member'da oluşan exception'u yakaladık o zaman exception yakalandığına göre member hayata gelmedi. bu durumda sınıfın invariantları oluşturamaması demek. dolayısıyla function try bloğunu izleyen catch bloğunun sonunda, siz kendiniz rethrow etmezseniz ya da translate etmezseniz ya da kendiniz buraya terminate gibi bir fonksiyonu çağırmazsanız exception rethrow ediliyor.
+
+
+-----------------------------------------
+
+
+bir fonksiyonun exception gönderme ihtimali ile ilgili bildirimlere yönelik  sentaks kuralları modern c++ ile değiştirildi.
+
+örneğin bildirim böyle yapıldığında;
+
+		void foo(int x); //foo may any exception 
+
+		bunun anlamı : foo bir exception gönderebilir de göndermeyebilir de.
+
+belirli türden exception göndereceğini şöyle yazılıyordu:
+
+		void foo(int x) throw(std::bad_alloc);
+
+birden fazla türden exception gönderebilme ihtimali de şöyle idi:
+
+		void foo(int x)	throw(std::bad_alloc, std::out_of_range)	
+
+ama bu nothrow garantili idi, no fail garantili:
+
+		void foo(int x) throw();//exception göndermeme garantili
+
+
+artık bizim bunlarla işimiz kalmadı..
+
+
+artık sadece bir fonksiyonun exception throw edebileceği ya da exception throw etmeme garantisi verdiği bildirilebiliyor.
+
+noexcept anahtar sözcüğü
+-------------------------
+iki farklı kullanımı var.
+
+- noexcept specifier
+- noexcept operator
+
+
+		void func(int)noexcept;
+
+böyle bir bildirim func fonksiyonunun exception throw edilmeyeceğine dair bir garanti sunuyor.
+
+//nothrow guarantee
+//nofail
+//noexcept
+
+bunları aynı anlamda kullanacağız.
+
+noexcept specifier'ın ilginç bir özelliği daha var.
+
+		void foo(int)noexcept(/*constant expression*/)
+
+		bu constant expression lojik yorumlamaya tabi tutlacak ve bu lojik yorumlama sonucunda true değer elde edilirse fonksiyon noexcept olarak bildirilmiş olacak. ama false ise exception throw etmeme garantisi vermiyor olacak.
+
+		yani bildirimi:
+
+				void bar(int)noexcept(true);
+				void bar(int)noexcept;
+
+				iki şekilde de yazsak aynı anlamda.
+
+
+				void foo()noexcept(false);
+				void foo();
+
+				bu iki şekilde de yazsak yine bunlar aynı anlamda olur.
+
+
+Peki bu ne işe yarar?
+
+		void bar(int)noexcept(sizeof(int) > 2);
+
+		örneğin sizeof int'in değerini bir koşula bağladık ve bunun sonucu derleyiciden derleyiciye değişebilir.
+
+		generic programlama da çok kullanılıyor.
+
+
+noexcept operatörü
+------------------
+tıpkı sizeof operatörü gibi bir compile time operatörü.
+compile time operatörü olması ne demek? - noexcept operatörü ile oluşturulan ifadeler constant expression demek.
+
+		int main()
+		{
+				noexcept(expr); // sabit ifadesi gerekli olan her yerde kullanılabilir.
+		}
+
+noexcept operatörü boolean değer üretiyor. yani değeri true ya da false.
+
+		int main()
+		{
+				int x = 10;
+
+				constexpr bool b = noexcept(x + 5);
+		}
+
+Peki noexcept operatörü neye göre true ya da false değer üretiyor?
+
+		bu ifadenin yürütülmesi sırasında exception throw etme ihtimali var mı? yoksa bu ifadenin yürütülmesi sırasında exception throw etmemesi garanti altında mı?
+
+				int x = 10;
+
+				constexpr bool b = noexcept(x + 5);
+
+				garanti altında, exception throw etmez ki bu ifade zaten.
+
+		gelelim büyük resime;
+
+				int foo();
+
+				int main()
+				{
+						int x = 10;
+
+						constexpr bool b = noexcept(foo());
+				}
+
+				bu kod exception göndermeme garantisi taşımıyor çünkü fonksiyon(foo) noexcept değil.
+				noexcept operatörü false üretir.
+
+		foo'nun kendisi nofail olsaydı, o zaman bu fonksiyonun çağırılmasında exception throw etmeme garantisi olacaktı. bu durumda noexcept operatörü true değer üretecekti.
+
+		Unevaluated Context listesine yeni bir ifade daha ekleyelim..
+
+				int x = 10;
+
+				const expr bool b = noexcept(x++);
+
+				std::cout << "x = " << x << "\n";
+
+				x'in değeri artmadı çünkü işlem kodu üretilmez.
+
+		başka bir örnek:
+
+				int foo()noexcept;
+
+				int main()
+				{
+						int* ptr{ nullptr };
+
+						constexpr bool b = noexcept(*p);
+						//unevaluated context olduğu için UB yok. 
+
+				}
+				peki ifade true mu false mu?
+				-true.
+
+				C++'da bir pointeri dereference etme ifadesinin exception throw etme ihtimali yok. o halde true.
+
+//////////////////////////////
+
+		class Myclass {
+
+		};
+
+		int main()
+		{
+				constexpr bool b = noexcept(Myclass{});
+		}
+
+burada hayata gelen bir myclass nesnesi var mı?
+-hayır, çünkü unevaluated context.
+
+b true mu false mu?
+-true, çünkü bu sınıfın default ctor'unu derleyici yazacak ve derleyici yazdığı için derleyici kendi yazdığı ctor'u noexcept olarak bildiriyor. çünkü noexcept olması için bir engel yok, içi boş bir ctor. exception throw etme ihtimali yok ki.
+
+ama kendimiz bildirirsek işler değişir. sınıfların special member functionları söz konusu olduğunda bunlar eğer user declared değilde implicitly declared ise derleyici karar veriyor. eğer derleyicinin yazdığı kodda exception throw etme ihtimali yoksa noexcept olarak bildiriyor.
+
+///////////
+
+		class Member{};
+
+		class Myclass{
+		public:
+
+		private:
+				Member mx;
+		};
+
+		int main()
+		{
+				constexpr bool b = noexcept(Myclass{});
+		}
+
+Soru: b true mu false mu?
+
+-true. çünkü memberin default ctor'u da implicitly declared, dolayısıyla derleyici noexcept olarak bildirecek. Myclass'ın default ctor'unu derleyici yazıyor, derleyicinin yazdığı ctor memberi de default ctor ediyor. o halde derleyicinin myclass sınıfı için yazdığı ctor'un da exception throw etme ihtimali yok.
+
+ama şimdi bakalım:
+
+		class Member{};
+
+		class Myclass{
+		public:
+				Member();
+
+		private:
+				Member mx;
+		};
+
+		int main()
+		{
+				constexpr bool b = noexcept(Myclass{});
+		}
+
+
+şimdi  bu ifade false oldu.
+
+
+
+/////////////////////////
+***
+
+		class Myclass{
+		public:
+				void foo();
+		};
+
+		void func(int x) noexcept(noexcept(Myclass{}));
+
+buradaki noexcept specifier mi operatör mü?
+-ilki specifier, ikincisi operatör.
+
+///////////////
+
+		struct Myclass{
+				Myclass operator+(const Myclass&)const noexcept;
+		};
+
+		Myclass f1(int)noexcept;
+		Myclass f2(int)noexcept;
+
+		void func(int x)noexcept(noexcept(f1(2) + f2(3)));
+
+noexcept garantisi veriyor func.
+
+
+
+noexcept garantisinin çiğnenmesi (violate)
+------------------------------------------
+nofail garantiyi violate etmek tamamen runtime'a yönelik bir hata.
+
+eskiden kural şöyleydi:
+
+		void foo()throw(std::bad_alloc)
+		void bar()throw();
+
+		örneğin foo fonksiyonu bad_alloc sınıfı türünden başka bir tür exception throw ettiğinde veya bar fonksiyonu exception throw etmeme garantisi vermesine rağmen exception throw ettiğinde ismi std::unexpected isimli bir fonksiyon çağırılıyordu.
+
+		ve bu duruma unexpected exception deniyordu. exception specification'da belirtilen türün dışında bir exception throw etmesi ya da exception göndermeme garantisinin violate edilmesi.
+
+		std::unexpected'in default davranışı std::terminate'i çağırmaktı. std::terminate'in de default davranışı std::abort'u çağırmak.
+
+		std::set_unexcepted diye default davranışı customize etmek için bir fonksiyon vardı.
+
+		bunlar komple dilden kaldırıldı.
+
+Şimdi artık kural böyle:
+
+		void foo()noexcept;
+
+		nofail garantisi veren bir fonksiyon kodu çalıştığında exception throw ederse, terminate çağırılıyor.
+
+örnek:
+
+	void bar(int x)
+	{
+			if ( x % 2 != 0)
+					throw 1;
+	}
+
+	void foo(int val)noexcept
+	{
+			bar(val); 
+	}
+
+	int main()
+	{
+			try{
+					foo(5);
+			}
+
+			catch(int) {
+					std::cout << "exception caught\n";
+			}
+	}
+
+exception'Un yakalanma ihtimali yok. terminate çağırılıyor çünkü bundan önce. abort çağırılır ve program sonlandırılır.
+
+
+mülakat sorularından birisi de : terminate'in çağırıldığı durumları sayın.
+	-uncaught exception 
+	-rethrow statement but noexception is being handled.
+	(herhangi bir exception handle edilmemesine rağmen rethrow statementin kullanılması)
+	-eğer bir fonksiyon noexcept garantisi vermesine rağmen exception throw ediyorsa
+
+	bu durumlarda terminate fonksiyonu çağırılır.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
