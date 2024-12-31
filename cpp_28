@@ -2,7 +2,8 @@
 Standard kütüphanenin gönderdiği bütün exception'lar polimorfik bir sınıf hiyerarşisi içinde. en tepede std::exception isimli bir sınıf var. 
 ve onun altında farklı farklı sınıflar var.
 
-Bazı exceptionlar operatatör seviyesindeki işlemlerin gönderdiği exceptionlar. örneğin new ifadesi kullandığımızda, operatör new'in başarısız olması durumunda gönderilen std::bad_alloc gibi.
+Bazı exceptionlar operatatör seviyesindeki işlemlerin gönderdiği exceptionlar. örneğin new ifadesi kullandığımızda, operatör new'in başarısız olması durumunda gönderilen 
+std::bad_alloc gibi.
 
 		std::exception
 
@@ -15,7 +16,8 @@ TEKRAR - ÖZET
 
 eğer gönderilen bir exception varsa, bunu gönderen bir throw statement. 
 
-bu exception yakalanmazsa bu duruma un-caught exception denir. std kütüphanenin terminate fonksiyonu çağırılır. terminate ise std::abort()'u çağırır. terminate'in davranışını customize etmek istersek set_terminate() fonksiyonunu kullanarak kendi terminate handler'ımızı kaydedebiliriz.
+bu exception yakalanmazsa bu duruma un-caught exception denir. std kütüphanenin terminate fonksiyonu çağırılır. terminate ise std::abort()'u çağırır. terminate'in 
+davranışını customize etmek istersek set_terminate() fonksiyonunu kullanarak kendi terminate handler'ımızı kaydedebiliriz.
 
 -------------------
 
@@ -25,7 +27,8 @@ bir fonksiyonun içinde gönderilen exception fonksiyonun içinde handle ediliyo
 
 yani fonksiyon onu yakalıyor, handle ediyor ve fonksiyonun çalışması devam ediyor. ama eğer bu exception fonksiyonun içinde yakalanmazsa fonksiyondan dışarı çıkıyor.
 
-bir exception'un fonksiyon tarafından yakalanmadan muhtemelen call chain'de daha yukarıdaki fonksiyonlar tarafından yakalanabilecek şekilde fonksiyondan dışarı çıkması için kullanılan terimler:
+bir exception'un fonksiyon tarafından yakalanmadan muhtemelen call chain'de daha yukarıdaki fonksiyonlar tarafından yakalanabilecek şekilde fonksiyondan dışarı çıkması 
+için kullanılan terimler:
 
 //emit (bazen kullanılan fiil bu)
 //exception propagate
@@ -54,14 +57,16 @@ bir exception'un fonksiyon tarafından yakalanmadan muhtemelen call chain'de dah
 	    bar();
 	}
 
-NOT : exception sınıflarının (hiyerarşideki sınıflar kast edliyor) bazılarının default constructor'u yok, bazılarının var. örneğin runtime_error'un default ctor'u yok, ya bir std::string ya da const char* ile initialize, construct edeceksiniz. bazı exception sınıfları için bu mecburi.
+NOT : exception sınıflarının (hiyerarşideki sınıflar kast edliyor) bazılarının default constructor'u yok, bazılarının var. örneğin runtime_error'un default ctor'u yok, 
+ya bir std::string ya da const char* ile initialize, construct edeceksiniz. bazı exception sınıfları için bu mecburi.
 
 
 Catch-All Bloğu
 ---------------
 
 Peki gönderilen herhangi bir exception'u, türü ne olursa olsun yakalamak mümkün mü?
--Evet, dilin buna ilişkin bir aracı var. Bu araca "catch all" bloğu veya parametresi deniyor. Hangi türden exception olursa olsun yakalamak anlamında. Sentaks biraz farklı. parantez içinde elipsis atomunu kullanıyoruz(...).
+-Evet, dilin buna ilişkin bir aracı var. Bu araca "catch all" bloğu veya parametresi deniyor. Hangi türden exception olursa olsun yakalamak anlamında. Sentaks biraz farklı.
+parantez içinde elipsis atomunu kullanıyoruz(...).
 
 (... ==> bu c++ dilinde bir token, 3 nokta. c'de sadece variadic fonksiyonlarda ve variadic makrolarda karşımıza çıkıyordu.)
 
@@ -79,7 +84,9 @@ Yani ya son blok olacak ya da tek başına tek blok olacak.
 
 
 ÖNEMLİ**
-	Gönderilen bütün exceptionları yakalamak mümkün olmayabilir. Çünkü en fazla main fonksiyonunun bütün kodunu bir try bloğu içine alabiliriz. Çünkü statik ömürlü sınıf nesnelerinin (mesela sınıfların statik veri elemanları) constructorları programın akışı main fonksiyonuna girmeden çalışıyor. Dolayısıyla onların ctor'larından gönderilen exceptionları main fonksiyonun içinde dahi yakalamak mümkün değil.
+	Gönderilen bütün exceptionları yakalamak mümkün olmayabilir. Çünkü en fazla main fonksiyonunun bütün kodunu bir try bloğu içine alabiliriz. 
+	Çünkü statik ömürlü sınıf nesnelerinin (mesela sınıfların statik veri elemanları) constructorları programın akışı main fonksiyonuna girmeden çalışıyor. 
+	Dolayısıyla onların ctor'larından gönderilen exceptionları main fonksiyonun içinde dahi yakalamak mümkün değil.
 
 	Dolayısıyla main bloğunun bütün ana bloğunu dahi try bloğu olarak kullansak gönderilen tüm exceptionları yakalayabilme garantisi yok.
 
@@ -100,9 +107,11 @@ Yani exceptionu yakaladığımızda ne yapıyoruz?
 En tipik hata şu:
 	Exception handling mekanizmasını geleneksel hata işleme metodolojisi gibi kullanmak.
 
-Ana fikir her zaman şu : Eğer yakaladığımızda ne yapacağımız konusunda bir fikrimiz yoksa o hataya müdahale etmek için bir fikrimiz yok demektir ve o zaman o hatayı yakalamayacağız. Bırakacağız başkası yakalasın, sorumluluk kimde ise o yakalasın.
+Ana fikir her zaman şu : Eğer yakaladığımızda ne yapacağımız konusunda bir fikrimiz yoksa o hataya müdahale etmek için bir fikrimiz yok demektir ve o zaman o hatayı 
+yakalamayacağız. Bırakacağız başkası yakalasın, sorumluluk kimde ise o yakalasın.
 
-Yani exception gönderme ihtimali olan herhangi bir fonksiyona çağrı yaptığımızda o fonksiyonun çağrıldığı yerde o exception'u yakalamak zorundayız veya yakalamalıyız gibi yanlış bir algı olmasın.
+Yani exception gönderme ihtimali olan herhangi bir fonksiyona çağrı yaptığımızda o fonksiyonun çağrıldığı yerde o exception'u yakalamak zorundayız veya yakalamalıyız 
+gibi yanlış bir algı olmasın.
 
 ***
 	Dolayısıyla: Yapacak bir şeyin yoksa yakalama!
@@ -116,7 +125,8 @@ Peki yakalayan, yakalayınca ne yapıyor tipik olarak?
 (2) exception yakalanır ve handle edilir. yani nerede yakalanıyorsa orada gerekli işlemler yapılır. resumptive bir yaklaşım söz konusudur.
 
 //rethrow | translate
-(3) exception yakalanır ve kısmen müdahale edilir ve exception tekrar gönderilir. işte gönderilen hata nesnesini yakalayıp kendi sorumluluğumuza ilişkin birşeyler yapıp, geri kalanını da yukarıdaki kodlara bırakabilir ve tekrar gönderebiliriz.
+(3) exception yakalanır ve kısmen müdahale edilir ve exception tekrar gönderilir. işte gönderilen hata nesnesini yakalayıp kendi sorumluluğumuza ilişkin birşeyler yapıp, 
+geri kalanını da yukarıdaki kodlara bırakabilir ve tekrar gönderebiliriz.
 Fakat exceptionu rethrow etmek başka translate etmek başka. Bu translate, rethrow değil. rethrow aynı exception nesnesini göndermektir.
 
 
@@ -190,7 +200,8 @@ işte böyle olursa rethrow statement:
 	}
 
 
-yani throw anahtar sözcüğü tek başına olacak ve onun yanında terminator atomu kullanılacak. şuan gösterilen nene adresi aynı, bu demek oluyor ki aynı hata nesnesini gönderdik ve rethrow yapmış olduk.
+yani throw anahtar sözcüğü tek başına olacak ve onun yanında terminator atomu kullanılacak. şuan gösterilen nene adresi aynı, bu demek oluyor ki aynı hata nesnesini 
+gönderdik ve rethrow yapmış olduk.
 
 
 ***
@@ -381,13 +392,16 @@ bir örnek verelim:
 
 	diyelim ki dosyalarla alakalı bir sınıfımızın böyle bir fonksiyonu var ve ona gönderilen elemanları yazdırıyor. ve bu fonksiyon basic guarantee veriyor olsun.
 
-	diyelim ki bu fonksiyon bir exception gönderildi ve biz yakaladık. ve gördük ki argüman olarak gönderdiğimiz vektörde 100 tane öğe varken sadece 50 tanesi yazılmış. herhangi bir kaynak sızıntısı yok. program state'inde bir sıkıntı yoksa bu halen basic guarantee'ye girer. 
+	diyelim ki bu fonksiyon bir exception gönderildi ve biz yakaladık. ve gördük ki argüman olarak gönderdiğimiz vektörde 100 tane öğe varken sadece 50 tanesi yazılmış. 
+	herhangi bir kaynak sızıntısı yok. program state'inde bir sıkıntı yoksa bu halen basic guarantee'ye girer. 
 
 	ancak strong guarantee verseydi o zaman ya işin tamamını yapacaktı ya da işi yapmadan önceki hale geri dönecekti. 
 
 dolayısıyla strong guarantee çok ciddi bir garanti. sağlamak her zaman kolay değil.
 
-çünkü (çoğunlukla) önce nesne üzerinde değişiklik yapmak yerine ayrı bir nesne üzerinde(örneğin otomatik ömürlü bir nesne) işlem yapıyoruz. exception gönderilmediğinden emin olduğumuz zaman değişikliği nesneye tanıyoruz. böylece exception gönderilirse nesnenin kendisi üzerinde bir işlem yapmamış olduk, ancak exception göndermezse onu (burada da tipik olarak exception throw etmeyen swap fonksiyonları kullanılıyor) bir swap işlemi ile gerçek nesneye taşırız.
+çünkü (çoğunlukla) önce nesne üzerinde değişiklik yapmak yerine ayrı bir nesne üzerinde(örneğin otomatik ömürlü bir nesne) işlem yapıyoruz. 
+exception gönderilmediğinden emin olduğumuz zaman değişikliği nesneye tanıyoruz. böylece exception gönderilirse nesnenin kendisi üzerinde bir işlem yapmamış olduk, 
+ancak exception göndermezse onu (burada da tipik olarak exception throw etmeyen swap fonksiyonları kullanılıyor) bir swap işlemi ile gerçek nesneye taşırız.
 
 örneğin vektör sınıfının pushback fonksiyonu strong guarantee.
 
@@ -398,7 +412,8 @@ fonksiyonun işini yapma garantisi. eğer bir fonksiyon nofail garanti veriyorsa
 (a) o fonksiyonun exception göndermeyeceğine güvenerek yazılabilir.
 (b) derleyici de o fonksiyonun exception göndermeyeceğini görerek daha iyi optimizasyon yapma imkanına sahip.
 
-basic ve strong garantiyi gösteren herhangi bir sentaks yok. basic guarantee zaten default olarak vermemiz gereken bir garanti. strong garanti veriyorsak zaten dökümanda tipik olarak belirtiyoruz.
+basic ve strong garantiyi gösteren herhangi bir sentaks yok. basic guarantee zaten default olarak vermemiz gereken bir garanti. strong garanti veriyorsak zaten dökümanda 
+tipik olarak belirtiyoruz.
 
 ancak nofail/nothrow garanti zaten dilin sentaksında da yer alan bir öğe ile belirtiliyor.
 
@@ -422,7 +437,8 @@ ancak nofail/nothrow garanti zaten dilin sentaksında da yer alan bir öğe ile 
 
 böyle bir fonksiyon yazarsak basic guarantee vermiş olmayız.
 
-fakat eğer bu tür kaynakları geri verme işini bir sınıf nesnesine bağlayıp RAII idiomunu kullnırsak, o zaman destructor çağrıldığında en azından kaynağın geri verilme garantisi olur.
+fakat eğer bu tür kaynakları geri verme işini bir sınıf nesnesine bağlayıp RAII idiomunu kullnırsak, o zaman destructor çağrıldığında en azından kaynağın geri verilme 
+garantisi olur.
 
 		#include <iostream>
 		#include <exception>
@@ -453,7 +469,8 @@ ve bu sınıfın dtor'u çağırıldığında eğer dtor çağırıldığında d
 		}
 
 ***
-	Yani Exception Handling'de işin önemli kısmı RAII idiomunda. Kaynak kullanıyor olabiliriz, ancak kaynağı geri verme işini ayrı yapmak yerine onu bir sınıf nesnesine bağlamak(bazen bu da gerekmiyor) ve RAII idiomundan faydalanmak.
+	Yani Exception Handling'de işin önemli kısmı RAII idiomunda. Kaynak kullanıyor olabiliriz, ancak kaynağı geri verme işini ayrı yapmak yerine onu bir sınıf nesnesine
+	bağlamak(bazen bu da gerekmiyor) ve RAII idiomundan faydalanmak.
 
 		#include <iostream>
 		#include <exception>
@@ -508,9 +525,11 @@ exception gönderildi, exception yakalanmadı. peki bu nesnelerin dtorları ça�
 exception yakalamanın en önemli taraflarından birisi de;
 otomatik ömürlü sınıf nesneleri call chain içinde exception gönderilene kadar farkli fonksiyonlarda oluşturulmuş olabilir.
 
-baz içinde exception gönderildiği zaman foo'da oluşturulmuş p1 nesnesi, bar'ın stack frame'in(içinde yani, foo ile aynı) de oluşturulmuş p2 nesnesi ve baz'da oluşturulmuş p3 nesnesi hayattaydı. exception gönderildi fakat yakalanamadı ve bu nesnelerin destroy edilme garantisi yok.
+baz içinde exception gönderildiği zaman foo'da oluşturulmuş p1 nesnesi, bar'ın stack frame'in(içinde yani, foo ile aynı) de oluşturulmuş p2 nesnesi ve baz'da oluşturulmuş 
+p3 nesnesi hayattaydı. exception gönderildi fakat yakalanamadı ve bu nesnelerin destroy edilme garantisi yok.
 
-ama exception'u yakalarsak otomatik ömürlü nesneler programın akışı exception'u handle eden catch bloğuna girmeden, stack frame'lerde teker teker yani son oluşturulan ilk destroy edilecek şekilde destructorları çağırılıyor. bu sürece verilen bir isim var: "Stack Unwinding".
+ama exception'u yakalarsak otomatik ömürlü nesneler programın akışı exception'u handle eden catch bloğuna girmeden, stack frame'lerde teker teker yani son oluşturulan 
+ilk destroy edilecek şekilde destructorları çağırılıyor. bu sürece verilen bir isim var: "Stack Unwinding".
 
 //Stack Unwinding
 
@@ -625,7 +644,8 @@ aynı durum new ifadesi ile oluşturulan dinamik ömürlü nesneler için de ge�
 
 bu bir pointer, otomatik ömürlü bir sınıf nesnesi değil. dolayısıyla buradaki kodlar exception gönderirse delete edilmeyecek.
 
-ancak öyle bir sınıf olsa ki dinamik ömürlü nesnenin adresini alsa ve sınıf da o adresi bir yerde tutsa, dtor da o adresi henüz delete edilmemişse delete etse. işte unique ptr bunu yapıyor.
+ancak öyle bir sınıf olsa ki dinamik ömürlü nesnenin adresini alsa ve sınıf da o adresi bir yerde tutsa, dtor da o adresi henüz delete edilmemişse delete etse. 
+işte unique ptr bunu yapıyor.
 
 şimdi bu kodu raw pointer yerine unique ptr ile yazalım:
 
@@ -664,24 +684,30 @@ ancak öyle bir sınıf olsa ki dinamik ömürlü nesnenin adresini alsa ve sın
 				}
 		}
 
-exception gönderilirse stack unwinding sürecinde unique_ptr nesnesinin dtoru çağırılacak. exception gönderilmezse programın akışı closing brace'e geldiğinde yine unique ptr nesnesinin dtoru çağırılacak. yani artık kaynak sızdırma ihtimali kalmadı.
+exception gönderilirse stack unwinding sürecinde unique_ptr nesnesinin dtoru çağırılacak. exception gönderilmezse programın akışı closing brace'e geldiğinde yine 
+unique ptr nesnesinin dtoru çağırılacak. yani artık kaynak sızdırma ihtimali kalmadı.
 
 exception handling görüldüğü üzere konusu büyük ölçüde RAII idiomu ile de ilgili. 
 
 Tekrar edelim - Özet
 --------------------
-Eğer exception gönderildiğinde call chain'de ki stack frame'lerde otomatik ömürlü nesneler oluşturulmuşsa exception yakalandığında programın akışı exception'u handle eden koda girmeden stack frame'lerde oluşturulan nesneler, son çağrılan fonksiyonlardan ilk çağrılan fonksyiona doğru hepsi için dtor çağırılma garantisi var. dolayısıyla dtor çağırıldığında kaynaklar geri verilmiş olacak böylece kaynak sızıntısı ihtimali kalmamış olacak.
+Eğer exception gönderildiğinde call chain'de ki stack frame'lerde otomatik ömürlü nesneler oluşturulmuşsa exception yakalandığında programın akışı exception'u handle 
+eden koda girmeden stack frame'lerde oluşturulan nesneler, son çağrılan fonksiyonlardan ilk çağrılan fonksyiona doğru hepsi için dtor çağırılma garantisi var. 
+dolayısıyla dtor çağırıldığında kaynaklar geri verilmiş olacak böylece kaynak sızıntısı ihtimali kalmamış olacak.
 
 --------------------
 
 
 Exception göndermeye aday fonksiyonların başında Constructor geliyor.
 
-Sınıf nesnesini kullanılır hale sokan, onu nesne yapan constructor. Dolayısıyla ctor invariantları zaten ilk başında sağlaması gereken fonksiyon. Ve invariantları sağlayamazsa isteseniz de geri dönüş değeri olmadığı için iletme imkanımız yok.
+Sınıf nesnesini kullanılır hale sokan, onu nesne yapan constructor. Dolayısıyla ctor invariantları zaten ilk başında sağlaması gereken fonksiyon. Ve invariantları 
+sağlayamazsa isteseniz de geri dönüş değeri olmadığı için iletme imkanımız yok.
 
-Bü yüzden aksi yönde karar almayı engelleyecek herhangi bir durum yoksa, ctor işini yapamıyorsa sınıf nesnesi için invariantları doğru hale getiremiyorsa, bu da sınıf nesnesinin başarılı bir şekilde hayata iş görecek bir sınıf nesnesi getirememesi demek. Bu durumda ne yapacak exception throw edecek.
+Bü yüzden aksi yönde karar almayı engelleyecek herhangi bir durum yoksa, ctor işini yapamıyorsa sınıf nesnesi için invariantları doğru hale getiremiyorsa, bu da sınıf 
+nesnesinin başarılı bir şekilde hayata iş görecek bir sınıf nesnesi getirememesi demek. Bu durumda ne yapacak exception throw edecek.
 
-Bir sınıf nesnesinin hayata gelmiş olması için, çağrılan constructorun kodunun tamamının çalışması gerekiyor. Eğer ctor'un kodunun tamamı çalışmazsa o zaman hayata gelen bir sınıf nesnesi yok.
+Bir sınıf nesnesinin hayata gelmiş olması için, çağrılan constructorun kodunun tamamının çalışması gerekiyor. Eğer ctor'un kodunun tamamı çalışmazsa o zaman hayata gelen 
+bir sınıf nesnesi yok.
 
 		class Myclass {
 		public:
@@ -781,7 +807,9 @@ burada önce operator new fonksiyonu çağırılır ve sınıfın size'ı kadar 
 peki burada ctor yakalandığında operator delete'in çağırılma garantisi var mı?
 -evet var.
 
-dinamik ömürlü bir nesneyi new ifadesi ile oluşturduğumuz zaman, bu nesneyi oluşturacak ctor çağırıldığında zaten operatör new çağırılmış durumda. zaten operator new'in kendisi exception throw etseydi ctor çağırılmazdı. peki çağırılan ctor içinde exception throw edilirse allocate edilen bellek bloğu geri verilecek. bu dilin sağladığı bir garanti.
+dinamik ömürlü bir nesneyi new ifadesi ile oluşturduğumuz zaman, bu nesneyi oluşturacak ctor çağırıldığında zaten operatör new çağırılmış durumda. zaten operator new'in 
+kendisi exception throw etseydi ctor çağırılmazdı. peki çağırılan ctor içinde exception throw edilirse allocate edilen bellek bloğu geri verilecek. bu dilin sağladığı bir 
+garanti.
 
 
 
@@ -789,7 +817,8 @@ dinamik ömürlü bir nesneyi new ifadesi ile oluşturduğumuz zaman, bu nesneyi
 
 Constructor içerisinde exception throw etse, exception yakalansa dahi dtor çağırılmıyor çünkü ortada construct edilen bir nesne yok dilin kurallarına göre.
 
-ama eleman olan nesneler için durum böyle değil. çünkü zaten eleman olan nesneler constructor'un ana bloğu içinde oluşturulmuyorlar. onlar programın akışı ana bloğa gelmeden, ctor initializer list içerisindeki kodun çalışması ile init. ediliyorlar.
+ama eleman olan nesneler için durum böyle değil. çünkü zaten eleman olan nesneler constructor'un ana bloğu içinde oluşturulmuyorlar. onlar programın akışı ana bloğa 
+gelmeden, ctor initializer list içerisindeki kodun çalışması ile init. ediliyorlar.
 
 		class Member {
 		public:
@@ -907,7 +936,8 @@ dilin bu konu ile ilgili bir aracı var. buna function try block deniyor.
 Az önceki problemin çözümü.
 Modern C++'dan önce de bu araç vardı.
 
-Eğer ctor init. list kısmında construct edilen memberlardan birinin gönderdiği exceptionu sınıfın ctor'u içinde yakalamak istiyorsak o zaman böyke bir try block oluşturmak yerine "function try block" denilen bloğu oluşturmalıyız. 
+Eğer ctor init. list kısmında construct edilen memberlardan birinin gönderdiği exceptionu sınıfın ctor'u içinde yakalamak istiyorsak o zaman böyke bir try block oluşturmak
+yerine "function try block" denilen bloğu oluşturmalıyız. 
 
 diyelim elimizde bir fonksiyon var ve  biz tüm fonksiyonu try bloğu kapsamına almak istiyoruz.
 
@@ -1002,7 +1032,8 @@ peki copy ctor exception throw etse, function try block'u izleyen catch bloklar�
 
 -Hayır. 
 
-Function try block içerisinde gönderilen exception'lar yakalanabilir ama parametre değişkeninin hayata gelmesi sürecindeki exceptionların function try block ile yakalanma imkanı yok.
+Function try block içerisinde gönderilen exception'lar yakalanabilir ama parametre değişkeninin hayata gelmesi sürecindeki exceptionların function try block ile yakalanma 
+imkanı yok.
 
 -------------------------
 
@@ -1039,7 +1070,8 @@ problemimize dönelim.
 				Myclass m;
 		}
 
-burada gönderilen exception constructor tarafından yakalanamıyor. Çünkü bu şekilde try block oluşturursak ctor init. list'de çalışan kodlar bu try bloğu içinde kabul edilmiyor.
+burada gönderilen exception constructor tarafından yakalanamıyor. Çünkü bu şekilde try block oluşturursak ctor init. list'de çalışan kodlar bu try bloğu içinde kabul 
+edilmiyor.
 
 ancak ctor'da function try block kullanırsak o zaman ctor init. list de yakalanma potansiyeline giriyor. o halde function try block kullanalım.
 
@@ -1066,9 +1098,13 @@ ancak ctor'da function try block kullanırsak o zaman ctor init. list de yakalan
 		...
 
 Ctor exceptionu throw etti. peki o zaman ne olacak?
-bu exception yakalanacak, programın akışı ctor'u izleyen catch bloğunun içine girecek. ama artık programın akışı buraya girdiğinde bizim bu myclass nesnesini construct etme imkanımız ne yazık ki yok. çünkü bir exception gönderilmek zorunda. eğer herhangi bir kod eklemezsek, ctor'un function try block'unu izleyen catch bloğunda, derleyici buraya doğrudan rethrow statement koyuyor.
+bu exception yakalanacak, programın akışı ctor'u izleyen catch bloğunun içine girecek. ama artık programın akışı buraya girdiğinde bizim bu myclass nesnesini construct 
+etme imkanımız ne yazık ki yok. çünkü bir exception gönderilmek zorunda. eğer herhangi bir kod eklemezsek, ctor'un function try block'unu izleyen catch bloğunda, 
+derleyici buraya doğrudan rethrow statement koyuyor.
 
-Burada biz member'da oluşan exception'u yakaladık o zaman exception yakalandığına göre member hayata gelmedi. bu durumda sınıfın invariantları oluşturamaması demek. dolayısıyla function try bloğunu izleyen catch bloğunun sonunda, siz kendiniz rethrow etmezseniz ya da translate etmezseniz ya da kendiniz buraya terminate gibi bir fonksiyonu çağırmazsanız exception rethrow ediliyor.
+Burada biz member'da oluşan exception'u yakaladık o zaman exception yakalandığına göre member hayata gelmedi. bu durumda sınıfın invariantları oluşturamaması demek. 
+dolayısıyla function try bloğunu izleyen catch bloğunun sonunda, siz kendiniz rethrow etmezseniz ya da translate etmezseniz ya da kendiniz buraya terminate gibi bir 
+fonksiyonu çağırmazsanız exception rethrow ediliyor.
 
 
 -----------------------------------------
@@ -1122,7 +1158,8 @@ noexcept specifier'ın ilginç bir özelliği daha var.
 
 		void foo(int)noexcept(/*constant expression*/)
 
-		bu constant expression lojik yorumlamaya tabi tutlacak ve bu lojik yorumlama sonucunda true değer elde edilirse fonksiyon noexcept olarak bildirilmiş olacak. ama false ise exception throw etmeme garantisi vermiyor olacak.
+		bu constant expression lojik yorumlamaya tabi tutlacak ve bu lojik yorumlama sonucunda true değer elde edilirse fonksiyon noexcept olarak bildirilmiş olacak.
+		ama false ise exception throw etmeme garantisi vermiyor olacak.
 
 		yani bildirimi:
 
@@ -1190,7 +1227,8 @@ Peki noexcept operatörü neye göre true ya da false değer üretiyor?
 				bu kod exception göndermeme garantisi taşımıyor çünkü fonksiyon(foo) noexcept değil.
 				noexcept operatörü false üretir.
 
-		foo'nun kendisi nofail olsaydı, o zaman bu fonksiyonun çağırılmasında exception throw etmeme garantisi olacaktı. bu durumda noexcept operatörü true değer üretecekti.
+		foo'nun kendisi nofail olsaydı, o zaman bu fonksiyonun çağırılmasında exception throw etmeme garantisi olacaktı. bu durumda noexcept operatörü true değer 
+		üretecekti.
 
 		Unevaluated Context listesine yeni bir ifade daha ekleyelim..
 
@@ -1234,9 +1272,11 @@ burada hayata gelen bir myclass nesnesi var mı?
 -hayır, çünkü unevaluated context.
 
 b true mu false mu?
--true, çünkü bu sınıfın default ctor'unu derleyici yazacak ve derleyici yazdığı için derleyici kendi yazdığı ctor'u noexcept olarak bildiriyor. çünkü noexcept olması için bir engel yok, içi boş bir ctor. exception throw etme ihtimali yok ki.
+-true, çünkü bu sınıfın default ctor'unu derleyici yazacak ve derleyici yazdığı için derleyici kendi yazdığı ctor'u noexcept olarak bildiriyor. çünkü noexcept olması için 
+bir engel yok, içi boş bir ctor. exception throw etme ihtimali yok ki.
 
-ama kendimiz bildirirsek işler değişir. sınıfların special member functionları söz konusu olduğunda bunlar eğer user declared değilde implicitly declared ise derleyici karar veriyor. eğer derleyicinin yazdığı kodda exception throw etme ihtimali yoksa noexcept olarak bildiriyor.
+ama kendimiz bildirirsek işler değişir. sınıfların special member functionları söz konusu olduğunda bunlar eğer user declared değilde implicitly declared ise derleyici 
+karar veriyor. eğer derleyicinin yazdığı kodda exception throw etme ihtimali yoksa noexcept olarak bildiriyor.
 
 ///////////
 
@@ -1256,7 +1296,8 @@ ama kendimiz bildirirsek işler değişir. sınıfların special member function
 
 Soru: b true mu false mu?
 
--true. çünkü memberin default ctor'u da implicitly declared, dolayısıyla derleyici noexcept olarak bildirecek. Myclass'ın default ctor'unu derleyici yazıyor, derleyicinin yazdığı ctor memberi de default ctor ediyor. o halde derleyicinin myclass sınıfı için yazdığı ctor'un da exception throw etme ihtimali yok.
+-true. çünkü memberin default ctor'u da implicitly declared, dolayısıyla derleyici noexcept olarak bildirecek. Myclass'ın default ctor'unu derleyici yazıyor, derleyicinin 
+yazdığı ctor memberi de default ctor ediyor. o halde derleyicinin myclass sınıfı için yazdığı ctor'un da exception throw etme ihtimali yok.
 
 ama şimdi bakalım:
 
@@ -1317,9 +1358,11 @@ eskiden kural şöyleydi:
 		void foo()throw(std::bad_alloc)
 		void bar()throw();
 
-		örneğin foo fonksiyonu bad_alloc sınıfı türünden başka bir tür exception throw ettiğinde veya bar fonksiyonu exception throw etmeme garantisi vermesine rağmen exception throw ettiğinde ismi std::unexpected isimli bir fonksiyon çağırılıyordu.
+		örneğin foo fonksiyonu bad_alloc sınıfı türünden başka bir tür exception throw ettiğinde veya bar fonksiyonu exception throw etmeme garantisi vermesine 
+		rağmen exception throw ettiğinde ismi std::unexpected isimli bir fonksiyon çağırılıyordu.
 
-		ve bu duruma unexpected exception deniyordu. exception specification'da belirtilen türün dışında bir exception throw etmesi ya da exception göndermeme garantisinin violate edilmesi.
+		ve bu duruma unexpected exception deniyordu. exception specification'da belirtilen türün dışında bir exception throw etmesi ya da exception göndermeme 
+		garantisinin violate edilmesi.
 
 		std::unexpected'in default davranışı std::terminate'i çağırmaktı. std::terminate'in de default davranışı std::abort'u çağırmak.
 
@@ -1367,19 +1410,6 @@ mülakat sorularından birisi de : terminate'in çağırıldığı durumları sa
 	-eğer bir fonksiyon noexcept garantisi vermesine rağmen exception throw ediyorsa
 
 	bu durumlarda terminate fonksiyonu çağırılır.
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
