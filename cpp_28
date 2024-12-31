@@ -1,5 +1,6 @@
 
-Standard kütüphanenin gönderdiği bütün exception'lar polimorfik bir sınıf hiyerarşisi içinde. en tepede std::exception isimli bir sınıf var. ve onun altında farklı farklı sınıflar var.
+Standard kütüphanenin gönderdiği bütün exception'lar polimorfik bir sınıf hiyerarşisi içinde. en tepede std::exception isimli bir sınıf var. 
+ve onun altında farklı farklı sınıflar var.
 
 Bazı exceptionlar operatatör seviyesindeki işlemlerin gönderdiği exceptionlar. örneğin new ifadesi kullandığımızda, operatör new'in başarısız olması durumunda gönderilen std::bad_alloc gibi.
 
