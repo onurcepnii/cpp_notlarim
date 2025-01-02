@@ -544,7 +544,8 @@ Fakat:
 
 Farklı farklı aşamalarda sentaks kontrolü yapılıyor demiştik. 
 
-Derleyici T türünün ne olduğunu anlayıp da bu template'den bir specialization oluşturduğunda (buna template'in instantiate[Template Instantiation] edilmesi deniyor) sizin yazdığınız bir kod nasıl bir sentaks kontrolüne tabi tutuluyorsa o kod da sentaks kontrolüne tabi tutulacak.
+Derleyici T türünün ne olduğunu anlayıp da bu template'den bir specialization oluşturduğunda (buna template'in instantiate[Template Instantiation] edilmesi deniyor) sizin
+yazdığınız bir kod nasıl bir sentaks kontrolüne tabi tutuluyorsa o kod da sentaks kontrolüne tabi tutulacak.
 
 Burada derleyicinin yazacağı kodda sentaks hatası var. int türden bir değişken . operatörünün operandı olamaz. Dolayısıyla burada dilin kuralları çiğnenmiş olacak. Buradaki sentaks hatasının nedeni derleyicinin yazdığı kod sentaks hatası oluşturuyor.
 
@@ -1057,25 +1058,5 @@ Eğer template'lerden biri diğerinin kabul ettiği bütün argümanları kabul 
 	örneğin int türden bir argüman için aşağıdaki template'den bir specialization oluşturmak mümnkün mü? hayır. üsttekinde mümkün ama.
 
 	dolayısıyla burada üstteki alttakine göre daha az spesifik.
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
