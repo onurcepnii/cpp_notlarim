@@ -1,0 +1,1081 @@
+Neden Template kullanıyoruz? Neden böyle bir generic yapıya ihtiyacımız var?
+
+Örneğin algoritmalar. Algoritmaların çoğu türden bağımsız. Fakat C++ kodu ve statik tür sistemine sahip kodlar türlere bağlı. 
+
+
+C++'da ki generiklik gerçek bir C++ kodunun bütün türlere hizmet vermesi değil, derleyicinin derleme zamanında belirli bir tür veya türler için tam onlara uygun kod yazmasını sağlıyor.
+
+Eğer hazırladığımız kod kalıbı bir fonksiyon yazımına yönelikse işte ona function template diyoruz.
+
+Bir sınıf kodu yazımına yönelikse ona class template diyoruz.
+
+Class template neden ihtiyacımız olsun? 
+
+	-En basitinden data structures için. Linked List düşünelim. ama biz bu linked list'de double mı tutucaz, int mi tutucaz? onlara göre ayrı ayrı implementasyon yapmak zorunda kalırız. oysa türden bağımsız şekilde bir template oluşturabiliriz.
+
+ 
+(1) Farklı farklı türler için ayrı ayrı kod yazmamız gerekmiyor, derleyici hallediyor.
+
+(2) Daha yüksek seviyeli bir abstraction yapılmış oluyor
+
+(3) Aynı kodu örneğin 10 farklı tür için ayrı ayrı yazsak ve değişiklik yapmak istesek hepsi için tek tek uğraşmamız gerekecek.
+
+(4) kod ekonomisi. sınıfların çok fazla üye fonksiyonu ve free function'U olabilir. fakat bu fonksiyonlar generic olarak ifade edildiğinde derleyici çağırılmayan fonksiyonun kodunu yazmayacak. sadece hangi fonksiyonlar çağırıldıysa o fonksiyonların kodunu yazacak.
+
+... daha bir çok faydası var.
+
+
+
+
+NOT: template <typename T>	// buradaki T'ye "template parameter" diyoruz.
+	 void func(T x, T y); // buradaki T'ye ise "call parameter" diyoruz.
+
+
+
+
+1) Deduction ( Template Argument Deduction )
+	Modern Cpp'den önce sadece function templates için geçerliydi. Fakat Cpp 17 ile bu konuda çok radikal bir gelişme yaşandı ve artık sınıflar için de belirli kapsamda CTAD gerçekleşiyor.
+
+	std::vector<int> ivec{ 1, 4, 5, 6 };
+
+	std::vector ivec{ 1, 4, 5, 6 }; // C++17 öncesi için sentaks hatası fakat 17 ve sonrası için legal
+
+2) Explicit Template Arguments
+3) Default Template Arguments
+
+
+
+Derleyiciler template koda ilişkin sentaks kontrolünü  birkaç farklı aşamada yapıyorlar:
+
+1) birinci aşama = template kod kullanılmadan template'in kendisi üzerinde yapılıyor.
+
+	açılan paranteze karşılık kapanan parantez olmaması gibi hatalar, hatta bazen ; olmamasına bile bazı derleyiciler hata vermiyor.
+
+	template <typename T>
+	void func(T x)
+	{
+		foo(x);	// sentaks hatası değil. T türünün ne olduğuna bağlı olarak foo ismi ADL ile aranabilir.
+
+		bar(19); // sentaks hatası. aranaıp bulunamaz.
+	}
+
+	bu birinci aşamada yapılan sentaks kontrolü.
+
+2) ikinci aşama = eğer template argument deduction söz konusu ise bu deduction'un yapılamaması ihtimali var. bu durumda template argümanının ne olduğu anlaşılamazsa yine derleyici durumu sentaks hatası olarak değerlendirecek.
+	
+	template <typename T>
+	T func();
+
+	int main()
+	{
+		func();	// hata
+
+		//derleyicinin verdiği hata msj : could not deduce template argument for 'T'
+	}
+
+	dolayısıyla derleyici bazı durumlarda fonksiyon çağrısından hareketle dilin kurallarına dayanarak template argümanının ne olduğunu anlama şansına sahip değil.
+
+
+	bir başka örnek:
+
+	template <typename T>
+	void func(T x, T y);
+
+	int main()
+	{
+		func(10, 2.0); // çelişki var, birinci parametreye gönderilen argümandan dilin kurallarına göre T türünün int olması gerekirken, ikinci parametre için double olması gerekiyor. T türü hem int hem double olamaz. dolayısıyla sentaks hatasına yol açıyor. 
+		// derleyicinin verdiği hata mesajında T türünün nambigious olduğu belirtilmiş.
+	}
+
+
+
+------------------------------------
+	Template Argument Deduction
+------------------------------------
+
+Nasıl yapılır?
+
+Auto Type Deduction ile Template Argument Deduction arasında bir istisna dışında fark yok.
+
+	iemplate <typename T>
+	void func(T x);
+
+	int main()
+	{
+		func(10);		// int
+	---------------------
+		const int x = 10;
+		func(x);		// int
+	---------------------
+		int ival{};
+		int& r = ival;
+		func(r);		// int. hatta hatırlayalım 					   constluk düşer.
+	---------------------
+		int a[10]{};
+		func(a);		// int*, array decay uygulanır
+	---------------------
+		const int a[10]{};
+		func(a);		// const int*
+	---------------------
+		func("onur");	// const char*
+	---------------------
+	// main dışında bu fonk. bildirilmiş olsun => int foo(int);
+		func(foo);		// int(*)int, function decay
+	---------------------
+
+	}
+
+
+*** Çok Önemli
+
+// trick
+
+	class Myclass;
+
+	int main()
+	{
+		Myclass m; // sentaks hatası çünkü in-complete type
+	}
+
+///////////////
+
+az önce neden sentaks hatası olduysa şimdi de o nedenle sentaks hatası olacak.
+
+	template <typename T>
+	class TypeTeller;
+
+	template <typename T>
+	void func(T x);
+
+	int main()
+	{
+		TypeTeller<int> x;
+	}
+
+/////////////
+
+eğer siz fonksiyonda yukarıdaki typeteller sınıfının template argümanı olarak bu fonksiyonun parametresi olan yani template'in template parametresini kullanırsanız, derleyici sentaks hatasını anlatırken T nin ne olması gerektiğini bize söyleyecek.
+
+	template <typename T>
+	class TypeTeller;
+
+	template <typename T>
+	void func(T)
+	{
+		TypeTeller<T> x;
+	}
+
+	int main()
+	{
+		func(123);
+	}
+
+////////////
+
+	template <typename T>
+	class TypeTeller;
+
+	template <typename T>
+	void func(T x);
+
+	int main()
+	{
+		const int y = 5;
+		func(y);
+	}
+
+
+-----------------------------------
+
+Gelelim referans deklaratörü olmasına..
+
+	template <typename T>
+	class TypeTeller;
+
+	template <typename T>
+	void func(T&)
+
+	int main()
+	{
+
+	// dikkat T için yapılan çıkarım diyoruz!
+
+		int x = 5;
+
+		func(x);	// T için yapılan tür çıkarımı int
+
+	-----------------
+		
+		const int x = 10;
+
+		func(x);	// T için yapılan çıkarım const int
+
+	-----------------
+
+		int a[5]{};
+
+		func(a);	// T için yapılan çıkarım int[5]
+
+	-----------------
+	
+	// int foo(int); diye bir fonksiyon tanımı olduğunu varsayalım.
+
+		func(foo);	// T için yapılan çıkarım int(int)
+
+	-----------------
+
+	}
+
+///////////////////
+
+
+	template <typename T>
+	void func(T&);
+
+	int main()
+	{
+		func("alican");		// T için yapılan tür çıkarımı const char[7]
+	}
+
+
+///////////////////
+
+
+	template <typename T>
+	void foo(T, T);
+
+	template <typename T>
+	void bar(T&, T&);
+
+	int main()
+	{
+		foo("onur","cepni");	// her iki parametre için yapılan çıkarım aynı olacak bu yüzden sentaks hatası yok. const char(*)
+		
+		bar("onur","cepni");	// burada ilk argümana göre yapılan çıkarım const char[5], ikinci argümana göre yapılan çıkarım const char[6]
+		//böyle olamaz ikisi farklı türler. o halde sentaks hatası
+	}
+
+
+///////////////////
+
+
+	template <typename T>
+	void foo(T, T&);
+
+	int main()
+	{
+		int a[5]{};
+
+		foo(a, a);	// ambiguity
+
+		// 1.parametrede T için yapılan çıkarım int*
+		// 2.parametrede T için yapılan çıkarım int[5]
+
+		// bunlar aynı tür değil o halde ambiugity
+	}
+
+
+///////////////////
+
+
+	template <typename T>
+	void foo(T, T&);
+
+	int main()
+	{
+		int x = 5;
+
+		foo(x,x);	// geçerli bir sorun yok.
+
+	-----------------
+
+		const int x = 5;
+
+		foo(x,x);	// geçersiz. ilk parametredeki T için yapılan tür çıkarımı int, ikinci parametredeki T için yapılan çıkarım const int
+
+	}
+
+
+
+//////////////////
+
+NOT: Önünde const, volatile herhangi bir niteleyici olmadan doğrudan template parametresini && token'ı izliyorsa bu bir sağ taraf referansı değil. Bunu auto konusunda görmüştük.
+
+Bu durumda böyle referans parametreye => forwarding reference (standard'ın kullandığı terim)
+
+diğeri Scott Meyers'in uydurduğu => universal referance
+
+	template <typename T>
+	void foo(T &&);	// bu bir R Value referansı değil, Universal/Forwarding Referance
+
+	//burada çıkarım kuralları tamamen farklı
+
+	int main()
+	{
+		// deduction for T depends on the value category of given argument
+
+		//eğer gönderilen argüman L value ise o zaman T için yapılan çıkarım T&.
+
+		//eğer gönderilen argüman R value ise T için yapılan çıkarım T. yani referans türü değil.
+
+		foo(12);	// T için yapılan çıkarım int
+
+		----------------
+
+		int x = 230;
+		foo(x);		// T için yapılan çıkarım int&
+
+
+		//T için yapılan çıkarımdan bahsettik ama template parametresi de T&&. Yani burada referansa referans oluşuyor. Reference collapsing table hatırlayalım.
+
+			T&		&		T&
+			T&		&&		T&
+			T&&		&		T&
+			T&&		&&		T&&
+
+		// yani bu örnek için fonksiyonun parametre değişkeninin türü int& olacak.
+
+		----------------
+
+	}
+
+
+Örneğin;
+
+	template <typename>
+	class TypeTeller;
+
+	template <typename T>
+	void foo(T&&)
+	{
+		T x; // referansı default init. edemem. T int& çünkü. sentaks hatası
+	}
+
+	int main()
+	{
+		int x = 240;
+		foo(x);
+	}
+
+
+
+////////////////////
+
+ÖZETLE
+
+
+	template<typename T>
+	void foo(T&&)
+	{
+		foo(10);
+	}
+
+
+Fonksiyona gönderilen ifade L value expression ise fonksiyonun parametre değişkeni L  value reference, fonksiyona gönderilen argüman R value expression ise fonksiyonun parametresi R value reference.
+
+Fonksiyona gönderilen argüman L value ise T türü L val. reference türü, fonksiyona gönderilen argüman R value ise T türü bir referans türü değil. 
+
+foo() fonksiyonuna ne gönderirsem göndereyim göndereyim (R value, L value, Const, Non-Const) sentaks hatası olmaz. İşte bu yüzden zaten Scott Meyers böyle parametrelere "Universal Reference" diyor.
+
+
+	template<typename T>
+	void foo(T&& a, T b);
+
+	int main()
+	{
+		int x = 10;
+
+		foo(x, x);		// sentaks hatası, birinci için yapılan çıkarım int&, ikinci için yapılan çıkarım int
+	------------------
+		foo(5, x);		// sentaks hatası yok. ikisi için yapılan çıkarım da int
+	------------------
+		foo(5, 5);		// burada da aynı şekilde sentaks hatası yok.
+	------------------
+
+	}
+
+
+//////////////////
+
+
+	template <typename T>
+	void foo(T&&, T&);
+
+	int main()
+	{
+		int x = 10;
+
+		foo(x, x);	// int&, int yani sentaks hatası
+	
+		foo(19,x);	// int, int yani legal
+	}
+
+
+
+//////////////////
+
+
+	template <typename T>
+	void func(T*);
+
+	int main()
+	{
+		int x{};
+		func(&x);
+	}
+
+(chat-gpt)
+ Burada func şablon fonksiyonu, bir işaretçi türü (T*) kabul eder.
+
+x bir int türündedir, dolayısıyla &x kullanarak bir int* işaretçi elde edilir.
+Şablon çıkarımı ile T = int olur ve func(int*) çağrılır.
+
+//////////////////
+
+	template <typename T>
+	void func(T** );
+
+	int main()
+	{
+		int x{};
+		int* ptr = &x;
+		int** p = &ptr;
+
+		func(p); 	// legal
+
+		func(ptr);	// sentaks hatası, çünkü ptr int*
+	}
+
+
+//////////////////
+
+	template <typename T>
+	void func(T);
+
+	int main()
+	{
+		int x{};
+		func(&x); // T türü int*
+
+	-----------------------
+
+		int x{};
+		int* ptr = &x;
+		func(&x);
+		func(&ptr);	// T türü int**
+
+
+	}
+
+Fakat dikkat edelim eğer fonksiyonda void func(T *) olsaydı, func(&x) int* gönderdiğimiz için T türü int olacaktı. func(&ptr) de int** gönderdiğimiz için T türü int** olacaktı.
+
+
+///////////////
+ZOR
+
+	template <typename T, int N>
+	void func(T (&)[N]);
+
+	// bu fonksiyonun parametresi N elemanlı, elemanları T türünden olan bir diziye referans.
+	// Yani fonksiyonun parametresi T[n] türüne L value reference
+
+	int main()
+	{
+		int a[20]{};
+
+		func(a);	
+		// derleyici T'nin int, N'nin 20 olduğunu anlayacak
+	}
+
+
+///////////////
+
+
+	template <typename T, int N>
+	constexpr int asize(T (&)[N])
+	{
+		return N;
+	}
+
+	int main()
+	{
+		int a[5]{};
+
+		constexpr auto size = asize(a);
+	}
+
+// C'de bunu fonksiyonel makro olarak yazardık asize makrosu.
+
+
+
+///////////////
+
+	#include <typeinfo>
+	#include <iostream>
+
+	template <typename T>
+	void foo(T)
+	{
+		typeid(T).name()
+	}
+
+	int main()
+	{
+		foo(1.2);
+		foo(12);
+		foo('A');
+	}
+
+Burada çağırılan 3 fonksiyon da aynı fonksiyon değil. Derleyici her fonksiyon çağrısı için farklı türler için farklı fonksiyon yazacak.
+
+Yani önce double parametreli fonksiyon yazıp daha sonra foo(12) onu çağırmayacak. hepsine ayrı ayrı fonksiyon yazacak derleyici.
+
+Fakat:
+	
+	foo(1.2);
+	foo<double>(12);
+	foo<double>('A');
+
+	bu durumda tek bir fonksiyon olacak.
+
+
+
+---------------------------------------
+
+Farklı farklı aşamalarda sentaks kontrolü yapılıyor demiştik. 
+
+Derleyici T türünün ne olduğunu anlayıp da bu template'den bir specialization oluşturduğunda (buna template'in instantiate[Template Instantiation] edilmesi deniyor) sizin yazdığınız bir kod nasıl bir sentaks kontrolüne tabi tutuluyorsa o kod da sentaks kontrolüne tabi tutulacak.
+
+Burada derleyicinin yazacağı kodda sentaks hatası var. int türden bir değişken . operatörünün operandı olamaz. Dolayısıyla burada dilin kuralları çiğnenmiş olacak. Buradaki sentaks hatasının nedeni derleyicinin yazdığı kod sentaks hatası oluşturuyor.
+
+	template <typename T>
+	void foo(T x)
+	{
+		x.foo();
+		x.bar();
+	}
+
+	int main()
+	{
+		foo(190);
+	}
+
+Oysa ki aşağıdaki gibi göndersek burada sentaks hatası olmayacaktı.
+
+	struct Myclass{
+		void bar();
+		void foo();
+	};
+
+	template <typename T>
+	void foo(T x)
+	{
+		x.foo();
+		x.bar();
+	}
+
+	int main()
+	{
+		foo(Myclass{});
+	}
+
+
+----------------------------
+
+//hidden constraint
+
+	template <typename T>
+	void foo(T x, T y)
+	{
+		if (x == y) {
+
+		}
+	}
+
+Bu kadar basit bir kodun bile legal olması için T türünün copy constructible olması gerekiyor. Çünkü buna T türden argümanlar geçtiğimde fonksiyonun parametre değişkenleri için copy ctor çağırılacak.
+Aynı zamanda equality comparable olması gerekiyor.1
+
+Biz bunları gizli bir constraint olarak bırakmak yerine dile C++20 ile eklenen araçlarla bunu açık açık interface'de gösterme imkanına sahibiz. Yani template'e bakar bakmaz çağıran kodun o template'in constraintlerinin nele olduğu konusunda bilgi edinmesi ve derleyicinin de çok daha açık bir hata mesajı vermesi .
+
+Template'lerin dezavantajları da var.
+ Bunlardan biri:
+
+ Template'ler ile ilgili verilen hata mesajlarında, hata mesajlarının 200-300-400 satır olabilmesi. C++20 ile gelen conceptlerin getirdiği en önemli özelliklerden biri de hata mesajlarının çok daha yalın hale gelmesi.
+
+----------------------------
+
+konumuza geri dönelim
+
+Son sentaks kontrolü derleyicinin yazdığı kod üzerinden yapılıyor.
+
+01.35
+
+
+
+Bir fonksiyon şablonunun kodunun derleyici yazarken derleyicinin yazdığı kod başka şablonlardan da specialization oluşturmayı gerekebilir.
+
+
+	template <typename T>
+	void bar(T& x)
+	{
+
+	}
+
+	template <typename T>
+	void foo(T x, T y)
+	{
+		bar(x);
+	}
+
+
+/////////////////////////
+
+	template <typename T>
+	void Swap(T& x, T& y)
+	{
+		T& temp(std::move(x));
+		x = std::move(y);
+		y = std::move(temp);
+	}
+
+
+
+	template <typename T>
+	void foo(T& r1, T& r2)
+	{
+		Swap(r1, r2);
+	}
+
+
+---------------------------------------
+
+Fonksiyon şablonlarının fonksiyon parametreleri de default argument alabilir.
+
+
+	template <typename T>
+	void foo(T x = 0);
+
+	int main()
+	{
+		foo(); // sentaks hatası.
+
+		// burada dilin kurallarına göre varsayılan argümanın ne olduğuna bağlı olarak bir tür çıkarımı yapmak mümkün değil.
+
+		// yani varsayılan argüman olabilir fakat varsayılan argümanın ne olduğuna bağlı olarak tür çıkarımı yapma mekanizması yok.
+	}
+
+///////////////////////////
+
+	template <typename T>
+	T foo();
+
+	int main()
+	{
+		int x = foo();	// bu da sentaks hatası. çünkü burada da böyle bir çıkarım mekanizması yok.
+
+		// çıkarım sadece fonksiyon çağrı ifadesinden anlaşılıyor.
+	}
+
+
+--------------------------------------
+
+***
+Fonksiyonun bütün parametrelerinin template parametresi ile ilgili olması gerekmiyor
+
+
+	template <typename T>
+	void foo(T x, int y, std::string);
+
+
+----------------------------------------
+
+Öyle fonksiyon şablonları var ki, çıkarım yapmak mümkün olmadığı için bir ya da birden fazla template parametresi için explicit template argümanı kullanmak durumunda kalabiliyoruz.
+
+	int main()
+	{
+		std::make_unique<
+	// örneğin make_unique fonksiyonu, bir fabrika fonksiyonu. Fonksiyonun birinci template parametresi sadece fonksiyonun geri dönüş değeri türünde kullanılıyor. Dolayısıyla fonksiyon şablonunun 1.template parametresinin çıkarımını yaptırmak mümkün değil.
+	}
+
+
+
+Explicit Template Arguments
+---------------------------
+(a) Bir çıkarım söz konusu değilse, yani çıkarım yapma imkanı yok ise,
+(b) Çıkarım yapma imkanı var ama biz çıkarıma bırakmak istemiyoruz.
+
+böyle durumlarda template argümanını explicit olarak belirtmek zorundayız.
+
+	template <typename T>
+	T foo();
+
+	int main()
+	{
+		foo<int>();
+	}
+
+Örneğin burada böyle bir imkan yok.
+
+	template <typename T, typename U>
+	void foo(T, U);
+
+	int main()
+	{
+		foo(2, 5); // bu fonksiyonu böyle çağırmak demek, aslında şöyle çağırmaya karşılık:
+		// foo<int, int>(2, 5);
+
+		foo<int>('A', 5); // birinci parametreye char türü göndermeme rağmen, birinci template parametresi karşılığı kullanılacak template argümanının int olduğunu söylediğim için bir çıkarım yapılmayacak. Fakat 2.parametre için explicit template argument kullanmadığım için burada çıkarım yapılacak.
+	}
+
+
+Özellikle standard kütüphanede ve 3rd party kütüphanelerde çok sık rastlanılan senaryolardan biri: Fonksiyon şablonu kodu içinde fonksiyon parametresinin fonksiyon çağrı operatörünün operandı olması.
+	
+	template <typename T>
+	void foo(T f)
+	{
+		f();
+	}
+
+	void bar();
+
+	int main()
+	{
+		foo(bar); // adres op. koyun veya koymayın
+	}
+
+Böyle parametrelere popüler olarak "callable" deniyor. Derleyici 
+
+Bir örnek daha:
+	
+	template <typename T>
+	void foo(T f)
+	{
+		int x = f(10);
+	}
+
+	class Myclass {
+	public:
+		int operator()(int);
+	};
+
+	int main()
+	{
+		Myclass m;
+		foo(m);
+	}
+
+
+-----------------------------------------
+
+Sınıfların karşılaştırma operatör fonksiyonlarının özellikle önemi  generic programlama tarafında net olarak ortaya çıkacak. Çünkü bazı fonksiyon şablonlarında biz fonksiyon şablonunun parametre değişkenlerini ya da o türden değişkenleri ==,!=, >=, <= gibi operatörlerin operandı yaptığımızda bu durumda orada bir sentaks hatası olmaması için ilgili sınıfın bu operatörleri overload etmesi gerekiyor.
+
+
+-----------------------------------------
+
+Fonksiyon şablonlarında kullanılan birkaç tane tipik yapı var.
+
+	template <typename T>
+	sum(T x, T y);
+
+	int main()
+	{
+		sum(3, 5.5); // ambiguity oluşur.
+
+		// ya da explicit template argument kullanarak T türünün double türü olmasını biz kendimiz seçebiliriz.
+
+		sum<double>(3, 5.5);
+
+	}
+
+şimdi bu fonksiyon şablonunun şöyle yazıldığını düşünelim:
+
+	template <typename T, typename U>
+	T sum(T x, U y)
+	{
+		return x + y;
+	}
+
+	int main()
+	{
+		sum(3, 5.7);	// burada veri kaybı olabilir çünkü fonksiyonun geri dönüş değeri int türden olur ve sonuç 8 olur.
+
+		//geri dönüş değeri U olsaydı evet bu veri kaybı olmayacak fakat bu sefer argümanların yeri değişse yine veri kaybı olacak.
+	}
+
+Bu tür durumlarda kullanılan farklı farklı yapılar var. Bir tanesi:
+	fonksiyon şablonuna bir parametre daha koyarız, fonksiyonun geri dönüş değeri bu parametre türünden olur.
+
+	template <typename Result, typename T, typename U>
+	Result sum(T x, U y);
+
+	int main()
+	{
+		auto val = sum<double>(5.7, 3);
+	}
+
+Bu sayede fonksiyonun geri dönüş değerinin ne olacağı bilgisini saptamasını fonksiyonu çağıran koda veririz.
+
+Ama C++ sentaksı fonksiyonların geri dönüş değeri türleri için iki tane daha farklı araç sunuyor:
+"Trailing Return Type" ve 
+
+	auto foo() -> int
+	{
+		//
+	}
+
+Fonksyionun geri dönüş değeri türü yerine auto'yu fakat parametre parantezinin kapanmasından sonra arrow tokeni onun yerine fonksiyonun geri dönüş değeri türü.
+
+Normal fonksiyonlarda bu sentaksı kullanmanın bize sağlayacağı fazla bir avantaj yok. 1 tane olabilir o da :
+
+	foo fonksiyonun geri dönüş değeri türünün int(*)int olduğunu düşünelim.
+
+	bir tür eş ismi bildirmeden
+
+		int(*foo())(int)	// sentaksa göre böyle yazabiliyoruz
+		{
+			//
+		}
+
+	özellikle sentaks fonksiyonun parametre değişkeninin de function pointer type olması durumunda iyice karışık hale geliyor.
+
+		int(*foo(int (*fp)(int)))(int)
+		{
+			//
+		}
+
+	Böyle durumları basitleştirmek için:
+
+		using fptr = int(*)(int);
+
+		fptr foo(fptr f)
+		{
+			//
+		}
+
+
+	Ya da "Trailing Return Type":
+
+		auto foo() -> int(*)(int)
+		{
+			//
+		}
+
+
+Trailing Return Type generic programlama da da önemli bir işleve sahip.
+
+diyelim ki fonksiyonun geri dönüş değeri türünün x + y işleminin sonucunda hangi tür oluşuyorsa o tür olmasını istiyoruz. 
+
+	template <typename T, typename U>
+	decltype(x + y) foo(T x, U y);
+	// burada sentaks hatası olur çünkü decltype yazdığımız yerde scope problemi olur.
+
+	bu yüzden trailing return type kullanırız.
+
+	template <typename T, typename U>
+	auto foo(T x, T u) -> decltype(x + y)
+	{
+		//
+	}
+
+
+Fakat bir de "Auto Return Type" var.
+Fonksiyonun geri dönüş değeri türü yerine auto keyword yazıyoruz. Bu durumda derleyici fonksiyonun geri dönüş değeri türünü return ifadesinin türünden çıkarım yapıyor.
+
+	template <typename T, typename U>
+	auto foo(T x, U y)
+	{
+		return x + y;
+	}
+
+Auto Return Type template'lere özgü değil, normal fonksiyonlar için de kullanılabilir.
+
+
+------------------------------------
+
+***
+
+Fonksiyon şablonları ile aynı isimli fonksiyonlar bir arada bulunabilir, hiç bir engel yok.
+
+	template <typename T>
+	void foo(T)
+	{
+
+	}
+
+	void foo(int);
+
+
+Bu da bir overloading.
+
+Eğer fonksiyon çağrısında kullanılan argüman gerçek fonksiyonun parametresi ile tam uyuşuyorsa, derleyici fonksiyon şablonundan bir fonksiyon yazmayacak.
+
+Yani burada overload resolution kuralları farklı.
+
+	template <typename T>
+	void foo(T)
+	{
+
+	}
+
+	void foo(int);
+
+	int main()
+	{
+		foo(4.5); // template seçilir
+
+		// void foo<double>(double)
+	}
+
+----------------------------------------------
+
+mülakat sorusu
+
+Soru: Öyle bir fonksiyon olsun ki sadece parametre değişkeninin türünden argüman kabul etsin. Bunun dışındakiler sentaks hatası olsun.
+
+	void foo(int);
+
+	int main()
+	{
+		foo('A');	//sentaks hatası olsun
+		foo(3.4);	//sentaks hatası olsun
+		foo(3.f);	//sentaks hatası olsun
+		foo(9);		//legal olsun
+	}
+
+şöyle yaparız :
+
+	template <typename T>
+	void foo(T) = delete;
+
+	void foo(int);
+
+	int main(int)
+	{
+		foo('A');	
+		foo(3.4);	
+		foo(3.f);	
+		foo(9);
+	}
+
+
+----------------------------------------------
+
+Function Template ile Template Function dememiz arasında fark yok, ikisi de aynı.
+
+----------------------------------------------
+
+Fonksiyon şablonları aynı isimli olabilir.
+
+	template <typename T>
+	void foo(T);
+
+	template <typename T>
+	void foo(T, T);
+
+	template <typename T, typename U>
+	void foo(T, U);
+
+
+STL'de de bu yoğun olarak kullanılıyor.
+
+
+
+----------------------------
+//partial ordering rules
+
+Burada uygulanan kurallara "Partial Ordering Rules" deniyor.
+Parametresi en spesifik olan, en fazla nitelenmiş olan seçilecek.
+
+	template <typename T>
+	void foo(T)
+	{
+
+	}
+
+	template <typename T>
+	void foo(T *)
+	{
+
+	}
+
+	int main()
+	{
+		int x = 10;
+
+		foo(&x);
+	}
+
+
+T*, T'ye göre daha spesifik olduğu için T* seçilecek.
+
+Bir örnek daha:
+
+	template <typename T>
+	void foo(T)
+	{
+
+	}
+
+	template <typename T>
+	void foo(T *)
+	{
+
+	}
+
+	template <typename T>
+	void foo(T***)
+	{
+
+	}
+
+	int main()
+	{
+		int x = 10;
+		int* ptr = &x;
+		foo(&ptr);
+	}
+
+
+
+T*** template'den bir specilialization oluşturulacak çünkü diğerlerinden daha spesifik.
+
+***
+Eğer template'lerden biri diğerinin kabul ettiği bütün argümanları kabul ediyorsa fakat diğerinin kabul etmediği argümanları da kabul ediyorsa o zaman daha az spesifik. Örneğin bu örnek:
+
+	template <typename T>
+	void foo(T)
+	{
+		//daha az spesifik
+	}
+
+	template <typename T>
+	void foo(T *)
+	{
+
+	}
+
+	örneğin int türden bir argüman için aşağıdaki template'den bir specialization oluşturmak mümnkün mü? hayır. üsttekinde mümkün ama.
+
+	dolayısıyla burada üstteki alttakine göre daha az spesifik.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
