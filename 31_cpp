@@ -1,0 +1,847 @@
+
+Soru:
+	Bir template koddan kullanılacak kodu (örneğin bir sınıfın tanımı kodunu, bir fonksiyonun tanımı kodunu) oluşturmasına ne deniyor? Yani sürecin kendisine, derleyicinin 
+  kodunu yazmasına ne deniyor?
+Cevap:
+	Template'i instantiate etmek deniyor buna. Derleyici template'i instantiate ediyor.
+
+	Derleyici Template'i instantiate ederek template specialization'u oluşturuyor.
+
+	Oluşan ürüne specialization deniyor.
+
+
+Template Instantiation : Derleyicinin template koddan template specialization'u oluşturması.
+
+
+Template'i Instantiate etmek 2 farklı biçimde olabiliyor:
+
+(1) Implicit
+	Derleyicinin durumdan vazife çıkartarak instantiation yapması.
+
+	Örnek:
+
+		template <typename T>
+		T getMax(T x, T y)
+		{
+			return x > y ? x : y;
+		}
+
+		int main()
+		{
+			getMax(20, 10);
+		}
+
+	//Derleyici burada bu fonksiyona çağrı yapıldığı için, bu da bir fonksiyon şablonu olduğu için önce argument deduction yapacak. Sonra substituon denilen süreci yönetecek.
+Yani template parametresine karşılık gelen template argümanını fonksiyon içinde yerine koyacak. 
+( ki burada bir hata oluşması durumu ile kullanılan tekniklere: SFINAE(Substition Failure Is Not An Error) deniyor. ) Nihayetinde derleyici burada template'i instantiate 
+ediyor. Derleyicinin template'i burada instantiate etmesi için bir talimat vermiyoruz.
+
+(2) Explicit
+	Derleyiciye biz fiilen bir template'den instantiation yapması için talimat veriyoruz.
+
+		template <typename T>
+		T getMax(T x, T y)
+		{
+			return x > y ? x : y;
+		}
+
+		template double getMax<double>(double);
+		// explicit template instantiation
+
+
+
+
+Bir template'i kullanırken, derleyicinin template'i kullanabilmesi için template argümanı ya da argümanlarının ne olduğunu anlaması gerekiyor. Bu da 3 yolla mümkün:
+
+(1) Deduction
+(2) Explicit Template Argument
+(3) Default Template Argument
+
+
+Deduction'la ilgili bir iki noktaya daha değinelim.
+
+Fonksiyon şablonlarında deduction normalde argümanlardan parametre değişkenine aktarım yoluyla anlaşılıyordu. Fakat deduction'un yapıldığı başka bağlamlarda var. 
+	
+	template <typename T, typename U>
+	T foo(T x, U y);
+
+	int main()
+	{
+		foo(34, 4.5); // deduction yapılır -> int, double
+		foo<long>(34, 4.5); // T için çıkarım yapılmayacak long olarak alacak, U için ise double.
+		foo<long, long double>(34, 4.5); // ikisi için de çıkarım yapmayacak, long, double olarak alacak
+
+		int(*fp)(int, double) = foo; // burada da bir çıkarım oluyor. Doğrudan bir fonksiyon çağrısı yok fakat yine de çıkarım yapılan contextlerden birisi.
+
+		//Not: fp bir function pointer. int(int,double) türünden bir fonksiyonun pointeri.
+	}
+
+
+
+--------------------------------------------------------------------
+
+Kaldığımız yere geri dönelim.
+
+Geri Dönüş Değeri Türü
+
+C++ 20'de generic programlamaya ilişkin devrimci eklemeler oldu.
+En güzel eklemelerden birisi:
+
+- Abbreviated Template Syntax
+	
+	Normalde böyle:
+
+	template <typename T>
+	void foo(T x)
+	{
+
+	}
+
+	Ama C++20'den sonra gelen özellik ile:
+
+	void foo(auto x)
+	{
+		// bu bir fonksiyon şablonu ve yukardaki ile aynı anlamda
+	}
+
+Bu kısım İleri C++'da işlenecek.
+
+-------------------------------------
+
+***
+
+Bir sınıf generic olmasa da (yani sınıfın kendisi sınıf şablonu olmasa da) sınıfın static ya da non-static üye fonksiyonları fonksiyon şablonu olabilir.
+
+	class Myclass{
+	public:
+
+		template <typename T>
+		void foo(int);
+	};
+
+	int main()
+	{
+		Myclass m;
+
+		m.foo(45);	// derleyici bu durumda sınıfa int parametreli bir function yazacak. yani sınıfa bu şablonun bir specialization'unu oluşturacak.
+
+		m.foo(6.7);	// şimdi bir specialization daha oluşturacak ve double.
+	}
+
+
+Hatta bu bir operatör fonksiyonu da olabilir.
+
+	class Myclass{
+	public:
+		template <typename T>
+		operator T()const;
+	};
+
+Hatta sınıfın constructor'u bir fonksiyon şablonu olabilir.
+
+
+
+-----------------------------------
+
+Fonksiyon şablonlarında fonksiyonun geri dönüş değeri türünü
+- ya türü kendimiz belirliyoruz.
+	
+	template <typename T>
+	T foo(T);
+
+- ya da fonksiyon geri dönüş türünü trailing return type yapılması.
+
+	Hem generic kodda, hem de generic olmayan kodda kullanılabiliyor.
+
+	Bunu görmüştük, generic olmayan kodlarda eğer fonksiyon geri dönüş değeri bir function pointer ise veya pointer to array ise olası karışıklıkların önüne geçmek, okunurluğu 
+  arttırmak ve basitleştirmek için trailing return type kullanabiliriz.
+
+	Bir örnek daha:
+
+		class Myclass {
+		public:
+			class Nested {
+				//
+			};
+
+			Nested foo();
+		};
+
+
+		Myclass::Nested Myclass::foo()
+		{
+			return{};
+		}
+
+	Fakat böyle yazmak yerine;
+
+
+		class Myclass {
+		public:
+			class Nested {
+				//
+			};
+
+			Nested foo();
+		};
+
+		auto Myclass::foo() -> Nested	// bu şekilde yazabiliriz
+		{
+			return {};
+		}
+
+
+		-----------------------
+
+		struct Nec {
+			std::vector<int> mvec;
+
+			auto begin() const -> decltype(mvec.begin())
+			{
+				return mvec.begin();
+			}
+
+			decltype(mvec.end()) end() const
+			{
+				return mvec.end();	//error
+			}
+		};
+
+
+
+Trailing Return Type'ın en çok kullanıldığı yer generic programming tarafı.
+
+	template <typename T>
+	decltype(x.foo()) func(T x);	// ancak burada x'in scope'u içinde olmadığı için hata verir.
+
+	o halde burada trailing return type kullanabiliriz.
+
+
+	template <typename T>
+	auto func(T x) -> decltype(x.foo()); // artık sentaks hatası yok
+
+
+
+Auto Return Type
+----------------
+
+Bir de C++14 ile gelen auto return type var ve bu Trailing Return Type ile aynı şey değil. auto return type, trailing return type'ın çoğu zaman yerini tutabilir ama her zaman 
+değil.
+
+auto return type'ın sentaksı:
+
+	auto foo(int x)
+	{
+		return x; // geri dönüş değeri int
+		---------
+		return x * 2.3;	// geri dönüş değeri double
+	}
+
+fonksiyonun geri dönüş değeri türü, return ifadesinden deduction yoluyla anlaşılacak.
+
+
+auto return type kullanmak için generic olması gerekmiyor.
+
+bildirim de yapabiliriz ve sentaks hatası olmaz.
+	
+	auto foo(int x);
+
+
+
+***
+	Eğer birden fazla return statement varsa, o statementlarda geri dönüş değerinin aynı türden olması gerekiyor.
+
+		Örneğin burada hata var:
+
+		auto foo(int x)
+		{
+			if(x > 10)
+				return 1;
+
+			return 3.4;
+		}
+
+
+Fonksiyonun geri dönüş değeri tek başına auto olmak zorunda değil. auto &, auto &&, const auto vs. olabilir.
+
+
+	auto foo(int &x)
+	{
+		return x;	// geri dönüş değeri int
+	}
+
+
+	auto & foo(int &x)
+	{
+		return x;	// geri dönüş değeri int&
+	}
+
+Dolayısıyla çıkarımda da bu fark oluşturuyor.
+
+	template <typename T>
+	auto foo(T& x)
+	{
+		return x; // bu durumda fonksiyonun geri dönüş değeri referans olmaz!
+	}
+
+	/////////////////
+
+	template <typename T>
+	auto print1(const T& t) -> decltype(std::cout << t)
+	{
+		return std::cout << t;
+	}
+
+	int main()
+	{
+		pri1(10) << 30; // legal
+	}
+
+	bu fonksiyonun geri dönüş değeri ostream&
+
+	ancak eğer auto return type olsaydı;
+
+	auto pri1(const T& x)
+	{
+		return std::cout << x;
+	}
+
+	int main()
+	{
+		pri1(10) << 40;
+	}
+
+	auto type deduction olduğu için auto type deduction'da ki kurallar gereği ostream türü, referans türü değil.
+
+
+-----------------------
+
+
+function template
+class template
+variable template
+alias template
+concept
+
+type parameter
+non-type parameter
+template parameter
+
+parameter pack (parametre paketi)
+variadic template
+
+
+1.11
+
+	template <typename ...Types>
+	class Myclass{
+
+	};
+
+Bu şekilde oluşturulan template parametrelerine parameter pack deniyor. Bunlara ilerde değineceğiz zaten.
+
+
+
+Sınıf Şablonu (Class Template)
+------------------------------
+
+Fonksiyon şablonu derleyiciye bir fonksiyon kodu yazdırmanın aracı.
+Sınıf şablonunun da amacı derleyicinin bir class kodu oluşturmasını sağlamak. Yani class template'in specializationu bir sınıfın kodu.
+
+Özellikle veri yapılarını temsil eden sınıflar, veri yapıları türden bağımsız olmasına rağmen türe bağımlılar.
+
+Fakat bunu bir sınıf şablonu olarak oluşturup veri yapılarına daha uygun sınıflar oluşturabiliriz.
+
+	template <typename T>
+	class Complex {
+	public:
+		T get_real()const;
+
+	private:
+		T r, i;
+	};
+
+***
+	String sınıfının kendisi de bir sınıf şablonu. Biz sanki std::string doğrudan bir sınıfmış gibi kullandık. Aslında std::string bir tür eş ismi. eğer biz o tür eş ismini 
+  kullanmasaydık ;
+	
+	std::basic_string<char, std::char_traits<char>, std::allocator<char>>
+
+	bunu kullanmak zorunda kalacaktık. fakat bu türe string eş ismi verildiği için biz doğrudan std::string kullanıyoruz.
+
+	Vector de bir sınıf şablonu.
+
+	STL'in en çok kullanılan sınıflarından biri olan std::array düşünelim. Aslında int dizilerini sarmalayan bir wrapper class.
+
+	Aşağıda yazdığımız kod türden bağımsız bir wrapper.
+
+		template <typename T, std::size_t SIZE>
+		struct Array {
+
+			T ar[SIZE];
+		};
+
+	Bir başka örnek: bitset sınıfı.
+
+
+
+Normal sınıflarda olduğu gibi bır sınıf şablonu için de;
+(a) Sadece forward declaration yapılabilir.	
+(b) Class definition yapılabilir.
+
+	template <typename, int>	// bildirimde template parametresinin ismini kullanmayacağımız için isim vermedik ama verilebilir de.
+	class Myclass;
+
+***
+Soru: m1 ve m2'nin türü aynı mı farklı mı?
+
+Aynı sınıf şablonundan elde edilen farklı specializationlar tamamen farklı türlerdir.
+
+	class <class T>
+	class Myclass {
+
+	};
+
+	int main()
+	{
+		Myclass<int> m1;
+		Myclass<double> m2;
+	}
+
+	Cevap: Hayır, farklı.
+
+
+***
+Template parametresi de bir isim ve template parametrelerine verilen isimlerin de bir scope'u var.
+
+	template <typename T>
+	void func(T x)
+	{
+
+	}
+
+	void foo(T x)	// burada template parametresinin isminin scope'unun dışında, yani geçerli değil sentaks hatası
+	{
+
+	}
+
+
+// class template'lerde üye fonksiyon declaration ve definition
+
+***
+Sınıf şablonlarında, normal şablon olmayan generic olmayan sınıflarda olduğu gibi sınıf şablonunun bir üye fonksiyonunu sınıfın içinde inline olarak tanımlayabiliriz. 
+Ya da class definition dışında tanımlayabiliriz.
+
+	template <typename T>
+	class Myclass {
+	public:
+		T foo(T x)
+		{
+			//
+			return x;
+		}
+	};
+
+	veya sınıf dışında tanımlayabiliriz. Fakat farklı kurallara tabi.
+
+	template <typename T>
+	class Myclass {
+	public:
+		T foo(T x);
+	};
+
+	template <typename T>
+	T Myclass<T>::foo(T x)
+	{
+		//
+	}
+
+
+***
+Önemli Not: Class scope içinde sınıf şablonunun ismini doğrudan specialization ismi olarak kullanabiliriz.
+
+	template <typename T>
+	class Myclass {
+	public:
+		Myclass<T> foo(Myclass<T>);
+		Myclass foo(Myclass);	// aynı ikisi de
+
+		Myclass bar(Myclass)
+		{
+			Myclass m; // myclass'ın int açılımı için bu yerel değişkenin türü Myclass'ın int specializationu, double açılımı için Myclass'ın double specializationu vs.
+			//Myclass<T> m; ile aynı yani
+		}
+	};
+
+Yani class scope içinde sınıf şablonunun ismini kullanmak ilgili specialization'u kullanmak demek.
+
+
+
+
+***
+Bir sınıf şablonunun farklı specialization'ları birer sınıf. Dolayısıyla bir sınıfı kullanabildiğim her yerde sınıf şablonunun bir specialization'unu da kullanabilirim.
+
+Hatta bir başka template'de template argümanı olarak da kullanabilirim;
+
+	vector<Myclass<int, double>>
+
+	hatta
+
+	Myclass<Myclass<int, double>, Myclass<long, char>>
+
+
+Dahası fonksiyon şablonları ve type deduction mekanizması.
+
+	template <typename T, typename U>
+	class Myclass {};
+
+	template <typename T>
+	void func(T);
+
+	int main()
+	{
+		Myclass<int, double> m;
+
+		func(m);
+	}
+
+Bir başka örnek, operator fonksiyonları ile;
+
+	template <typename T>
+	class Myclass {
+	public:
+		T val{};
+	};
+
+	template <typename T>
+	bool operator<(const Myclass<T>& lhs, const Myclass<T>& rhs)
+	{
+		return lhs.val == rhs.val;
+	}
+
+	int main()
+	{
+		Myclass<int> x, y;
+		Myclass<double> d1, d2;
+
+		x < y;
+		d1 < d2;
+	}
+
+
+---------------------------
+
+
+	class Nec;
+
+	template <typename T>
+	class Myclass { };
+
+	int main()
+	{
+		Myclass<Nec>	// template argümanı olan tür yani Nec henüz bir in-complete type. Bunun complete type olmasını gerektiren bir senaryo olmadığı sürece herhangi bir problem 
+                      olmayacak.
+	}
+
+
+-----------------------------
+
+Derleyici çağrılmayan fonksiyonun kodunu da yazmıyor.
+
+	struct Nec {
+		void f();
+	};
+	
+	template <typename T>
+	class Myclass {
+	public:
+		void foo(T x)
+		{
+			x.f();
+		}
+
+		void bar(T x)
+		{
+			x.g();
+		}
+
+		void baz(T x)
+		{
+			x.h();
+		}
+	};
+
+	int main()
+	{
+		Nec mynec;
+
+		Myclass<Nec> m;
+
+		m.foo(mynec);
+	// bu noktaya kadar sentaks hatası yok. çünkü Nec'in f() fonksiyonu var. 
+
+	------------------------
+
+		m.bar(mynec);	// işte şimdi hata var
+	}
+
+
+String sınıfı için düşünelim.
+
+	int main()
+	{
+		std::string str(10, 'a'); // derleyici class definition yapacak ama hangi fonksiyonların kodunu yazacak? data memberlar için değil çünkü onlar class definition da. 
+                              // constructor ve destructor'un kodunu yazacak.
+
+		ama şimdi biz size() fonksiyonunu çağırdığımızda derleyici size fonksiyonun kodunu yazacak.
+
+		str.size();	// şimdi size fonksiyonunun kodunu yazar.
+
+		// onlarca daha string sınıfının üye fonksiyonu var. onların kodu yazılmak zorunda değil.
+	}
+
+Sınıf şablonlarının önemli bir faydası da bu.
+
+
+---------------------------------
+
+***
+
+
+	template <typename T>
+	class Myclass {
+
+	public:
+		void func(T &&)	// fonksiyonun parametresi için bir çıkarım yapılmıyor. ve bu universal reference değil, sağ taraf referansı.
+		{
+
+		}
+	};
+
+	int main()
+	{
+		Myclass<int> x;
+		int val = 5;
+
+		x.func(val); // sentaks hatası.
+
+		fonksiyonun parametresi r value referans ve l value gönderdiğimiz için sentaks hatası olacak. tekrar görüyoruz ki universal referance değil.
+	}
+
+
+Ama buradaki universal reference parameter;
+
+	template <typename T>
+	void func(T&&);
+
+fakat bu kesinlikle universal reference parameter değil;
+	
+	template <typename T>
+	void func(const T&&);
+	// bu const r value reference parametre.
+	
+	yani buraya const, volatile herhangi bir specifier koyarsak artık universal reference parameter değil.
+
+Soru:
+
+	template <typename T>
+	class Myclass {};
+
+	template <typename T>
+	void func(Myclass<T> &&)	// bu fonksiyonun parametresi universal referance değil. sadece T&& olsa olur.
+	{
+
+	}
+
+--------------------------
+
+	template <typename T>
+	class Myclass {};
+
+	template <typename T>
+	void func(std::vector<T> &&) // bu fonksiyonun parametresi de universal reference değil
+	{
+
+	}
+
+Soru:
+	
+
+	template <typename T>
+	class Myclass{
+
+	public:
+		void func(T&&); // Myclass<int> için bu fonksiyonun parametresi int&&. Burada bir çıkarım yok.
+	}
+
+	void foo(int&& r);	// fonk. parametresi bir deduction olmadığına göre r value reference.
+
+
+	Ama diyelim ki mesela;
+
+	template <typename T>
+	class Myclass {
+
+	public:
+		void foo(Myclass);
+	};
+
+	int main()
+	{
+		Myclass<int> x;
+		Myclass<double> y;
+
+		y.foo(x);
+	}
+
+	Soru: y.foo(x) yani y'nin foo fonksiyonuna x'i argüman olarak gönderebilir miyim?
+	-hayır. çünkü bu fonksiyonun parametresi Myclass<double> ama ben Myclass<int> yani başka bir sınıf türünden nesne gönderiyorum.
+
+
+// sınıf şablonu içinde fonksiyon şablonu
+
+Bir sınıf şablonunun üye fonksiyonu kendisi de bir template(şablon) olabilir mi?
+-evet. ama onun sentaksı farklı.
+
+	template <typename T>
+	class Myclass {
+
+	public:
+		void foo(T);
+	};
+
+	int main()
+	{
+		using namespace std;
+
+		string str{};
+
+		Myclass<int> m;
+		m.foo(str);	// sentaks hatası olur, bu fonksiyonun parametresi int fakat string türünden bir nesne gönderiyorum. böyle bir örtülü dönüşüm de yok
+	}
+
+
+	Ama bu fonksiyon şöyle olsaydı;
+
+
+	template <typename T>
+	class Myclass {
+
+	public:
+		template <typename U>
+		void foo(U);		// artık bu bir function template
+	};
+
+	int main()
+	{
+		using namespace std;
+
+		Myclass<int> m;
+
+		m.foo(string {});	// herhangi bir sentaks hatası yok. çünkü foo fonksiyonu da bir function template.
+	}
+
+
+	Hatta;
+
+	template <typename T>
+	class Myclass {
+
+	public:
+		template <typename U>
+		void foo(Myclass<U>)
+		{
+			*this // bunun türü Myclass<int>
+		}
+	};
+
+	int main()
+	{
+		using namespace std;
+
+		Myclass<int> x;
+		Myclass<double> y;
+
+		x.foo(y);
+	}
+
+***
+Sınıf şablonuna duyulan ihtiyacı belki de en güzel şekilde gösteren örnek: Standard kütüphanenin utiliy başlık dosyası içinde tanımlanan std::pair
+
+	// basitleştirilmiş şekilde
+
+	template <typename T, typename U>
+	class Pair {
+
+		**
+		template <typename X, typename Y>
+		Pair(const Pair<X, Y>&);	// böyle bir ctor ile herhangi bir pair specializationunu pair'in başka bir specializationu ile başlatabiliriz
+		**
+
+		T first;
+		U second;
+
+	};
+
+	int main()
+	{
+		Pair<double, double> pd;
+		Pair<int ,int> pi;
+
+		pd = pi;	// sentaks hatası, bunlar ayrı sınıflar.
+
+		fakat ** içine alınmış olan kod bloğunu eklersek sentaks hatası ortadan kalkar.
+	}
+
+
+-------------------------------------
+
+Universal referansa geri dönelim.
+
+	template <typename U>
+	class Myclass {
+
+	public:
+		void foo(U&&); // bu universal reference parametre değil
+	};
+
+
+Fakat;
+
+	template <typename U>
+	class Myclass {
+
+	public:
+		template <typename U>
+		void foo(U&&); // Universal Reference Parametere için tüm koşulları sağlıyor. o artık universal reference parametre
+
+		// yani bu ne demek? myclass'ın foo fonksiyonu herhangi türden const ya da non-const bir argüman alabilir, bütün argümanları kabul eder.
+	};
+
+
+31.video 02.20 den sonrasi std::pair
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
