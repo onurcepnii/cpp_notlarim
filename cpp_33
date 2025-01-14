@@ -1,0 +1,973 @@
+Compile Time'da ki recurvivity'yi kullanan çok sayıda teknikten biri;
+
+	#include <iostream>
+
+
+	template <long long N>
+	constexpr long long factorial()
+	{
+		return N * factorial<N - 1>();
+	}
+
+	template <>
+	constexpr long long factorial<0>()
+	{
+		return 1;
+	}
+
+	int main()
+	{
+		std::cout << factorial<5>();
+	}
+
+
+--------------------------------------------------
+
+	template <typename T>
+	struct Myclass {
+		void foo(T)
+		{
+			//...
+		}
+	};
+
+	template <>
+	struct Myclass<int> {	// sınıfın kendisi için bir explicit specialization
+
+	}
+
+	template <>
+	void Myclass<double>::foo(double)	// foo için bir explicit specialization
+	{
+
+	}
+
+
+--------------------------------
+
+
+	template <typename >
+	struct Myclass {
+
+		template <typename U>
+		void func(U)
+		{
+			std::cout << "type T is" << typeid(T).name() << "\n";
+			std::cout << "type U is" << typeid(T).name() << "\n";
+		}
+	};
+
+	int main()
+	{
+		Myclass<double> x;
+
+		x.func(34);
+	}
+
+
+OUTPUT:		type T is double
+			type U is int
+
+
+Fakat şimdi kodu şöyle yapalım
+
+
+	template <typename T>
+	struct Myclass {
+
+		template <typename U>
+		void func(U)
+		{
+			std::cout << "type T is" << typeid(T).name() << "\n";
+			std::cout << "type U is" << typeid(T).name() << "\n";
+		}
+	};
+
+	template <>
+	template <>
+	void Myclass<double>::func(int)
+	{
+		std::cout << "explicit spec\n";
+	}
+
+	int main()
+	{
+		Myclass<double> x;
+		x.func(3.4);
+	}
+
+OUTPUT : 	explicit spec
+
+
+----------------------------------------------------------
+
+Partial Specialization'u hatırlayalım.
+
+- Öncelikle fonksiyon şablonları için partial spec. yok.
+
+template parametresi/parametrelerine karşılık geren bir tür grubu için alternatif kod veriyoruz. 
+
+Burada sentaks da farklı;
+
+	template <typename T>
+	struct Myclass<T*> {	// template argümanı olarak bir ptr türü kullanılırsa bu kod kullanılacak ve kesinlikle interface'in aynı olması gerekmiyor.
+
+	}
+
+Not: Vektör sınıf şablonunun bool açılımı bir partial specialization. Kötü bir fikir fakat o kadar zaman geçti ki üzerinden değiştirmek mümkün değil.
+
+	Referans türleri için olabilir,
+
+	template <typename T>
+	struct Myclass<T&> {	 // T&& de olabilir
+
+	}
+
+	şöyle olabilir;
+
+	template <typename T>
+	struct Myclass<std::pair<T, T>> {
+
+	}
+
+	dizi olabilir;
+
+	template <typename T>
+	struct Myclass<T[]> {
+
+	}
+
+	In-complete type da olabilir.
+
+
+-------------------------------------------------------
+
+	template <typename T, int N>
+	struct Nec {
+		Nec()
+		{
+			std::cout << "primary template\n";
+		}
+	};
+
+	int main()
+	{
+		Nec<double, 5> n1;
+		Nec<int, 3> n2;
+		Nec<long, 67> n3;
+
+		// bunların hepsi başka bir template ya da bir explicit ya da partial spec. olmadığına göre primary template'den oluşturulacak.
+	}
+
+
+şimdi bir partial spec. oluşturalım
+
+
+
+	template <typename T, int N>
+	struct Nec {
+		Nec()
+		{
+			std::cout << "primary template\n";
+		}
+	};
+
+	template <typename T>
+	struct Nec<T, 3>
+		Nec()
+		{
+			std::cout << "partial spec. Nec<T,3>"
+		}
+
+
+	int main()
+	{
+		Nec<double, 5> n1;
+		Nec<int, 3> n2;
+		Nec<long, 67> n3;
+	}
+
+
+
+OUTPUT:		primary template
+			partial spec. Nec<T, 3>
+			primary template
+	
+
+
+
+
+şöyle yazsaydık;
+
+
+	template <typename T, int N>
+	struct Nec {
+		Nec()
+		{
+			std::cout << "primary template\n";
+		}
+	};
+
+	template <typename T>
+	struct Nec<T, 3>
+		Nec()
+		{
+			std::cout << "partial spec. Nec<T,3>"
+		}
+
+
+	template <int N>
+	struct Nec<double, N>
+		Nec()
+		{
+			std::cout << "partial spec. Nec<double, N>\";
+		}
+
+	int main()
+	{
+		Nec<double, 5> n1;
+		Nec<int, 3> n2;
+		Nec<long, 67> n3;
+	}
+
+
+OUTPUT:		partial spec. Nec<double, N>
+			partial spec. Nec<T, 3>
+			primary template
+
+---------------------------------------------------------
+
+	template <typename T, int N>
+	struct Nec {
+		Nec()
+		{
+			std::cout << "primary template\n";
+		}
+	};
+
+	template <typename T, typename U, int N>
+	struct Nec <std::pair<T, U>, N> {
+
+	};
+
+
+Eğer birinci template argümanının std::pair olması durumunda partial specialzation kullanılacak.
+
+---------------------------------------------------------
+
+
+Modern Cpp de ki araçların olmadığını düşünelim. Bir meta function yazmak istiyoruz.
+
+	template <std::size_t base, std::size_t exp>
+	struct Power {
+		static const std::size_t value = base * power<base, exp -1>::value;
+	};
+
+	template <std::size_t base>
+	struct Power<base, 0u>
+	{
+		static const std::size_t value = 1;
+	}
+
+	int main()
+	{
+		Power<3, 5>::value;
+	}
+
+
+Compile Time'da hesaplanıyor..
+
+
+-----------------------------------------------------------
+
+***
+ÇOK ÖNEMLİ
+
+
+Not: aşağıdaki size_type bir dependent name. dependent name şu demek; öyle bir isim ki template parametresi ile ilişkili, template parametresine bağlı. Dependent Name ile Non-Dependent Name lerin arama kuralları farklı.
+
+	template <typename T>
+	void foo(const T& t)
+	{
+		bar();
+	}
+
+derlenince sentaks hatası olur. çünkü derleyici bar herhangi bir şekilde template parametresine bağlı bir isim olmadığı için daha template'in üzerinden ilk kez geçtiğinde bar ismini arıyor ve bulamadığı için isim arama hatası oluyor.
+
+fakat şöyle bir kod olsaydı;
+
+	template <typename T>
+	void foo(const T& t)
+	{
+		T::value_type x;
+	}
+
+Burada value_type da bir identifier fakat bu identifier template parametresine bağlı, scope resolution operatörü ile kullanılmış. Bu durumda value type'ın ne olduğu T türü yerine  kullanılacak template argümanının ne olduğuna bağlı.
+Dolayısıyla derleyicinin şöyle bir problemi olacak: 
+
+Daha önce demiştik ki typename anahtar sözcüğünün kullanıldığı bir context(bağlam) daha var. Bu contextte typename keyword yerine class keyword kullanamıyoruz ve bu context son derece önemli.
+
+
+	template <typename T>
+	void foo(const T& t)
+	{
+		T::size_type * p(T::npos);
+	}
+
+Burada size_type ın ne olduğuna bağlı olarak ve npos'un ne olduğuna bağlı olarak buradaki bildirimin ya da tanımlamanın anlamı tamamen değişecek.
+
+Mesela size_type'ın bir tür olduğunu düşünelim Eğer size_type bir türse bir aslında bir ptr tanımlamış oluruz. 
+
+Fakat size_type bir tür değil de kendisi bir değişken veya expression ise o zaman bir ihtimal kalıyor, buradaki asterisk atomunun çarpma operatörü olması.
+
+Yani burada bir kurala ihtiyaç var. Kuralı da şöyle koydular;
+Eğer siz template parameteresine bağlı bir dependent type'dan bahsediyorsanız, yani size_type bir türse, bir nested type ise (bu örnek için) derleyicinin bunu nested type olarak alması için typename keyword kullanıyorsunuz. Eğer typename keyword kullanmazsanız derleyici bunu bir expression olarak ele alıyor.
+
+
+	template <typename T>
+	void foo(const T&)
+	{
+		typename T::size_type x;
+	}
+
+	struct A {
+		using size_type = int;
+	};
+
+	int main()
+	{
+		A ax;
+		foo(ax);
+	}
+
+
+Kodu biraz değiştirelim.
+
+	template <typename T>
+	void foo(const T&)
+	{
+		T::size_type * x;
+	}
+
+	struct A {
+		static const int size_type = 10;
+	};
+
+	int main()
+	{
+		A ax;
+		foo(ax);
+	}
+
+
+Sentaks hatasında diyor ki x identifier bulunamadı.
+
+
+	template <typename T>
+	void foo(const T&)
+	{
+		T::size_type * 20;
+	}
+
+	struct A {
+		static const int size_type = 10;
+	};
+
+	int main()
+	{
+		A ax;
+		foo(ax);
+	}
+
+
+Yukarıdaki kodda herhangi bir sentaks hatası yok. Çünkü biz bunun bir tür bilgisi olduğunu söylemediğimiz sürece bunu bir tür bilgisi olarak almayacak. Dolayısıyla size_type in kendisi bir tür değil, sınıfın statik veri elemanı, kodda hata yok.
+
+Yalnız buradaki kurallar C++20 ile ciddi şekilde gevşetildi.
+
+C++20 öncesinde, template kod içinde türden bahsettiğiniz her yerde typename anahtar sözcüğünü kullanmak zorundaydınız. 
+
+Örnek;
+	
+	template <typename T>
+	typename T::value_type foo(T )
+	{
+		return {};
+	}
+
+////////////////
+	
+	template <typename T>
+	class Myclass {
+		using value_type = typename T::value_type;
+	};
+
+
+-------------------------
+	Variable Template
+-------------------------
+
+	template <class T>
+	constexpr T pi = static_cast<T>(3.14159265);
+
+	template <class T>
+	T circular area(T r) // function template
+	{
+		return pi<T> *r * r; // pi<T> is a variable template instantiation
+	}
+
+
+----------------------------------------------
+
+** ÖNEMLİ **
+
+	template <typename T>
+	struct Myclass {
+		//
+		constexpr static int value = 10;
+	};
+
+	// value değişkenini kullanmak için ne yazmalıyım? Myclass bir sınıf değil, sınıf şablonu. Ancak şöyle yazabilirim;
+
+	int main()
+	{
+		Myclass<int>::value
+	}
+
+Peki Myclass'ın int açılımının value'si yazmak yerine scope resolution operatörünü kullanarak sadece böyle bir ifadeyi değişken olarak kullanmasak isteseydim variable template kullanabilir miydim?
+-Tabi;
+	
+	template <typename T>
+	struct Myclass {
+		//
+		constexpr static int value = 10;
+	};
+
+	template <typename T>
+	constexpr int Myclass_v = Myclass<T>::value;
+
+	int main()
+	{
+		constexpr auto x1 = Myclass<int>::value;
+		constexpr auto x2 = Myclass_v<double>;		
+	}
+
+Not: Variable Template de de explicit ve partial specialization da var tabi ki.
+
+Power örneğini bu sefer farklı bir şekilde yazalım;
+
+	template <std::size_t base, std::size_t exp>
+	constexpr std::size_t power = base * power<base, exp - 1>;
+
+	template <std::size_t base>
+	constexpr size_t power<base, 0> = 1;
+
+	template <std::size_t base>
+	constexpr size_t power<base, 1> = base;
+
+
+
+----------------------------------------------------
+
+Bir template genel derleyicinin kod üretmesi için bir kod, ama o kadar da genel olmak zorunda değil.
+
+Yani biz bazı araçları kullanarak template'in kısıtlanmasını (constraint edinmesini) sağlayabiliriz.
+
+Örneğin öyle bir template olsun ki sadece tamsayı türleri için kod üretilsin.
+
+Örneğin öyle bir template olsun ki non-type parametreye sahip olsun ama non-type parametre asal sayı olmak zorunda olsun.
+
+	int main()
+	{
+		Myclass<19> geçerli olacak
+		Myclass<18> sentaks hatası olacak çünkü 18 asal sayı değil
+	}
+
+İşte bu tür durumlara template'in constraint edinmesi deniyor.
+
+
+33.vid 01.20 
+
+----------------------
+	Alias Template
+----------------------
+
+
+Alias : Bir türe verilen eş isim.
+
+	// int(*)(int, int)
+
+	typedef int (*FPTR)(int, int);
+
+	using FPTR = int (*)(int, int);	// aynı anlama geliyor ama bunu yazmak daha kolay tabi.
+
+***
+Using keyword ile yapılan bildirimler işimizi kolaylaştırıyor ama asıl gücü sadece bu değil. Typedef C'den geldiği için template haline getirilemiyor.
+
+Fakat Using keyword kullanarak tür eş isim bildirimlerine ilişkin bir template oluşturabiliyoruz. Ama bu sefer bu template'in instantiation'u bir değişken değil, bir tür eş ismi bildirimi.
+
+	template <typename T>
+	using Ptr = const T*;
+
+Ptr'nin kendisi type alias değil, Ptr'nin kendisi bir type alias template. Type alias olan Ptr'nin bir spec. i. örneğin;
+
+	Ptr<int> p1, p2, p3;	// hepsinin türü const int*
+
+	int x = 10;
+	
+	Ptr<int> p = &x;	// low-level const pointer
+
+
+--------------------------------------------
+
+
+	template <typename T, int N>
+	using ar = T[N];
+
+	int main()
+	{
+		ar<double, 4>	// double[4] türünün eş ismi
+	}
+
+----------------------------------------------
+
+std::pair için iki tane aynı türden eleman tutacağız diyelim. Bunun için type alias template tanımlayalım.
+
+	template <typename T>
+	using epair = std::pair<T, T>;
+
+	int main()
+	{
+		epair<int>a;
+
+----------------------------------------------
+
+başka bir örnek: geri dönüş değeri ile parametresi aynı olan function pointer türüne eş isim verelim.
+
+	template <typename T>
+	using fptr = T(*)(T);
+
+	int foo(int);
+	double bar(double);
+
+	int main()
+	{
+		fptr<int> // int(*)int türü
+
+		fptr<int> fp1 = &foo;
+		fptr<double> fp2 = &bar;
+	}
+
+----------------------------------------------
+
+	#include <iostream>
+	#include <type_traits>
+	#include <set>
+	#include <string>
+
+	using namespace std;
+
+	template <typename T>
+	using gset = std::set<T, std::greater<T>>;
+
+	int main()
+	{
+		gset<string>
+	}
+
+
+
+---------------------------------------------
+
+NOT
+Standard Kütüphanede isminin sonunda _t olan isimler alias template, _v olanlar ise variable template'dir.
+
+	using namespace std;
+
+	int main()
+	{
+		is_floating_point_v<double>	
+	}
+
+burada hemen _v yi görüyoruz ve bunun bir variable template olduğunu anlıyoruz. Çoğunlukla bu variable template'ler constexpr boolean sabitler(öyle bir zorunluluk olmamasına rağmen çoğunluğu böyle).
+
+	is_floating_point<double>
+	is_floating_point<double>::value
+
+	aynı anlamda.
+
+Sonu _t ile bitenler ise alias template.
+
+	int main()
+	{
+		using namespace std;
+
+		remove reference<int&>::type
+
+		//std kütüphane böyle meta fonksiyonlar için her biri için bir alias template sağlıyor.
+
+		remove_reference_t<int&>
+	}
+
+
+	Şöyle gibi aslında;
+
+	template <typename T>
+	using RemoveReference_t = typename std::remove_reference<T>::type;
+
+	int main()
+	{
+		RemoveReference_t<int&>
+	}
+
+
+
+
+--------------------------------------------------------
+		Template'lerin Default Argument Alması
+--------------------------------------------------------
+
+Modern Cpp öncesinde sadece sınıf şablonları varsayılan argüman alabiliyordu. Fonksiyon şablonları alamıyordu.
+
+	template <typename T = int>
+	class Myclass {
+
+	};
+
+	int main()
+	{
+		Myclass<double> m1;	// double
+		Myclass<long> m2;	// long
+		Myclass<> m3;		// int
+	}
+
+
+Sınıf şablonlarında ve variable şablonlarında default argument'e ilişkin şöyle bir kural var: 	Bir template parametresi varsayılan argüman alıyorsa onun sağındakilerin hepsi varsayılan argüman almak zorunda.
+	
+Mesela şöyle olamaz;
+	
+	template <typename T = int, typename U>
+	class Myclass {
+
+	};
+
+
+
+Böyle olmalı;
+
+	template <typename T = int, typename U = double>
+
+	int main()
+	{
+		Myclass<char, char> m1;
+		Myclass<char> m2;
+		Myclass<> m3;	
+	}
+
+
+
+İlginç bir şekilde fonksiyon şablonlarında böyle olmak zorunda değil.
+
+	template <typename T = int, typename U>
+	void func(T x, U y);
+
+	// fonksiyon şablonu olduğu için geçerli fakat class ya da variable template olsaydı geçersiz olurdu.
+
+--------------------------------------------------
+
+Bu legal mi değil mi?
+
+void func(int x, int y = x);
+
+- Legal değil.
+
+Fonksiyonların default argument almasında default argument ifadesinde parametre değişkenleri kullanılamaz.
+
+	template <typename T, typename U = T>
+	class Myclass {
+
+	};
+
+	int main()
+	{
+		Myclass<int, double> m1;
+		Myclass<int> m2;
+	}
+
+
+
+
+
+STL'in container sınıflarının hemen hepsinin en az bir tane default template argumenti var.
+
+Örnek;
+	
+	int main()
+	{
+		using namespace std;
+
+		vector<int> x;
+		vector<int, allocator<int>> x;	// allocator<int> default argument. bu yüzden her sefer böyle yazmak yerine üst satırdaki gibi yazma kolaylığı oluyor.
+	}
+
+
+
+
+Akıllı pointer sınıflarında da öyle;
+
+	int main()
+	{
+		using namespace std;
+
+		unique_ptr<int> uptr;
+
+		// iki template parametresi var. birincisi smart pointer'in göstereceği, hayatını kontrol edeceği nesnenin türü
+		// ama aslında ikinci bir parametresi daha var: hayatını kontrol ettiği nesnenin sonu nasıl getirilecek
+
+		aslında böyle yazmış gibi oluyoruz;
+		unique_ptr<int, default_delete<int>> uptr;
+	}
+
+
+Map de böyle.
+
+String sınıfı da böyle;
+
+	using String = std::basic_string<char>;
+
+	int main()
+	{
+		using namespace std;
+
+		string str("neco");
+
+	}
+
+
+02.12
+
+
+-----------------------------------------------------------------
+***
+İlginç bir özellik
+
+Normalde böyle bir declaration yapmak sentaks hatası iken => void func(int x = 10, int y)
+
+Aşağıdaki gibi yaparsak sentaks hatası olmuyor, kümülatif etki ediyor. merge
+
+	void func(int x, int y);
+	void func(int x, int y = 10);
+	void func(int x = 56, int y);
+
+**ÖNEMLİ**
+
+Template'lerde de bu özellik var. Default argümanlar merge edilebiliyor.
+
+	typename <typname, typename U, typename W = int>
+	class Myclass;
+
+	typename <typname, typename U = double, typename W>
+	class Myclass;
+
+	typename <typname = char, typename U, typename W>
+	class Myclass {
+	public:
+		Myclass()
+		{
+			std::cout << typeid(Myclass).name() << "\n";
+		}
+	};
+
+	int main()
+	{
+		Myclass<> m1;	
+	}
+
+OUTPUT:	class Myclass<char, double, int>
+
+*** ÖNEMLİ
+Çok yapılan hata:
+
+	template <typename T>
+	void func(T x = 43);
+
+	int main()
+	{
+		func();	// sentaks hatası. derleyici buradan tür çıkarımı yapamıyor. default argument olması bizi yanıltmasın
+	}
+
+
+
+Template'in template parametresi default argument alırsa, fonksiyonun parametresi de default argument alabiliyor.
+
+	template <typename T = int>
+	T foo(T x = 0)
+	{
+		return x * x;
+	}
+
+	int main()
+	{
+		auto val = foo();
+	}
+
+fonksiyonun parametresi default argument alıyor ama template'in parametresi de default argument alıyor. Derleyici burada çıkarım yapamadığını gördüğü zaman template'in parametresinin default argument alıp almadığına bakıyor ve int olduğunu görünce burada bir problem kalmıyor.
+
+
+Bunun kullanıldığı güzel bir örnek : Value Initialization
+
+	template <typename T = int>
+	T foo(T x = {})
+	{
+
+	}
+
+bu durumda eğer default template argument'i kullanırsak T türü int olacak ve bu durumda int türden parametreye 0 değeri geçilmiş olacak. Çünkü int türden bir nesne bu şekilde init. edildiğinde zero initialize ediliyor. 
+Fakat T türü bir sınıf türü olduğunda, default ctor çağırılacak. Dolayısıyla fonk. şablonunun fonk. parametresi (call parameter) default argument kullanıldığında aslında biz default construct edilmiş bir parametreyi kullanmış olacağız. Fakat bu primitive türden ise zero init edilmiş olacak.
+
+	int main()
+	{
+		foo<std::string>()	// default initialize edilmiş bir string göndermiş oluyoruz.
+	}
+
+
+
+
+---------------------------
+	Perfect Forwarding
+---------------------------
+
+Mükemmel gönderim.
+
+Bir fonksiyon var diyelim. Bu fonksiyona biz bir çağrı yapmak istiyoruz fakat kendimiz değil de başka bir fonksiyon daha olacak. Biz o fonksiyona asıl asıl çağrı yapmak istediğimiz fonksiyona göndermek istediğimiz argümanları geçiyoruz ve bu aradaki fonksiyon o fonksiyona çağrı yapıyor ve maliyet açısından fark olmuyor, value category korunuyor, constluk korunuyor.
+
+// value category
+// constness
+
+Öncelikle bunu perfect forwarding mekanizması olmadan yapalım.
+
+	class Myclass{};
+
+	void func(Myclass&){std::cout << "func(Myclass&)\n";}
+	void func(const Myclass&){std::cout << "func(const Myclass&)\n";}
+	void func(Myclass&&){std::cout << "func(Myclass&&)\n";}
+	void func(const Myclass&&){std::cout << "func(const Myclass&&)\n";}
+
+func'ın 4 tane overloadu var.
+	
+	void call_func();
+
+	int main()
+	{
+		Myclass m;
+		const Myclass cm;
+
+
+		func(m); 				// ilk fonksiyon çağırılır
+		func(cm);				// ikinci fonksiyon çağırılır
+		func(std::move(m));		// üçüncü fonksiyon çağırılır
+		func(std::move(cm));	// dördüncü fonksiyon çağırılır
+
+Şimdi bunları func'a değil, call_func'a göndericez ve call_func bunları func'a gönderecek ama diyecek ki "bak senin func ı doğrudan çağırman ile benim çağırmam arasında hiçbir fark yok". bunu yapmak çok kolay değil.
+	}
+
+
+----------------------------------------
+
+	class Myclass{};
+
+	void func(Myclass&){std::cout << "func(Myclass&)\n";}
+	void func(const Myclass&){std::cout << "func(const Myclass&)\n";}
+	void func(Myclass&&){std::cout << "func(Myclass&&)\n";}
+	void func(const Myclass&&){std::cout << "func(const Myclass&&)\n";}
+
+func'ın 4 tane overloadu var.
+	
+	void call_func(Myclass &r)
+	{
+		func(r);
+	}
+
+	void call_func(const Myclass &r)
+	{
+		func(r);
+	}
+
+	void call_func(Myclass&& r)
+	{
+		func(std::move(r));
+	}
+
+
+	void call_func(const Myclass&& r)
+	{
+		func(std::move(r));
+	}
+
+	int main()
+	{
+		Myclass m;
+		const Myclass cm;
+
+		call_func(m);
+		call_func(cm);
+		call_func(std::move(m));
+		call_func(std::move(cm));
+	}
+
+
+
+Benim gönderdiğim argümanları kullanarak, benim çağıracağım fonksiyonu çağırıyor. Ve hiçbir fark olmaması lazım benim çağırmam ile.
+
+Fakat bunu yapmak için tek parametreli bir fonksiyon varsa 4 farklı fonksiyon yazmam gerekir.
+
+Peki ya bu fonksiyonun 2 parametresi olsaydı. Bu sefer 4^2 = 16 fonksiyon yazmam gerekirdi. 3 parametresi olsaydı 4^3 = 64 tane fonksiyon yazmam gerekirdi.
+
+Yani gözüktüğü kadar kolay ve kullanışlı değil, bunun için bir mekanizmaya ihtiyacımız var => "Perfect Forwarding"
+
+
+	class Myclass{};
+
+	void func(Myclass&){std::cout << "func(Myclass&)\n";}
+	void func(const Myclass&){std::cout << "func(const Myclass&)\n";}
+	void func(Myclass&&){std::cout << "func(Myclass&&)\n";}
+	void func(const Myclass&&){std::cout << "func(const Myclass&&)\n";}
+
+	template <typename T>
+	void call_func(T&& x)	// #
+	{
+		func(std::forward<T>(x));
+	}
+
+	int main()
+	{
+		Myclass m;
+		const Myclass cm;
+
+
+	}
+
+	# : hatırlayalım buna Universal Reference diyorduk. Tek kullanımı burada olmasa da en büyük kullanımı perfect forwarding sağlamak.
+
+Nasıl std::move compile time'da ele alınan bir yardımcı fonksiyonsa, ifadeyi rvalue haline getiriyorsa, std::forward da perfect forwarding amacıyla kullanılır ve ifadeyi orijinal değer kategorisini koruyarak iletir.
+
+İki parametreli olsaydı şöyle yapardık:
+	
+	template <typename T, typename U>
+	void call_func(T&& x, U&& y)
+	{
+		func(std::forward<T>(x), std::forward<U>(y));
+	}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
