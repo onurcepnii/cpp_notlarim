@@ -109,7 +109,8 @@ int main()
 }
 
 
-# : std::forward ile oluşturulan ifade eğer fonksiyonun parametre değişkeni, bu fonksiyona L value gelmişse bu ifade yine L value oluyor. Fakat fonksiyona gönderilen R value ise bu ifade R value oluyor. Bunu da conditionally olarak R value'ye dönüştürüyor.
+# : std::forward ile oluşturulan ifade eğer fonksiyonun parametre değişkeni, bu fonksiyona L value gelmişse bu ifade yine L value oluyor. 
+Fakat fonksiyona gönderilen R value ise bu ifade R value oluyor. Bunu da conditionally olarak R value'ye dönüştürüyor.
 
 std::move, ona ne gönderirsek bize r value olarak döndürüyor. Fakat std::forward ona r value gönderirsek r value, l value gönderirsek l value.
 
@@ -131,7 +132,8 @@ Normalde biz direk şöyle yazsaydık:
 
 Bir unique ptr nesnesi oluşturup bize o nesneyi veren make_unique diye bir fabrika fonksiyonu var.
 
-Diyor ki sen bana argümanları gönder, ben senin bana gönderdiğin argümanların value kategorisini ve constluğunu koruyarak new ifadesi ile dinamik ömürlü bir nesne oluşturayım ve o nesnenin hayatını kontrol edecek bir unique ptr döndüreyim.
+Diyor ki sen bana argümanları gönder, ben senin bana gönderdiğin argümanların value kategorisini ve constluğunu koruyarak 
+new ifadesi ile dinamik ömürlü bir nesne oluşturayım ve o nesnenin hayatını kontrol edecek bir unique ptr döndüreyim.
 
 işte bunun yapılması için perfect forwarding gerekiyor.
 
@@ -176,7 +178,8 @@ void bar(T&& x)
 
 Static If
 ---------
-Runtime'da ki if ile karıştırmayalım, eğer bu if'e bir constant expression' u argüman olarak verirsek, o zaman derleyici if'in doğru kısmındaki kodu alacak. Eğer buradaki ifade yanlışsa if'in yanlış kımsındaki kodu derleyecek.
+Runtime'da ki if ile karıştırmayalım, eğer bu if'e bir constant expression' u argüman olarak verirsek, o zaman derleyici if'in doğru kısmındaki kodu alacak. 
+Eğer buradaki ifade yanlışsa if'in yanlış kımsındaki kodu derleyecek.
 
 C'de ki conditional compiling'in çok daha gelişmiş hali.
 
@@ -571,9 +574,11 @@ Cevap: Evet
 
 Cevap: Bu fonksiyonun içinde(alttaki) gerçekten gönderilen argümanın const olup olmadığını anlayamayız, r value veya l value olup olmadığını anlayamayız.
 
-Yani bu template içinde gönderilen argümanın value kategorisine bağlı bir kod yazamayız. Dolayısıyla alttaki fonksiyon aldığı argümanı perfect forward edemez. Çünkü value kategori kayboldu artık.
+Yani bu template içinde gönderilen argümanın value kategorisine bağlı bir kod yazamayız. Dolayısıyla alttaki fonksiyon aldığı argümanı perfect forward edemez. 
+Çünkü value kategori kayboldu artık.
 
-Fakat üstteki fonksiyon öyle değil. Bu bir Universal Reference. Tüm argümanları alır ve const olup olmadığını, l value mi r value mi olduğunu bütün bunları fonksyion içinde compile time'da öğrenebiliriz.
+Fakat üstteki fonksiyon öyle değil. Bu bir Universal Reference. Tüm argümanları alır ve const olup olmadığını, l value mi r value mi olduğunu bütün bunları 
+fonksiyon içinde compile time'da öğrenebiliriz.
 
 
 	template <typename T>
@@ -591,7 +596,8 @@ Fakat üstteki fonksiyon öyle değil. Bu bir Universal Reference. Tüm argüman
 	}
 
 
-Universal Reference parametre her türlü argümanı kabul ediyor ama bu fonksiyon şablonu veya sınıf şablonu içinde gelen argümanın l value mi r value mi olduğunu, const mu non-const mu olduğunu sınama şansına sahibiz. Bu da bize perfect forwarding dışında bize şöyle imkanlar sağlar;
+Universal Reference parametre her türlü argümanı kabul ediyor ama bu fonksiyon şablonu veya sınıf şablonu içinde gelen argümanın l value mi r value mi olduğunu, 
+const mu non-const mu olduğunu sınama şansına sahibiz. Bu da bize perfect forwarding dışında bize şöyle imkanlar sağlar;
 	- l value veya r value'lara kısıtlama
 	- const l-r value için ayrı kod kullanma, const olmayan için ayrı kod kullanma
 
@@ -881,7 +887,8 @@ template <typename ...Ts>
 	class Myclass : public Ts... { // burada dikkat edersek parametre paketinden sonra ellipsis tokeni var, öncesi değil. ve bu pack expansion olan bağlamlardan biri.
 	};
 
-bu pack expansion olan bağlamlardan biri. Eğer burada template parametre paketi expand edilmişse(ki ortada zaten bir fonksiyon yok), derleyici pack expansion ifadesini virgüllerle ayrılan bir listeye dönüştürüyor.
+bu pack expansion olan bağlamlardan biri. Eğer burada template parametre paketi expand edilmişse(ki ortada zaten bir fonksiyon yok), derleyici pack expansion ifadesini 
+virgüllerle ayrılan bir listeye dönüştürüyor.
 
 	struct A{};
 	struct B{};
@@ -933,7 +940,8 @@ başka bir örnek;
 		using Ts::foo ...;
 	};
 
-bu da bir pack expansion. ellipsis ten önce using Ts::foo var. Bu durumda derleyici bunu virgüllerle ayrılmış listeye nasıl dönüştürecek? parametre paketinde olan türler aslında taban sınıf, her bir taban sınıfın foo isimli(eğer o bir fonksiyonsa) fonksiyonu için bir using declarationu olacak.
+bu da bir pack expansion. ellipsis ten önce using Ts::foo var. Bu durumda derleyici bunu virgüllerle ayrılmış listeye nasıl dönüştürecek? parametre paketinde olan türler 
+aslında taban sınıf, her bir taban sınıfın foo isimli(eğer o bir fonksiyonsa) fonksiyonu için bir using declarationu olacak.
 
 
 	struct A{ void foo(int); };
