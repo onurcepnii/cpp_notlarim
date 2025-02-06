@@ -284,7 +284,8 @@ Compile Time'da hesaplanıyor..
 ÇOK ÖNEMLİ
 
 
-Not: aşağıdaki size_type bir dependent name. dependent name şu demek; öyle bir isim ki template parametresi ile ilişkili, template parametresine bağlı. Dependent Name ile Non-Dependent Name lerin arama kuralları farklı.
+Not: aşağıdaki size_type bir dependent name. dependent name şu demek; öyle bir isim ki template parametresi ile ilişkili, template parametresine bağlı. 
+Dependent Name ile Non-Dependent Name lerin arama kuralları farklı.
 
 	template <typename T>
 	void foo(const T& t)
@@ -292,7 +293,9 @@ Not: aşağıdaki size_type bir dependent name. dependent name şu demek; öyle 
 		bar();
 	}
 
-derlenince sentaks hatası olur. çünkü derleyici bar herhangi bir şekilde template parametresine bağlı bir isim olmadığı için daha template'in üzerinden ilk kez geçtiğinde bar ismini arıyor ve bulamadığı için isim arama hatası oluyor.
+derlenince sentaks hatası olur. 
+çünkü derleyici bar herhangi bir şekilde template parametresine bağlı bir isim olmadığı için daha template'in üzerinden ilk kez geçtiğinde bar ismini arıyor ve 
+bulamadığı için isim arama hatası oluyor.
 
 fakat şöyle bir kod olsaydı;
 
@@ -302,10 +305,12 @@ fakat şöyle bir kod olsaydı;
 		T::value_type x;
 	}
 
-Burada value_type da bir identifier fakat bu identifier template parametresine bağlı, scope resolution operatörü ile kullanılmış. Bu durumda value type'ın ne olduğu T türü yerine  kullanılacak template argümanının ne olduğuna bağlı.
+Burada value_type da bir identifier fakat bu identifier template parametresine bağlı, scope resolution operatörü ile kullanılmış. 
+Bu durumda value type'ın ne olduğu T türü yerine  kullanılacak template argümanının ne olduğuna bağlı.
 Dolayısıyla derleyicinin şöyle bir problemi olacak: 
 
-Daha önce demiştik ki typename anahtar sözcüğünün kullanıldığı bir context(bağlam) daha var. Bu contextte typename keyword yerine class keyword kullanamıyoruz ve bu context son derece önemli.
+Daha önce demiştik ki typename anahtar sözcüğünün kullanıldığı bir context(bağlam) daha var. 
+Bu contextte typename keyword yerine class keyword kullanamıyoruz ve bu context son derece önemli.
 
 
 	template <typename T>
@@ -321,7 +326,8 @@ Mesela size_type'ın bir tür olduğunu düşünelim Eğer size_type bir türse 
 Fakat size_type bir tür değil de kendisi bir değişken veya expression ise o zaman bir ihtimal kalıyor, buradaki asterisk atomunun çarpma operatörü olması.
 
 Yani burada bir kurala ihtiyaç var. Kuralı da şöyle koydular;
-Eğer siz template parameteresine bağlı bir dependent type'dan bahsediyorsanız, yani size_type bir türse, bir nested type ise (bu örnek için) derleyicinin bunu nested type olarak alması için typename keyword kullanıyorsunuz. Eğer typename keyword kullanmazsanız derleyici bunu bir expression olarak ele alıyor.
+Eğer siz template parameteresine bağlı bir dependent type'dan bahsediyorsanız, yani size_type bir türse, bir nested type ise (bu örnek için) derleyicinin bunu 
+nested type olarak alması için typename keyword kullanıyorsunuz. Eğer typename keyword kullanmazsanız derleyici bunu bir expression olarak ele alıyor.
 
 
 	template <typename T>
@@ -380,7 +386,8 @@ Sentaks hatasında diyor ki x identifier bulunamadı.
 	}
 
 
-Yukarıdaki kodda herhangi bir sentaks hatası yok. Çünkü biz bunun bir tür bilgisi olduğunu söylemediğimiz sürece bunu bir tür bilgisi olarak almayacak. Dolayısıyla size_type in kendisi bir tür değil, sınıfın statik veri elemanı, kodda hata yok.
+Yukarıdaki kodda herhangi bir sentaks hatası yok. Çünkü biz bunun bir tür bilgisi olduğunu söylemediğimiz sürece bunu bir tür bilgisi olarak almayacak. 
+Dolayısıyla size_type in kendisi bir tür değil, sınıfın statik veri elemanı, kodda hata yok.
 
 Yalnız buradaki kurallar C++20 ile ciddi şekilde gevşetildi.
 
@@ -433,7 +440,8 @@ C++20 öncesinde, template kod içinde türden bahsettiğiniz her yerde typename
 		Myclass<int>::value
 	}
 
-Peki Myclass'ın int açılımının value'si yazmak yerine scope resolution operatörünü kullanarak sadece böyle bir ifadeyi değişken olarak kullanmasak isteseydim variable template kullanabilir miydim?
+Peki Myclass'ın int açılımının value'si yazmak yerine scope resolution operatörünü kullanarak sadece böyle bir ifadeyi değişken olarak kullanmasak isteseydim 
+variable template kullanabilir miydim?
 -Tabi;
 	
 	template <typename T>
@@ -503,7 +511,8 @@ Alias : Bir türe verilen eş isim.
 ***
 Using keyword ile yapılan bildirimler işimizi kolaylaştırıyor ama asıl gücü sadece bu değil. Typedef C'den geldiği için template haline getirilemiyor.
 
-Fakat Using keyword kullanarak tür eş isim bildirimlerine ilişkin bir template oluşturabiliyoruz. Ama bu sefer bu template'in instantiation'u bir değişken değil, bir tür eş ismi bildirimi.
+Fakat Using keyword kullanarak tür eş isim bildirimlerine ilişkin bir template oluşturabiliyoruz. Ama bu sefer bu template'in instantiation'u bir değişken değil, 
+bir tür eş ismi bildirimi.
 
 	template <typename T>
 	using Ptr = const T*;
@@ -588,7 +597,8 @@ Standard Kütüphanede isminin sonunda _t olan isimler alias template, _v olanla
 		is_floating_point_v<double>	
 	}
 
-burada hemen _v yi görüyoruz ve bunun bir variable template olduğunu anlıyoruz. Çoğunlukla bu variable template'ler constexpr boolean sabitler(öyle bir zorunluluk olmamasına rağmen çoğunluğu böyle).
+burada hemen _v yi görüyoruz ve bunun bir variable template olduğunu anlıyoruz. Çoğunlukla bu variable template'ler constexpr boolean sabitler(öyle bir zorunluluk 
+olmamasına rağmen çoğunluğu böyle).
 
 	is_floating_point<double>
 	is_floating_point<double>::value
@@ -641,7 +651,8 @@ Modern Cpp öncesinde sadece sınıf şablonları varsayılan argüman alabiliyo
 	}
 
 
-Sınıf şablonlarında ve variable şablonlarında default argument'e ilişkin şöyle bir kural var: 	Bir template parametresi varsayılan argüman alıyorsa onun sağındakilerin hepsi varsayılan argüman almak zorunda.
+Sınıf şablonlarında ve variable şablonlarında default argument'e ilişkin şöyle bir kural var: 	Bir template parametresi varsayılan argüman alıyorsa onun 
+sağındakilerin hepsi varsayılan argüman almak zorunda.
 	
 Mesela şöyle olamaz;
 	
@@ -810,7 +821,8 @@ Template'in template parametresi default argument alırsa, fonksiyonun parametre
 		auto val = foo();
 	}
 
-fonksiyonun parametresi default argument alıyor ama template'in parametresi de default argument alıyor. Derleyici burada çıkarım yapamadığını gördüğü zaman template'in parametresinin default argument alıp almadığına bakıyor ve int olduğunu görünce burada bir problem kalmıyor.
+fonksiyonun parametresi default argument alıyor ama template'in parametresi de default argument alıyor. Derleyici burada çıkarım yapamadığını gördüğü zaman template'in 
+parametresinin default argument alıp almadığına bakıyor ve int olduğunu görünce burada bir problem kalmıyor.
 
 
 Bunun kullanıldığı güzel bir örnek : Value Initialization
@@ -821,8 +833,11 @@ Bunun kullanıldığı güzel bir örnek : Value Initialization
 
 	}
 
-bu durumda eğer default template argument'i kullanırsak T türü int olacak ve bu durumda int türden parametreye 0 değeri geçilmiş olacak. Çünkü int türden bir nesne bu şekilde init. edildiğinde zero initialize ediliyor. 
-Fakat T türü bir sınıf türü olduğunda, default ctor çağırılacak. Dolayısıyla fonk. şablonunun fonk. parametresi (call parameter) default argument kullanıldığında aslında biz default construct edilmiş bir parametreyi kullanmış olacağız. Fakat bu primitive türden ise zero init edilmiş olacak.
+bu durumda eğer default template argument'i kullanırsak T türü int olacak ve bu durumda int türden parametreye 0 değeri geçilmiş olacak. 
+Çünkü int türden bir nesne bu şekilde init. edildiğinde zero initialize ediliyor. 
+Fakat T türü bir sınıf türü olduğunda, default ctor çağırılacak. 
+Dolayısıyla fonk. şablonunun fonk. parametresi (call parameter) default argument kullanıldığında aslında biz default construct edilmiş bir parametreyi kullanmış olacağız. 
+Fakat bu primitive türden ise zero init edilmiş olacak.
 
 	int main()
 	{
@@ -838,7 +853,9 @@ Fakat T türü bir sınıf türü olduğunda, default ctor çağırılacak. Dola
 
 Mükemmel gönderim.
 
-Bir fonksiyon var diyelim. Bu fonksiyona biz bir çağrı yapmak istiyoruz fakat kendimiz değil de başka bir fonksiyon daha olacak. Biz o fonksiyona asıl asıl çağrı yapmak istediğimiz fonksiyona göndermek istediğimiz argümanları geçiyoruz ve bu aradaki fonksiyon o fonksiyona çağrı yapıyor ve maliyet açısından fark olmuyor, value category korunuyor, constluk korunuyor.
+Bir fonksiyon var diyelim. Bu fonksiyona biz bir çağrı yapmak istiyoruz fakat kendimiz değil de başka bir fonksiyon daha olacak. 
+Biz o fonksiyona asıl asıl çağrı yapmak istediğimiz fonksiyona göndermek istediğimiz argümanları geçiyoruz ve bu aradaki fonksiyon o fonksiyona çağrı yapıyor ve 
+maliyet açısından fark olmuyor, value category korunuyor, constluk korunuyor.
 
 // value category
 // constness
@@ -867,7 +884,8 @@ func'ın 4 tane overloadu var.
 		func(std::move(m));		// üçüncü fonksiyon çağırılır
 		func(std::move(cm));	// dördüncü fonksiyon çağırılır
 
-Şimdi bunları func'a değil, call_func'a göndericez ve call_func bunları func'a gönderecek ama diyecek ki "bak senin func ı doğrudan çağırman ile benim çağırmam arasında hiçbir fark yok". bunu yapmak çok kolay değil.
+Şimdi bunları func'a değil, call_func'a göndericez ve call_func bunları func'a gönderecek ama diyecek ki "bak senin func ı doğrudan çağırman ile benim çağırmam arasında 
+hiçbir fark yok". bunu yapmak çok kolay değil.
 	}
 
 
@@ -948,7 +966,8 @@ Yani gözüktüğü kadar kolay ve kullanışlı değil, bunun için bir mekaniz
 
 	# : hatırlayalım buna Universal Reference diyorduk. Tek kullanımı burada olmasa da en büyük kullanımı perfect forwarding sağlamak.
 
-Nasıl std::move compile time'da ele alınan bir yardımcı fonksiyonsa, ifadeyi rvalue haline getiriyorsa, std::forward da perfect forwarding amacıyla kullanılır ve ifadeyi orijinal değer kategorisini koruyarak iletir.
+Nasıl std::move compile time'da ele alınan bir yardımcı fonksiyonsa, ifadeyi rvalue haline getiriyorsa, std::forward da perfect forwarding amacıyla kullanılır ve ifadeyi 
+orijinal değer kategorisini koruyarak iletir.
 
 İki parametreli olsaydı şöyle yapardık:
 	
