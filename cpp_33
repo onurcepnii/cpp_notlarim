@@ -600,7 +600,7 @@ Standard Kütüphanede isminin sonunda _t olan isimler alias template, _v olanla
 burada hemen _v yi görüyoruz ve bunun bir variable template olduğunu anlıyoruz. Çoğunlukla bu variable template'ler constexpr boolean sabitler(öyle bir zorunluluk 
 olmamasına rağmen çoğunluğu böyle).
 
-	is_floating_point<double>
+	is_floating_point_v<double>
 	is_floating_point<double>::value
 
 	aynı anlamda.
