@@ -1,0 +1,1049 @@
+
+Parameter Pack
+--------------
+
+typename veya class keyword kullanırsak: Type Parameter Pack
+
+	template <typename ...Ts> veya template <class ...Ts>
+
+eğer tür kullanırsak : Non-Type Parameter Pack
+
+	template <int ...N>
+
+
+Parametre Paketi ne demek?
+- Yani parametre paketinde 0 dahil N tane template parametresi olabilir.
+
+yani;
+
+	template <class ...Ts>
+	class Myclass{
+
+	};
+
+	int main()
+	{
+		Myclass<int, double, long> m;	// parametre paketinde 3 tane template tür parametresi var.
+	}
+
+İşte bu parametre paketindeki türlere erişmek için bir takım  ifadeler kullanıyorduk, bunlara "Pack Expansion" deniyor.
+
+Bir şeye dikkat;
+
+Template parametre paketinin olması, sınıf şablonu, değişken şablonu ya da fonksiyon şablonu olması ile ilgili değil.
+
+Örneğin bu bir fonksiyon şablonu da olabilir ve fonksiyon şablonu olduğunda template parametre paketinden sonra ellipsis tokeni gelirse bu durumda bu fonksiyonun parametre paketi.
+
+Yani template parametre paketi başka, fonksiyonun parametre paketi başka.
+
+	template <class ...Ts>
+	void func(Ts ...args)
+	{
+
+	}
+
+Birbiriyle ilişkili ama ikisi aynı olmak zorunda değil.
+
+
+--------------------------------
+
+Fonksiyon şablonlarında birden fazla parametre paketi olabilir. fakat seyrak olarak karşımıza çıkar.
+
+
+template <typename ...X, typename ...Y>
+void foo(X ...xargs, int, int, Y ...yargs)
+{
+	std::cout << "sizeof...(X) = " << sizeof...(X) << "\n";
+	std::cout << "sizeof...(Y) = " << sizeof...(Y) << "\n";
+}
+
+int main()
+{
+	foo<int, double, int> (1, 2., 3, 5, 5, 6, 7, 8, 9);
+}
+
+
+--------------------------------
+
+	template <typename ...Ts>
+	void foo(Ts ...args)
+	{
+
+	}
+
+şöyle de olabilirdi;
+
+	template <typename T, typename ...Ts>
+	void foo(T x, Ts ...args)
+	{
+		std::cout << __FUNCSIG__ << "\n"; // arka planda ne oluyor bunu görmek için bu makroyu kullanabiliriz.
+	}
+
+	int main()
+	{
+		foo(12, 4, 'A', 3.4);
+	}
+
+
+Pack Expansion
+--------------
+Öyle bir ifade ki, derleyici ilgili contextte belirli örüntülere(pattern) uygun olarak virgüllerle ayrılan listeye dönüştürür.
+
+Eğer template parametre paketinin isminden sonra elipsis tokenini koyarsak derleyici bunu paketteki türlerin isimlerini içeren, virgüllerle ayrılan bir listeye çeviriyor.s
+
+	template <typename ...Ts>
+	void foo(Ts ...args)
+	{
+		std::tuple<Ts...> x; // #
+	}
+
+# : Burada parametre paketindeki parametreler int, double, long ise derleyicinin oluşturduğu fonksiyon kodunda tuple'ın  int, double, long açılımı söz konusu olacak.
+
+Yani template parametre paketi expand edildiğinde, parametre paketindeki türler ya da değerlerden oluşan comma seperated list'e dönüşüyor.
+
+Daha da önemlisi: eğer parametre paketi template parametre paketi değilde, fonksiyon parametre paketi  pack expansion dediğimiz örüntüye ya da örüntülerden birine tabi tutulursa bu da derleyici tarafından 
+
+	template <typename ...Ts>
+	void foo(Ts ...args)
+	{
+		aslında fonksiyon şöyle (T türünden p) // T1 p1, T2 p2, T3 p3 (eğer 3 tane tür varsa)
+
+		şimdi ben eğer template parametre paketini expand edersem aslında o şuna dönüşür;
+			T1, T2, T3
+		fakat eğer fonksiyon parametre paketini expand edersem o zaman;
+			p1, p2, p3
+
+		args...
+	}
+
+	int main()
+	{
+
+	}
+
+Dolayısıyla comma seperated kullanılan bir çok contextte parametre paketinin expand edilmiş halini kullanabiliyorum.
+
+
+	template <typename ...Ts>
+	void foo(Ts ...args)
+	{
+		bar(args...);
+	}
+
+	int main()
+	{
+
+	}
+
+-------------------------
+
+burada aslında fonksiyonun parametre değişkenlerinin değerlerini göndermiş olacağız.
+
+	template <typename ...Ts>
+	void foo(Ts ...args)
+	{
+		bar(args...); // az önceki örneğe göre söylemek gerekirse: p1, p2, p3
+	}
+
+	int main()
+	{
+
+	}
+
+-------------------------
+
+Pack expansion daha uzun bir örüntü de olabilir;
+
+
+	template <typename ...Ts>
+	void foo(Ts ...args)
+	{
+		bar(&args...); 
+		// bar(&p1, &p2, &p3) böyle bir listeye dönüştürülür.
+	}
+
+	int main()
+	{
+
+	}
+
+
+//////////////////////////
+
+
+	template <typename ...Ts>
+	void foo(Ts ...args)
+	{
+		bar(foo(args)...); #
+		//bar(foo(p1), foo(p2), foo(p3))
+	}
+
+	int main()
+	{
+
+	}
+
+# : burada elipsis dikkat edersek args parametre paketi ismini izlemiyor. foo(args) 'ı  izliyor. dolayısıyla burada yapılan expansion;
+bar(foo(p1), foo(p2), foo(p3))
+
+
+-----------------------------------
+		ÖRNEKLER
+-----------------------------------
+(1)
+
+template <typename ...Ts>
+void print(Ts ...args)
+{
+	((std::cout << args << ' '), ...);
+	std::cout << '\n';
+}
+
+template <typename T>
+auto g(T* x)
+{
+	return *x * *x + 10;
+}
+
+template <typename Ts>
+void f(Ts ...args)
+{							// patterns
+	print(args...);
+	print(&args...);
+	print(10 * args...);	// 10 * p1, 10 * p2, 10 * p3
+	print(args * args...);	// p1 * p1, p2 * p2, p3 * p3
+	print(g(&args)...);		// g(&p1), g(&p2), g(&p3)
+	print(++args...);		// ++p1, ++p2, ++p3
+}
+
+int main()
+{
+	int x{ 1 }, y{ 2 }, z{ 3 };
+	f(x, y, z);
+}
+
+
+-----------------------------------
+
+	template <typename ...Ts>
+	void f(const Ts &...args)	// fonksiyonun bütün parametreleri const l value referans olacak
+	{
+
+	}
+
+
+///////////////////////////
+
+	template <typename ...Ts>
+	void f(Ts &&...args)	// fonksiyonun bütün parametreleri universal referans olacak
+	{
+
+	}
+
+
+///////////////////////////
+
+	template <typename ...Ts>
+	void f(Ts &&...args)
+	{
+
+	}
+
+-----------------------------------
+(2)
+
+	template <typename ...T>
+	T square(T x)
+	{
+		return x * x;
+	}
+
+	template <typename... T>
+	auto sum(T... args)
+	{
+		return (... + args);
+	}
+
+	template <typename... T>
+	void call_sum(T... args)
+	{
+	
+		// fonksiyon parametre paketi farklı patternlerde expand ediliyor aşağıdaki kodlarda
+
+		auto x1 = sum(args...);		 // sum(1,2,3,4,5)
+		std::cout << "x1 =" << x1 << "\n";
+
+		auto x2 = sum(85, args...);		sum(85, 1, 2, 3, 4, 5)
+		std::cout << "x2 =" << x2 << "\n";
+
+		auto x3 = sum(square(args)...);		// sum(square(1), square(2), square(3), square(4), square(5))
+		std::cout << "x3 =" << x3 << "\n";
+	}
+
+	int main()
+	{
+		call_sum(1, 2, 3, 4, 5);
+	}
+
+
+-----------------------------------
+(3)
+
+	template <class.... Us>
+	void f(Us... pargs){}
+
+	template <class... Ts>
+	void g(Ts... args)
+	{
+		f(&args...); // "&args..." is a pack expansion
+		// "&args" is its pattern
+	}
+
+	int main()
+	{
+		g(1, 0.2, "a"); // Ts... args expand to int E1, double E2, const char* E3
+		// &args... expands to &E1, &E2, &E3
+		// Us... pargs expand to int* E1, double* E2, const char** E3
+	}
+
+
+
+-----------------------------------
+(4)
+
+	template <typename ...Ts>
+	constexpr auto sum(Ts ...args)
+	{
+		return (0 + ... + args);
+	}
+
+	template <typename ...Ts>
+	constexpr auto mul(Ts ...args)
+	{
+		return (1 * ... * args);
+	}
+
+	template <typename ...Ts>
+	constexpr auto foo(Ts ...args)
+	{
+		return mul(sum(args...) + args...);
+		// mul(sum(1,2,4) + 1, sum(1,2,4) + 2, sum(1,2,4) + 4)
+		// mul(8,9,11)
+	}
+
+	int main()
+	{
+		constexpr auto result = foo(1,2,4);
+	}
+
+
+
+-----------------------------------
+(5)
+
+Pack expansion'u en güzel gösteren örneklerden birisi;
+
+	template <typename T, typename ...Args>
+	std::unique_ptr<T> MakeUnique(Args&& ...args) // universal reference
+	{
+		new T(std::forward<Args>(args)...)
+	}
+
+	int main()
+	{
+		MakeUnique<Myclass>(x, y, 10)
+	}
+
+Yazdığımız makeunique fonksiyonu aldığı argümanları T sınıfının ctor'una perfect forward edecek. (T'nin sınıf türü olduğunu düşünelim.)
+
+
+-----------------------------------
+(6)
+
+	#include <type_traits>
+
+	template <typename ...Ts>
+	class Var {
+		//...
+	};
+
+
+	template <typename ...Types>
+	class Myclass : public Var<Types...> {
+	public:
+		constexpr static size_t size = sizeof... (Types);
+	};
+
+	int main()
+	{
+		constexpr auto n = Myclass<int, double>::size; // 2
+		static_assert(std::is_base_of_v<Var<int,double>, Myclass<int, double>>);	// holds
+	}
+
+
+-----------------------------------
+(7)
+
+	template <typename... Types, int ...N>
+	void func(Types(&args)[N]) // her bir parametresi türü T olan boyutu N olan diziye referans
+	{
+		//MSVS
+		std::cout << __FUNCSIG__ << "\n";
+	}
+
+	int main()
+	{
+		int a[2]{};
+		int b[3]{};
+		int c[5]{};
+		double d[7]{};
+
+		func(a,b,c,d);
+	}
+
+
+----------------------------------------------------------------------
+----------------------------------------------------------------------
+
+Variadic parametre paketine sahip fonksiyon şablonları dilediğimiz sayıda argümanla çağrılma olanağı veriyorlar fakat bu olanaktan nasıl istifade edeceğiz ona bakalım;
+
+Not: Bundan istifade etmek için birden fazla teknik var.
+
+Kullanılan Teknikler:
+
+- Compile Time Recursive Pack Expansion
+- Initializer List
+- Fold Expressions
+- Constexpr if & compile time recursivity
+
+
+
+(1) Compile Time Recursive Pack Expansion
+-----------------------------------------
+Template'e parametre paketinin dışında bir template parametresi daha ekliyoruz. ve fonksiyona da yine parametre paketinin dışında bir parametre daha ekliyoruz. 
+
+	template <typename T, typename ...Ts>
+	void print(const T& t, const Ts& ...args)
+	{
+		print(args...);
+	}
+
+	int main()
+	{
+		std:: string name { "onur" };
+		print(2, 5.6, "cepni", name);
+	}
+
+burada her print çağrısında paketten bir tanesi ayrılır. compile time'da ki recursivity'i durduracak bir mekanizmaya ihtiyacımız var;
+
+En çok kullanılan teknik, bir parametre için ayrı bir fonksiyon yazmak ve print fonksiyonu örneğin tek parametreyle çağrıldığında artık bizim başka bir template veya başka bir fonksiyondan kodun oluşturulması.
+
+	// compile-time recursive pack expansion
+	template <typename T>
+	void print(const T& r)
+	{
+		std::cout << r << "\n";
+	}
+
+	template <typename T, typename ...Ts>
+	void print(const T& t, const Ts& ...args)
+	{
+		print(r);
+		print(args...);
+	}
+
+	int main()
+	{
+		int x = 10;
+		double d = 23.5;
+
+		print(x, d, 9L, "necati");
+	}
+
+///////////////////////////////
+
+farklı şekillerde yazabiliriz, hatta bu daha da şık;
+
+	template <typename T>
+	std::ostream& print(std::ostream& os, const T& t)
+	{
+		return os << t;
+	}
+
+	// this version of print will be called for all but the last element in the pack
+	template <typename T, typename... Args>
+	std::ostream& print(std::ostream& os, const T& t, const Args& ...rest)
+	{
+		os << t << ", "; // print the first argument
+		return print(os, rest...); // recursive call; print the other arguments
+	}
+
+	int main()
+	{
+		print(std::cout, 45, "ali", 3.87, 'A');
+	}
+
+
+-------------------------------------------------------------
+
+
+	template <typename T>
+	T max(const T& a, const T& b)
+	{
+		return a > b ? : b;
+	}
+
+	template <typename T, typename... Args>
+	T max(const T& a, const Args&... args)
+	{
+		return max(a, max(args...));
+	}
+
+	int main()
+	{
+		std::cout << max(2, 4, 1) << "\n";
+		std::cout << max(4.2, 2.6, 5.1, 2.3, 1.7, 8.2) << "\n";
+	}
+
+
+-------------------------------------------------------------
+
+
+	template <typename T>
+	T summer(T v)
+	{
+		return v;
+	}
+
+	template <typename T, typename... Args>
+	T summer(const T& first, const Args&... args)
+	{
+		return first + summer(args...);
+	}
+
+	int main()
+	{
+		std::cout << summer(10, 20, 30, 80, 17) << "\n";
+		std::string s1 = "nec", s2 = "ati", s3 = "Er";
+		std::cout << summer(s1,s2,s3,"gin") << '\n';
+	}
+
+
+
+Yani bu tekniklerin hepsi eksiltme yapıyor ve recursiviteyi başka bir template ile veya fonksiyon ile durduruyor.
+
+
+(2) Initializer List
+--------------------
+
+Virgül operatörünün bir sequence oluşturması ve ürettiği değerin sağ operandının değeri olmasından faydalanarak bu tekniği implemente ediyoruz.
+
+	using namespace std;
+
+	int x = 10;
+	int y = 20;
+	int z = 30;
+
+	int a[] = { (cout << x << " ", 0), (cout << y << " ", 0), (cout << z << " ", 0)};
+
+yukarıda böyle bir dizi init. ettiğimizde bütün elemanları cout ile bastırmış oluyoruz. şimdi gelelim konumuza;
+
+	template <typename ...Ts>
+	void print(const Ts& ...args)
+	{
+		(std::cout << args << " ", 0)...
+		//(std::cout << p1 << " ",0), (std::cout << p2 << " ",0), (std::cout << args << " ",0)
+	}
+
+devam edelim
+
+	template <typename ...Ts>
+	void print(const Ts& ...args)
+	{
+		int a[] = { (std::cout << args << " ",0)...};W
+	}
+
+	int main()
+	{
+		print(2, 2.3, "onur", 6L);
+	}
+
+bu şekilde oluyor fakat boşuna daha sonra kullanmayacağımız bir dizi kullanmış olduk.
+
+bundan daha iyisini yapabiliriz;
+
+	template <typename ...Ts>
+	void print(const Ts& ...args)
+	{
+		(void)std::initializer_list<int> { (std::cout << args << " ",0)...};
+
+		// aslında CTAD sayesinde <int> yazmamıza gerek de yok ama yazdık yine de.
+	}
+
+	int main()
+	{
+		print(2, 2.3, "onur", 6L);
+	}
+
+--------------------------------------------
+
+
+(3) If Constexpr / Constexpr If / Static If / Compile Time If
+-------------------------------------------------------------
+Farklı farklı isimler ile isimlendirilebiliyorlar yukarıda görüldüğü üzere.
+
+Preprocessor komutları ile compile time'da derleyiciye conditional compiling yaptırabiliyorduk.
+
+Fakat C++17 itibariyle önişlemci programı hiç devreye katmadan derleyicinin bir kodu görmesini veya görmemesini sağlayacak bir derleme zamanında ele alınacak If deyimi var.
+
+
+If'in kontrol ifadesi bir constant expression olacak, eğer o constant expression compile time'da true değer üretirse o zaman derleyici if'in doğru kısmındaki kodu derleyecek.
+Eğer false değer üretirse, if'in yanlış kısmı varsa yanlış kısmındaki kodu derleyecek, yanlış kısmı yoksa herhangi bir kodu derlemeyecek.
+
+
+	template <typename T>
+	void func(T x)
+	{
+		if constexpr (sizeof(T) > 2) {
+			std::cout << "compiled code is true path\n";
+		}
+		else {
+			std::cout << "compiled code is false path\n";
+		}
+	}
+
+	int main()
+	{
+		short s = 34;
+		func(s);
+	}
+
+(1) Kontrol ifadesinin constexpr olma şartı var. örneğin sizeof(T > 2) yerine gidip de x > 2 yazamayız.
+
+(2) Derleyicinin derlemediği kısımdaki kod sentaks hatası oluşturmayacak.
+
+
+Mesela şöyle bir kod olsaydı;
+
+	#include <type_traits>
+
+	struct Nec {
+		void foo() {}
+	};
+
+	template <typename T>
+	void func(T x)
+	{
+		if constexpr (!std::is_integral_v<T>) {
+			x.foo();
+		}
+		else {
+			std::cout << "compiled code is false path\n";
+		}
+	}
+
+	int main()
+	{
+		func(12);	
+	}
+
+bu durumda T türü int olur ve derleyici else bloğundaki kodu üretir. Eğer o kodu da derleseydi int türden değişkeni . operatörünün operandı yapmış olacaktım ve bu da sentaks hatası oluşturacaktı. Fakat şimdi sentaks hatası yok çünkü derleyici bu kodu derlemiyor.
+
+Yani derlenmeyen kısımda name-lookup ile ilgili bir problem olmadığı sürece o kod derlenmiyor, o kodun sentaksa uygun olması gerekmiyor.
+
+** Not **
+Sık yapılan hatalardan birisi else if yazarken constexpr yazmayı unutmak. Bu hatayı yaparsak artık o else if compile time if olmayacak.
+
+	if constexpr (!std::is_integral_v<T>){}
+	else if (???) {} // constexpr yazılmamış, yazılması lazım!
+
+birkaç örnek verelim;
+
+
+	template <typename T>
+	std::string as_string(T x)
+	{
+		if constexpr (std::is_same_v<T, std::string>){
+			return x;
+		}
+		else if constexpr (std::is_arithmetic_v<T>){
+			return std::to_string(x);
+		}
+		else {
+			return std::string(x);
+		}
+	}
+
+	int main()
+	{
+		std::cout << as_string(42) << "\n";
+		std::cout << as_string(4.2) << "\n";
+		std::cout << as_string(std::string("hello") << "\n");
+		std::cout << as_string("hello") << "\n";
+	}
+
+
+
+----------------------------------------------------
+	
+NOT:
+
+
+	auto func(int x)
+	{
+		if (x > 10)
+			return 4.5;
+
+		return 3;
+	}
+
+Yukarıdaki kodda hata verir çünkü iki farklı return statement'in türleri farklı. Aynı türde olmalılar.
+
+Fakat aşağıdaki kod hata vermez gayet de çalışır, compile time if ile yaptığımız için zaten compile time'da kod seçimi yapılacak ve aslında tek return ifadesi kalacak bundan dolayı hata oluşmayacak.
+
+	auto func(int x)
+	{
+		if constexpr (sizeof(x) > 2)
+			return 4.5;
+		else
+			return 3;
+	}
+
+
+----------------------------------------------------
+
+
+template <int N>
+constexpr int fibo()
+{
+	if constexpr (N >= 2) {
+		return fibo<N - 1>() + fibo<N - 2>();
+	}
+	else{
+		return N;
+	}
+}
+
+int main()
+{
+	constexpr auto val = fibo<7>();
+}
+
+
+
+----------------------------------------------------
+***
+Öyle bir fonksiyon yazmak istiyorum ki parametresi pointer ise geri dönüş değeri o pointer'in gösterdiği nesnenin değeri olsun. Fakat parametresi pointer değilse parametrenin kendi değeri olsun.
+
+	template <typename T>
+	auto get_value(T x)
+	{
+		if constexpr(std::is_pointer_v<T>)
+			return *x;
+		else
+			return x;
+	}
+
+	int main()
+	{
+		int i = 56;
+		std::string s{"onur"};
+		auto* p = &s;
+
+		std::cout << get_value(i) << "\n";
+		std::cout << get_value(p) << "\n";
+
+	}
+
+----------------------------------------------------
+
+** Örnek **
+
+Burada function overloading var. Hatırlayalım template function'lar da normal function'lar ile function overloading e girebiliyor. 
+
+Gönderilen argüman eğer alttaki 3 tane gerçek fonksiyonun parametresi ile aynı ise gerçek fonksiyon çağırılacak aksi halde fonksiyon şablonundan fonksiyon üretilecek.
+
+	template <typename T>
+	std::string tostr(T t)
+	{
+		return std::to_string(t);
+	}
+
+	std::string tostr(const std::string& s)
+	{
+		return s;
+	}
+
+	std::string tostr(const char* cstr)
+	{
+		return cstr;
+	}
+
+	std::string tostr(bool b)
+	{
+		return b ? "true" : "false";
+	}
+
+	int main()
+	{
+		std::cout << tostr("necati") << "\n";
+		std::cout << tostr(std::string{"ergin"}) << "\n";s
+		std::cout << tostr(13) << "\n";
+		std::cout << tostr(5.9) << "\n";
+		std::cout << tostr(true) << "\n";
+	}
+
+
+Ama şimdi overloading yerine derleyicinin compile time'da kod seçmesini sağlayalım.
+
+
+	template <typename T>
+	std::string tostr(T t)
+	{
+		if constexpr (std::is_convertable_v<T, std::string>)	// #
+			return t;
+		else if constexpr(std::is_same_<T, bool>)
+			return t ? "true" : "false";
+		else
+			return std::to_string(t);
+	}
+
+
+# : bu meta function ile T türü std::string türüne convert edilebilir mi onu sınıyoruz.
+
+
+
+
+------------------------------------
+
+	static_assert Declaration
+
+------------------------------------
+Doğrulama.
+
+Assertion'ları iki kategoriye ayırıyorduk: compile time ya da statik assertions ve runtime assertions.
+
+Runtime Assertion tipik olarak assert makrosu ile kullanılıyor.
+
+Compile Time Assertions, compile time'da yapılan doğrulamalar.
+
+Statik assert sentaksta bir bildirim olarak geçiyor. Static Assert Declaration.
+
+Statik assert bildirimini
+-global düzeyde
+-local düzeyde
+-doğrudan bir sınıf tanımı içinde
+
+yapmak legal.
+
+static_assert(constant expression , "hata .......")
+
+gönderilen ilk argümanın true mu false mu olduğunu sınıyor, eğer false ise doğrudan bir sentaks hatası oluşuyor ve bu hatayı verirken derleyici yazdığımız "hata ........" yazısını hatanın yanında gösteriyor.
+
+
+Örnek:
+
+	static_assert(sizeof(int) > 2, "sizeof int must be greater than 2");
+
+
+
+Dolayısıyla compile time'da derleyiciye bir kontrol yaptırıyorum ve eğer o kontrol doğru sonuçlanmaz ise derleyicinin sentaks hatası vermesini sağlıyorum.
+
+Böylece kodun derlenmesi için gerekli şartlar oluşmadığında, daha derleme zamanında sentaks hatası alarak işimi kolaylaştırıyorum.
+
+Daha çok generic programlama tarafında kullanılıyor.
+
+
+
+	template <typename T>
+	class Myclass {
+		static_assert(std::is_integral_v<T>)
+	};
+
+	int main()
+	{
+		Myclass<double> x;	// static assertion'a takılır ve hata verir
+	}
+
+
+Birden fazla static_assertion da koyabiliriz.
+
+	template <typename T>
+	void func(T)
+	{
+		static_assert(std::is_integral_v<T>);
+		static_assert(sizeof(T) > 2);
+	}
+
+
+Bu durumda T türünün hem integral type olması hem de sizeof'unun 2'den büyük olması lazım.
+
+
+
+***
+	Template parametrelerini constraint etmenin yollarından birisi de static_assert.
+
+Fakat tabi bu fonksiyonun önce overload'da seçilmesi gerekiyor.
+
+
+Compile Time'da kod seçimi için 3-4 tane tipik araç var;
+
+-SFINAE
+-If constexpr(static if)
+-Tag Dispatch
+-Concept
+
+bunlar ile derleyiciye compile time'da kod seçtirme imkanına sahibiz.
+
+	template <typename T, std::size_t N>
+	class Array {
+		static_assert(N >= 5, "size must be greater than 5");
+
+		T ma[N];
+	};
+
+	int main()
+	{
+		Array<int, 8> a1;
+		Array<int, 4> a2;
+	}
+
+
+-------------------------------------
+
+	template <typename T>
+	class Myclass {
+		static_assert(std::is_default_constructible_v<T>);
+	};	
+
+	struct Nec {
+		Nec(int);
+	};
+
+	int main()
+	{
+		Myclass<Nec> x;
+	}
+
+--------------------------------------------------------
+
+
+-------------------------------------
+
+		Fold Expressions
+
+-------------------------------------
+
+Parametre paketinin önceden belirlenmiş bir şekilde expand edilmesini sağlıyor.
+
+Doğrudan zaten bunlara karşılık gelen kurallar var.
+
+Fold Expressions'u dilin standardı iki kategoriye ayırıyor;
+(Onlar da içlerinde 2'ye ayrılıyorlar, right-left olarak)
+	
+(1) Unary Fold Expressions
+	Unary Right Fold
+	Unary Left Fold
+
+(2) Binary Fold Expressions
+	Binary Right Fold
+	Binary Left Fold
+
+Fold Expression variadic parametre paketleri ile ilgili. Ortada bir parametre paketi, variadic bir template yoksa fold ifadesinin kullanılması mümkün değil. Fold ifadeleri variadic templateler için geçerli.
+
+Unary Fold Expression
+---------------------
+
+	template <typename ...Ts>
+	auto sum(Ts ...args)
+	{
+		return (... + args);
+	}
+
+Not/Trick : Ellipsis tokeni operatörün solundaysa left fold, sağındaysa right fold.
+
+Derleyici fold expression olan ifadeyi aslında şuna dönüştürüyor: eğer left fold ise (bu fonksiyonların parametrelerinin isimleri olsaydı p1 p2 p3 p4 diye) (((p1 + p2) + p3) + p4)
+
+Dolayısıyla öyle bir ifade oluşacak ki bu ifade zaten bütün argümanların toplamı anlamına gelecek.
+
+***
+Left-Fold olması ile Right-Fold olması arasındaki fark nedir?
+
+	return (args + ...);	// Right 
+	// return p1 + ( p2 +(p3 + (p4 + p5)))
+
+Çok fark olabilir veya fark olmayadabilir, ifadeye bağlı.
+Bir örnek;
+	
+	template <typename ...Ts>
+	auto sum(Ts ...args)
+	{
+		return (args + ...);
+	}
+
+	int main()
+	{
+		using namespace std;
+
+		string name{ "onur" };
+
+		sum(name, "cep", "ni");
+	}
+
+
+OUTPUT : onurcepni
+
+	eğer unary right fold yaparsak;
+
+OUTPUT : sentaks hatası
+
+Neden sentaks hatası? çünkü derleyici iki tane pointeri toplayacak bir kod üretecek bu da sentaks hatasına sebep verecek.
+
+Güzel bir örnek;
+
+	template <typename ...Ts>
+	auto div(Ts ...args)
+	{
+		return (... / args);
+	}
+
+	int main()
+	{
+		using namespace std;
+
+		div(500, 50, 5, 2);	// sonuç 1
+		// fakat left fold yerine right fold olsaydı, bu durumda right assosiative gibi olacak ve sonuç 20 olacaktı.
+	}
+
+
+--------------------------------------
+
+	template <int ...N>
+	constexpr int Sum = (... + N);
+
+	int main()
+	{
+		Sum<2, 5, 7, 9>
+	}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
