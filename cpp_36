@@ -50,7 +50,8 @@ Binary Fold Expressions
 			auto val = sum();
 		}
 
-	derleyici burada hata verir ve der ki expansion boş olmamak zorunda. dolayısıyla eğer bunun geçerli olmasını istiyorsak ya paketi boş bırakmayacağız ya da binary fold kullanacağız.
+	derleyici burada hata verir ve der ki expansion boş olmamak zorunda. dolayısıyla eğer bunun geçerli olmasını istiyorsak ya paketi boş bırakmayacağız ya da binary 
+	fold kullanacağız.
 
 	Fakat bu durum ilginç ve istisnai;
 
@@ -108,7 +109,8 @@ Virgül operatörü ile ilgili idiomatic bir yapı;
 		auto x2 = func(3, 5, 4, "onur");
 	}
 
-Virgül operatörünün değeri sağ operandının değeri. O halde parameter pack'i açtığımızda comma seperated list haline geldiğinde en sağdaki elemanın değerini döndürecek yani en son alldığı argüman.
+Virgül operatörünün değeri sağ operandının değeri. O halde parameter pack'i açtığımızda comma seperated list haline geldiğinde en sağdaki elemanın değerini döndürecek yani 
+en son alldığı argüman.
 
 -------------------------------------
 
@@ -213,7 +215,8 @@ C/C++'da ki containerların biraz daha soyutlanmış, daha yüksek düzeyde abst
 
 Pointerlar dizi elemanlarının adreslerini tutan değişkenler olarak kullanılabilir ve pointerların sağladığı bir interface var. Örneğin ptr bir pointer, *ptr, ++ptr gibi.
 
-Nasıl pointerlar bir interface sağlıyorsa fakat bu interface daha çok dizilere yönelikse iteratorler de aslında ya kendileri de doğrudan pointerlar ya da pointer-like bir arayüze sahip olan sınıflar.
+Nasıl pointerlar bir interface sağlıyorsa fakat bu interface daha çok dizilere yönelikse iteratorler de aslında ya kendileri de doğrudan pointerlar ya da pointer-like bir 
+arayüze sahip olan sınıflar.
 
 Yani iteratoru pointer like bir interface ile kullanabiliyorum fakat iteratorler containerlarda tutulan öğelerin konumlarını tutan değişkenler.
 
@@ -222,11 +225,14 @@ Yani iteratoru pointer like bir interface ile kullanabiliyorum fakat iteratorler
 
 Neden Pointerlar Yeterli Olmuyor?
 ---------------------------------
-Örneğin Linked List'lerde öğeler node'larda tutuluyor. Eğer bir node'da ki nesneyi gösteren bir pointeri ++ operatörünün operandı yaparsak lojik olarak bağlı listedeki bir sonraki elemanı gösterir hale gelme ihtimali var mı? Hayır.
+Örneğin Linked List'lerde öğeler node'larda tutuluyor. Eğer bir node'da ki nesneyi gösteren bir pointeri ++ operatörünün operandı yaparsak lojik olarak bağlı listedeki bir
+sonraki elemanı gösterir hale gelme ihtimali var mı? Hayır.
 
-Fakat bunlar sınıflar türünden nesnelerse şunu sağlayabiliriz: hangi container'ın iteratoru olursa olsun, o iteratoru içerik operatörünün operandı yaptığımda burada bir fonksiyon çağrılır operator overloading mekanizmasından faydalanırım, bir fonksiyon çağrılı ve o fonksiyon bana bu iteratörün anlattığı konumdaki nesneye erişim sağlar.
+Fakat bunlar sınıflar türünden nesnelerse şunu sağlayabiliriz: hangi container'ın iteratoru olursa olsun, o iteratoru içerik operatörünün operandı yaptığımda burada bir 
+fonksiyon çağrılır operator overloading mekanizmasından faydalanırım, bir fonksiyon çağrılı ve o fonksiyon bana bu iteratörün anlattığı konumdaki nesneye erişim sağlar.
 
-Yani ++ operatörünü kullandığımda eğer gerçek pointer ise bir sonraki bellek bloğunun adresini gösterirdi ama şimdi öyle değil, burada operatör overloading mekanizmasından faydalaranak bu işlemi yaptık.
+Yani ++ operatörünü kullandığımda eğer gerçek pointer ise bir sonraki bellek bloğunun adresini gösterirdi ama şimdi öyle değil, burada operatör overloading mekanizmasından 
+faydalaranak bu işlemi yaptık.
 
 İşte daha yüksek düzeyde soyutlama.
 
@@ -234,11 +240,13 @@ Yani bir iterator nedir?
 ------------------------
 Bir container'da ki nesnenin konumunu tutar. İteratörü dereference edersem o konumdaki nesneye eriştirir.
 
-Hatta öyle bir soyutlama ki container'dan bağımsız. Container ister list olsun ister map olsun ister set olsun, yani ne olursa olsun diyor ki : Ben hangi container'in iteratörü isem o container'da benim değerim olan konumdaki öğeye eriştiririm.
+Hatta öyle bir soyutlama ki container'dan bağımsız. Container ister list olsun ister map olsun ister set olsun, yani ne olursa olsun diyor ki : Ben hangi container'in 
+iteratörü isem o container'da benim değerim olan konumdaki öğeye eriştiririm.
 
 Algoritmalarda özellikle iteratör çok önemli.
 
-Algoritmalar öyle fonksiyon şablonları ki bu fonksiyon şablonlarından instantiation yapıldığında derleyicinin oluşturduğu fonksiyon kodunda, fonksiyonun parametreleri (birden fazla parametre olabilir) iteratör dediğimiz türlerden değişkenler oluyor. 
+Algoritmalar öyle fonksiyon şablonları ki bu fonksiyon şablonlarından instantiation yapıldığında derleyicinin oluşturduğu fonksiyon kodunda, fonksiyonun parametreleri 
+(birden fazla parametre olabilir) iteratör dediğimiz türlerden değişkenler oluyor. 
 
  
 Range
@@ -251,11 +259,13 @@ tipik olarak iteratör ile belirtiliyor.
 
 (1) range olma koşulunu sağlaması için konum1'den konum2'ye varılması gerekiyor. O da konum1'in arttırılarak konum2'ye eşit olması hali.
 
-Fakat dikkat konum1'de ki nesne dahil, konum2 de ki nesne hariç. Örneğin p1 ve p2 iki tane konumumuz olsun ve bu range'de ki öğeleri yazdırmak demek p1 de ki nesnenin yazdırılması ve p2'Ye kadar olan nesnelerin yazdırılması fakat p2'de ki nesneye dokunulmaması, yani yazdırılmaması.
+Fakat dikkat konum1'de ki nesne dahil, konum2 de ki nesne hariç. Örneğin p1 ve p2 iki tane konumumuz olsun ve bu range'de ki öğeleri yazdırmak demek p1 de ki nesnenin 
+yazdırılması ve p2'Ye kadar olan nesnelerin yazdırılması fakat p2'de ki nesneye dokunulmaması, yani yazdırılmaması.
 
 
 ----------------------------
-Not : STL'in en önemli özelliklerinden biri algoritmaların cross-container işlemleri yapabilmesi. Örneğin bir vector'den bir list'e copy işlemi yapılabilir. Generic soyutlama buna izin veriyor.
+Not : STL'in en önemli özelliklerinden biri algoritmaların cross-container işlemleri yapabilmesi. Örneğin bir vector'den bir list'e copy işlemi yapılabilir. Generic soyutlama 
+buna izin veriyor.
 ----------------------------
 
 numeric başlık dosyasında numerik algoritmalar var, algorithm başlık dosyasında ise diğer tüm algoritmalar var.
@@ -353,14 +363,16 @@ Modern C++'ta sınıfların begin ve end fonksiyonlarının dışında global fo
 
 		begin(ivec);
 
-	Burada sentaks hatasının olmamasını nedeni ADL(argument dependent lookup). ivec std namespace içinde tanımlanan bir türe ilişkin olduğu için begin ismi std namespace'inde de aranacak.
+	Burada sentaks hatasının olmamasını nedeni ADL(argument dependent lookup). ivec std namespace içinde tanımlanan bir türe ilişkin olduğu için begin ismi std 
+namespace'inde de aranacak.
 
 
 Global begin() ve end()
 -----------------------
 Peki neden böyle bir eklemeye gerek duydular? Yani neden global fonksiyon olarak da eklediler?
 
-C dizileri de bir container. Ama onların bir nested type vs. yok ki. Ama global begin ve end fonksiyonları, fonksiyon şablonları olduğu için dizi türleri için bazı araçlardan faydanalabilir.
+C dizileri de bir container. Ama onların bir nested type vs. yok ki. Ama global begin ve end fonksiyonları, fonksiyon şablonları olduğu için dizi türleri için bazı araçlardan 
+faydanalabilir.
 
 	int a[] = { 1, 2, 3, 4, 5, 6 };
 	int b[20] {};
@@ -389,7 +401,8 @@ Yani örneğin vector, set, deque, list vs.vs. bunların hepsinin iteratörleri 
 Fakat normal C dizileri söz konusu olduğu zaman onlar için iteratörler gerçek pointerlar.
 
 
-Demiştik ki iteratörlerin ortak bir interface'i var. Orası tam olarak doğru değil. Örneğin iteratörleri ++ operatörünün operandı yapabiliyoruz fakat -- operatörünün operandı yapabiliyor muyuz? - It depends.
+Demiştik ki iteratörlerin ortak bir interface'i var. Orası tam olarak doğru değil. Örneğin iteratörleri ++ operatörünün operandı yapabiliyoruz fakat -- operatörünün operandı 
+yapabiliyor muyuz? - It depends.
 Yani bir iteratörün hangi operasyonlara destek verdiği, hangi operasyonları sağladığı iterator category dediğimiz bir özelliğine bağlı.
 
 	
@@ -429,7 +442,8 @@ Yani bir iteratörün hangi operasyonlara destek verdiği, hangi operasyonları 
 	}
 
 
-YANİ iteratörlerin ortak bir interface'i var fakat her iteratör her operasyonu desteklemiyor. Iterator interface'inin hangi operasyonları sağladığı, hangi operasyonlara destek verdiği iteratörün kategorisi dediğimiz bir nitelik ile belirleniyor.
+YANİ iteratörlerin ortak bir interface'i var fakat her iteratör her operasyonu desteklemiyor. Iterator interface'inin hangi operasyonları sağladığı, hangi operasyonlara destek 
+verdiği iteratörün kategorisi dediğimiz bir nitelik ile belirleniyor.
 
 İteratörlerin kategorisi şu 5 kategoriden birine ait olmak zorunda(C++20 ile bir kategori daha eklendi):
 
@@ -442,27 +456,6 @@ YANİ iteratörlerin ortak bir interface'i var fakat her iteratör her operasyon
 -contiguous iterator(C++20)
 
 ve biz bir iteratörün iteratör kategorisinin bunlardan hangisi olduğunu compile time'da da meta functionlarla ya da başka yollarla sınayabiliyoruz.
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
