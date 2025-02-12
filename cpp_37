@@ -1,6 +1,8 @@
 Container : Verileri bir arada tutan, arka planda tipik olarak bir data structure'ı implemente eden sınıf şablonları.
 
-Iterator : Pointer'ların daha yüksek düzeyde soyutlanmış hali. Bir iteratör bir konum tutan değişken. Adres de bir konuma ilişkin olduğu için adresi de doğrudan iteratör olarak kullanabiliyoruz. Container'lar söz konusu olduğunda, container'ların nested type'ı olan iteratör sınıfları türünden nesneler container'da ki öğelerin konumunu tutuyor ve pointer-like bir interface sunuyorlar. Örneğin dereferencing operatörünün, ++ operatörünün operandı olabiliyorlar.
+Iterator : Pointer'ların daha yüksek düzeyde soyutlanmış hali. Bir iteratör bir konum tutan değişken. Adres de bir konuma ilişkin olduğu için adresi de doğrudan iteratör 
+olarak kullanabiliyoruz. Container'lar söz konusu olduğunda, container'ların nested type'ı olan iteratör sınıfları türünden nesneler container'da ki öğelerin konumunu tutuyor 
+ve pointer-like bir interface sunuyorlar. Örneğin dereferencing operatörünün, ++ operatörünün operandı olabiliyorlar.
 
 Algorithms : Tipik olarak container'ların range'leri üzerinde işlem yapan fonksiyon şablonları. 
 Yani algoritmalar ile container'ları birbirine bağlayan öğe iteratörler. 
@@ -65,7 +67,8 @@ NOT: rfill, cprint fonksiyonları standard değil, o yüzden onların kodunu da 
 		cout << count(ivec.begin(), ivec.end(),ival) << "\n";
 	}
 
-Iteratörlerin bazı common nested type'ları var. Generic programlamayı kolaylaştırmak için. Bir iteratörün ismi value_type olan nested type'ı o iteratör konumundaki nesnenin türünün eş ismi.
+Iteratörlerin bazı common nested type'ları var. Generic programlamayı kolaylaştırmak için. Bir iteratörün ismi value_type olan nested type'ı o iteratör konumundaki nesnenin 
+türünün eş ismi.
 
 Örneğin:
 
@@ -82,7 +85,8 @@ iterator_traits bir meta function.
 	iterator_traits<vector<int>::iterator>::value_type
 
 	bu ikisi aynı şey.
-	Yani bir iteratör türünün nested value_type'ını kullanmakla o iteratör türünü bir iterator_traits isimli sınıf şablonuna template argümanı yaparak onun value type'ını kullanmak aynı şey.
+	Yani bir iteratör türünün nested value_type'ını kullanmakla o iteratör türünü bir iterator_traits isimli sınıf şablonuna template argümanı yaparak onun value type'ını 
+	kullanmak aynı şey.
 
 Peki neden böyle bir ihtiyaç var?
 	
@@ -127,7 +131,8 @@ STL'de empty class'lar çok kullanılıyor;
 
 Peki neden kullanılıyor?
 
-	En çok kullanılma nedeni böyle sınıfların tag olarak kullanılması. Generic programlama tarafında bazı teknikler, işte böyle sadece bir kimlik belirten, aslında amacımız o sınıf türünden nesne oluşturmak değil çoğunlukla compile time'da o türü kullanmak olan böyle sınıflar karşımıza çıkacak.
+	En çok kullanılma nedeni böyle sınıfların tag olarak kullanılması. Generic programlama tarafında bazı teknikler, işte böyle sadece bir kimlik belirten, aslında 
+	amacımız o sınıf türünden nesne oluşturmak değil çoğunlukla compile time'da o türü kullanmak olan böyle sınıflar karşımıza çıkacak.
 
 	Standard kütüphane bazı empty class'ları tanımlıyor iterator kategorisi için.
 
@@ -139,7 +144,8 @@ Peki neden kullanılıyor?
 	struct bidirectional_iterator_tag
 	struct random_access_iterator_tag
 
-	Eğer ben bir iteratörün, iterator kategori isimli nested type'ını kullanırsam o iteratör random_access iteratörse iterator kategori nested type'ı bu tür olmak zorunda. İteratör kategori bir tür eş ismi. Eğer output_iterator_tag ise o zaman kategorisi output iterator.
+	Eğer ben bir iteratörün, iterator kategori isimli nested type'ını kullanırsam o iteratör random_access iteratörse iterator kategori nested type'ı bu tür olmak zorunda.
+	İteratör kategori bir tür eş ismi. Eğer output_iterator_tag ise o zaman kategorisi output iterator.
 
 	#include <iterator>
 	#include <vector>
@@ -174,13 +180,17 @@ Random Access Iterator : C'de ki pointer'la hangi işlemleri yapabilirsan beniml
 		sort(ilist.begin(), ilist.end());
 	}
 
-Burada sentaks hatası olacak. Çünkü sort algoritmasının şöyle bir beklentisi var : "ben iki iteratör ile belirlenen bir range istiyorum ama o range'in iteratörlerinin minimal random access iteratörü olması lazım" fakat list'in iteratörleri random access kategorisinde değil.
+Burada sentaks hatası olacak. Çünkü sort algoritmasının şöyle bir beklentisi var : "ben iki iteratör ile belirlenen bir range istiyorum ama o range'in iteratörlerinin minimal 
+random access iteratörü olması lazım" fakat list'in iteratörleri random access kategorisinde değil.
 
-peki neden sentaks hatası oluyor? demek ki sort implementasyonunda random access iterator kategorisinde olan fakat bidirectional iterator kategorisinde olmayan işlemler kullanılmış.
+peki neden sentaks hatası oluyor? demek ki sort implementasyonunda random access iterator kategorisinde olan fakat bidirectional iterator kategorisinde olmayan işlemler 
+kullanılmış.
 
-Bunu göstermek için implementasyonlar (bizde böyle yapmalıyız) iteratörün beklenen minimal iterator kategorisini çağrıştırması için template parametrelerine böyle isimler veriyor. 
+Bunu göstermek için implementasyonlar (bizde böyle yapmalıyız) iteratörün beklenen minimal iterator kategorisini çağrıştırması için template parametrelerine böyle isimler 
+veriyor. 
 
-Örneğin yukarıda implemente ettiğimiz Count kodunda template parametresi InIter yani minimal olarak input iterator yeter manasında. Zaten İnput Iterator kategorisi olabilecek en düşük kategori.
+Örneğin yukarıda implemente ettiğimiz Count kodunda template parametresi InIter yani minimal olarak input iterator yeter manasında. Zaten İnput Iterator kategorisi olabilecek 
+en düşük kategori.
 
 Yanlış anlaşılmasın Input Iterator kategorisinde olacak değil, minimum input iterator kategorisinde olmalı fakat daha yüksek de olabilir.
 
@@ -199,7 +209,8 @@ Yanlış anlaşılmasın Input Iterator kategorisinde olacak değil, minimum inp
 
 Input Iter yeter mi? - İşlemlere baktık ve dedik evet yeter. O halde isimlendirmeyi ona göre yapalım.
 
-Iter2 için bakalım. Iter2 için evet içerik operatörünün operandı olmuş ama yazma amaçlı kullanılmış, oysa Input Iterator yazma amaçlı kullanılamıyor. O halde diyoruz ki burada da Output Iterator yeter.
+Iter2 için bakalım. Iter2 için evet içerik operatörünün operandı olmuş ama yazma amaçlı kullanılmış, oysa Input Iterator yazma amaçlı kullanılamıyor. O halde diyoruz ki 
+burada da Output Iterator yeter.
 	
 	template <class InIter, class OutIter>
 	...
@@ -222,9 +233,11 @@ STL'in algoritmalarının ve container sınıfların çok önemli bir özelliği
 
 		*beg 	// UB
 
-	Yani boş container'ın begin fonksiyonunun döndürdüğü iteratör valid bir iteratör, belirli işlemlerde kullanabiliriz fakat dereference edemeyiz, UB olur. Exception'da throw etmez.
+	Yani boş container'ın begin fonksiyonunun döndürdüğü iteratör valid bir iteratör, belirli işlemlerde kullanabiliriz fakat dereference edemeyiz, UB olur. Exception'da 
+	throw etmez.
 
-	Fakat şöyle bir garanti var	: container boşsa, yani öğe tutmuyorsa begin ve end fonksiyonlarının geri döndürdüğü iteratörler eşitlik karşılaştırmasında eşit çıkacak.
+	Fakat şöyle bir garanti var	: container boşsa, yani öğe tutmuyorsa begin ve end fonksiyonlarının geri döndürdüğü iteratörler eşitlik karşılaştırmasında eşit 
+	çıkacak.
 
 	Container'da öğe olsa da olmasa da end konumu dereference etmek tanımsız davranış.
 
@@ -286,7 +299,8 @@ NOT : Iteratorler ile ilgili hiçbir şekilde exception throw etmek yok.
 
 
 
-Iteratorler pointerlerin daha yüksek soyutlaması olarak düşünülebilir demiştik fakat pointer semantiğinde ve referans semantiğinde const correctness konusu var ve büyük önem taşıyor.
+Iteratorler pointerlerin daha yüksek soyutlaması olarak düşünülebilir demiştik fakat pointer semantiğinde ve referans semantiğinde const correctness konusu var ve büyük önem 
+taşıyor.
 
 Bir C++ kodunun olmazsa olmaz sağlanması gereken niteliklerinden birisi const correctness.
 
@@ -308,12 +322,14 @@ hayıııır. bu const bir nesne. bununla sadece const üye fonksiyonlarını ç
 
 ama aslında bizim istediğimiz bunların tam tersi. yani ++iter legal olacak, *iter = 34; illegal olacak.
 
-Bunun için bir iterator adapter olan bir sınıf kullanılıyor. Bu sınıf bir nested type ile temsil ediliyor ve const iterator sınıfı. Yani container'ların bir iterator türü olduğu gibi bir de iterator adaptörü nested type'ı olan iteratör türü de var.
+Bunun için bir iterator adapter olan bir sınıf kullanılıyor. Bu sınıf bir nested type ile temsil ediliyor ve const iterator sınıfı. Yani container'ların bir iterator türü 
+olduğu gibi bir de iterator adaptörü nested type'ı olan iteratör türü de var.
 
 
 	vector<int>::iterator diye bir tür var, bir de vector<int>::const_iterator diye bir tür de var.
 
-	const iterator öyle bir iterator ki bu türden bir nesneyi dereferencing operatörünün operandı yaptığımızda buradaki fonksiyonun(*iter = ) geri dönüş değeri const&, dolayısıyla artık bu nesneyi set amaçlı kullanamayız.
+	const iterator öyle bir iterator ki bu türden bir nesneyi dereferencing operatörünün operandı yaptığımızda buradaki fonksiyonun(*iter = ) geri dönüş değeri const&, 
+	dolayısıyla artık bu nesneyi set amaçlı kullanamayız.
 
 	++iter;			// legal
 	*iter;			// legal
@@ -321,7 +337,9 @@ Bunun için bir iterator adapter olan bir sınıf kullanılıyor. Bu sınıf bir
 
 	aslında biz *iter demek ile iter.operator*() kullanmış oluyoruz, ve bu fonksiyon geri dönüş değeri ise const int&. bundan dolayı bu yapı sağlanmış oluyor.
 
-Bu da demek ki const correctness'a tamamen uymak istiyorsak, eğer bir range'i sadece o range'de ki öğelere erişmek amaçlı kullanmak istiyorsak ideali iteratör türünü kullanmak yerine const_iterator kullanmak. Yani iterator türünü nested type olarak kullanmamız get de set de yaparım demek, ama const_iterator kullanmamız ben sadece erişim amaçlı dolaşıyorum demek.
+Bu da demek ki const correctness'a tamamen uymak istiyorsak, eğer bir range'i sadece o range'de ki öğelere erişmek amaçlı kullanmak istiyorsak ideali iteratör türünü kullanmak 
+yerine const_iterator kullanmak. Yani iterator türünü nested type olarak kullanmamız get de set de yaparım demek, ama const_iterator kullanmamız ben sadece erişim amaçlı 
+dolaşıyorum demek.
 
 	
 	vector<string> svec{ "onur", "cepni" };
@@ -352,9 +370,11 @@ Const iterator nested type'ı gibi türlere "Iterator Adapters" deniyor.
 Adapter = adapt eden, uyarlayan, uyarlayıcı.
 
 
-Adaptörler örneğin sınıflar ise, başka bir sınıfı alıyor bir şekilde fakat o sınıfın interface'ini kendi amacına uygun bir şekilde adapte ediyor. İşte bazı sınıflar böyle bir adaptation için kullanıldığı için onlara "Adapter Class" da diyoruz. 
+Adaptörler örneğin sınıflar ise, başka bir sınıfı alıyor bir şekilde fakat o sınıfın interface'ini kendi amacına uygun bir şekilde adapte ediyor. İşte bazı sınıflar böyle bir 
+adaptation için kullanıldığı için onlara "Adapter Class" da diyoruz. 
 
-Mesela Stack, Queue, Priority Queue gibi sınıf şablonları container değil. Bunlara container adapter deniyor. Bunlar bir container'i alıp onun interface'ini kendi amaçları doğrultusunda adapte ediyorlar, uyarlıyorlar yani kendileri container değil.
+Mesela Stack, Queue, Priority Queue gibi sınıf şablonları container değil. Bunlara container adapter deniyor. Bunlar bir container'i alıp onun interface'ini kendi amaçları 
+doğrultusunda adapte ediyorlar, uyarlıyorlar yani kendileri container değil.
 
 Adaptör sınıfların implementasyonu iki farklı şekilde olabiliyor;
 
@@ -387,7 +407,8 @@ Reverse Iterator
 
 Range'i sondan başa dolaşmış oldu.
 
-Fonksiyonu bu şekilde çağırdığım zaman rbegin ve rend fonksiyonlarının geri dönüş değeri iterator türü değil. Sınıfın bir başka nested type'ı olan reverse_iterator isimli bir sınıf türünden.
+Fonksiyonu bu şekilde çağırdığım zaman rbegin ve rend fonksiyonlarının geri dönüş değeri iterator türü değil. Sınıfın bir başka nested type'ı olan reverse_iterator isimli bir 
+sınıf türünden.
 Dolayısıyla derleyici koda baktığında bu ifadenin türünün aslında;
 	
 	vector<int>::reverse_iterator
@@ -396,7 +417,8 @@ türü olduğunu anlıyor koda bakarak(compile time'da).
 Bu türün şöyle bir özelliği var: bu da bir iterator adaptörü.
 reverse_iterator türü base'i olan(yani adapte ettiği tür olan) iterator türünü ++ operasyonunu --'ye dönüştürüyor.
 
-Yani aslında beg++ demek bu iteratorun bir şekilde sarmaladığı gerçek iteratorun -- fonksiyonunu çağırmak demek. Yani aslında bu sarmalama ile, adaptasyon ile, biz iteratorun ++ operatörünü kullandığımız zaman aslında gerçek iteratorun -- operatörünü kullanmış oluyoruz.
+Yani aslında beg++ demek bu iteratorun bir şekilde sarmaladığı gerçek iteratorun -- fonksiyonunu çağırmak demek. Yani aslında bu sarmalama ile, adaptasyon ile, biz iteratorun 
+++ operatörünü kullandığımız zaman aslında gerçek iteratorun -- operatörünü kullanmış oluyoruz.
 
 reverse_iterator öyle bir iterator ki bir iterator türünden nesneyi sarmalıyor ama ++ operasyonu --'ye dönüştürüyor.
 
@@ -437,7 +459,8 @@ Böyle bir tasarımın olmasının iki tane nedeni var;
 
 	peki a - 1 	// hayır, bu adres valid bir adres değil.(kullanılabilir bir adres değil.)
 
-İşte aynı garantinin iteratörler için verilmesi durumunda, iterator yerine pointer da kullanılabildiği için a - 1 gibi bir adres kullanma imkanı yok. Onun yerine gerçek pointeri sarmalayıp dereference ettiğimizde bir önceki adresi dereference ediyor.
+İşte aynı garantinin iteratörler için verilmesi durumunda, iterator yerine pointer da kullanılabildiği için a - 1 gibi bir adres kullanma imkanı yok. Onun yerine gerçek 
+pointeri sarmalayıp dereference ettiğimizde bir önceki adresi dereference ediyor.
 
 
 
@@ -531,7 +554,8 @@ Programcı diyor ki o halde şöyle yaparım;
 hayır şimdi de sileceği konumdan bir ilerisini sildi.
 
 Neden?
-çünkü reverse_iterator u ile bulduğumuz zaman evet dereference ettiğimiz zaman buna eriştik ama aslında base ondan bir sonraki konumu tutuyor. dereferencing operatörü bu konumu tutan iteratorü değil bunun bir önceki konumunu dereference ediyor.
+çünkü reverse_iterator u ile bulduğumuz zaman evet dereference ettiğimiz zaman buna eriştik ama aslında base ondan bir sonraki konumu tutuyor. dereferencing operatörü bu 
+konumu tutan iteratorü değil bunun bir önceki konumunu dereference ediyor.
 
 o halde şöyle olması gerekiyor;
 
@@ -540,7 +564,8 @@ o halde şöyle olması gerekiyor;
 Şimdi istenilen işi yapmış olacak.
 
 ---------------------------------------------------------
-Minimal Bidirectional Iterator olması şartıyla reverse_iterator ile range'i baştan sona değil sondan başa dolaşmış oluyoruz. Bu bütün algoritmalar için(birectional ve üstü) geçerli.
+Minimal Bidirectional Iterator olması şartıyla reverse_iterator ile range'i baştan sona değil sondan başa dolaşmış oluyoruz. Bu bütün algoritmalar için(birectional ve üstü) 
+geçerli.
 
 Peki ya ben sondan başa dolaşmak istiyorsam fakat salt okuma amaçlı erişmek için?
 -O zaman onun da const& döndüren bir biçimi olması gerekir işte o tür de -> const reverse iterator
@@ -579,7 +604,8 @@ Bazı algoritmalar template parametresi olarak callable diye nitelenen türlerde
 
 callable : öyle bir tür ki fonksiyon çağrı operatörünün operandı olduğunda bir fonksiyonun çağrılması sağlansın.
 
-STL'de geri dönüş değeri bool olan callable'lara predicate deniyor. Eğer söz konusu callable bool döndürmek ile birlikte bir tane parametreye sahipse böyle predicate'lara "Unary Predicate" deniyor. İki parametre istiyorsa onlara "Binary Predicate" deniyor.
+STL'de geri dönüş değeri bool olan callable'lara predicate deniyor. Eğer söz konusu callable bool döndürmek ile birlikte bir tane parametreye sahipse böyle predicate'lara 
+"Unary Predicate" deniyor. İki parametre istiyorsa onlara "Binary Predicate" deniyor.
 
 Bazı algoritmalar tipik olarak if son ekini alıyorlar. Bunlar bir range'de ki öğelerin belirli koşulu sağlayanları üzerinde işlem yapıyorlar.
 
@@ -600,7 +626,8 @@ Bu tür algoritmalar bir template parametresi olarak callable yani bir fonksiyon
 burada 2 seçeneğimiz var;
 
 (1) f'in function pointer olması
-(2) UnPred türünün function call operatörünü overload eden bir sınıf türü olması(böyle sınıflara function object veya functor deniyor) bu durumda çağrılan fonksiyon sınıfın fonksiyon çağrı operator fonksyionu olacak.
+(2) UnPred türünün function call operatörünü overload eden bir sınıf türü olması(böyle sınıflara function object veya functor deniyor) bu durumda çağrılan fonksiyon sınıfın 
+fonksiyon çağrı operator fonksyionu olacak.
 
 	bool is_even(int x)
 	{
@@ -611,7 +638,9 @@ burada 2 seçeneğimiz var;
 	{
 		vector<int> ivec{ 2, 10, 3, 19, 299, 188, 109, 832, 177, 928, 8, 0, 19, 675, 847 };
 
-		find_if(ivec.begin(), ivec.end(), &is_even) //3. parametreye bir fonksiyon adresi gönderirsem, derleyici template argument deduction ile UnPred türünün karşılığı olan template argümanı bir function type olarak alacak. derleyicinin oluşturduğu instantion'da fonksiyonun 3.parametresi bir function pointer olacak. burada da function pointer'in gösterdiği fonksiyon çağırılacak.
+		find_if(ivec.begin(), ivec.end(), &is_even) //3. parametreye bir fonksiyon adresi gönderirsem, derleyici template argument deduction ile UnPred türünün 
+karşılığı olan template argümanı bir function type olarak alacak. derleyicinin oluşturduğu instantion'da fonksiyonun 3.parametresi bir function pointer olacak. burada da 
+function pointer'in gösterdiği fonksiyon çağırılacak.
 
 		if(auto iter = find_if(ivec.begin(), ivec.end(),&is_even); iter != ivec.end()) {
 			std::cout << "found" << *iter << " index = " << iter - ivec.begin() << "\n";
@@ -636,11 +665,14 @@ Yani iki ihitmal var. böyle algoritmalar söz konusu olduğunda birinci ihtimal
 	};
 
 
-ve fonksiyonun 3.parametresine is_even fonksiyonunun adresini göndermek yerine Pred türünden bir pr value expression'u argüman olarak gönderseydik, derleyici bu kodda bu ifadenin türünün class Pred olduğunu anladığında burada template parametresi karşılığı bu tür çıkarım yapılacak. ve Pred türünden bir nesne fonksiyon çağrı operatörünün operandı olduğu için function call operator function çağırılacak.
+ve fonksiyonun 3.parametresine is_even fonksiyonunun adresini göndermek yerine Pred türünden bir pr value expression'u argüman olarak gönderseydik, derleyici bu kodda bu 
+ifadenin türünün class Pred olduğunu anladığında burada template parametresi karşılığı bu tür çıkarım yapılacak. ve Pred türünden bir nesne fonksiyon çağrı operatörünün 
+operandı olduğu için function call operator function çağırılacak.
 
 Zaten direk istediğimiz fonksiyonu implemente edip onun adresini gönderebiliriz.
 Peki niye bu kadar zahmete girelim ki? 
-- bu kodu daha da genelleştirmek istersek, yani 2'ye tam bölünen ilk öğeyi, 5'e tam bölünen ilk öğeyi de, y değerine bölünen ilk öğeyi de bulmak istiyorum. Eğer bunu gerçek fonksiyonla yapsaydım o zaman n tane ayrı fonksiyon yazmak zorunda kalırdım.
+- bu kodu daha da genelleştirmek istersek, yani 2'ye tam bölünen ilk öğeyi, 5'e tam bölünen ilk öğeyi de, y değerine bölünen ilk öğeyi de bulmak istiyorum. Eğer bunu gerçek 
+fonksiyonla yapsaydım o zaman n tane ayrı fonksiyon yazmak zorunda kalırdım.
 
 işte burada functor class'ların avantajı ortaya çıkıyor.
 
@@ -656,7 +688,8 @@ işte burada functor class'ların avantajı ortaya çıkıyor.
 	};
 
 
-Şimdi biz eğer 2'ye tam bölünenleri istiyoruz o halde DivPred(2) veya 5'e tam bölünenleri istiyoruz DivPred(5) gibi gibi istediğimiz şekilde böyle esnek bir kullanım sağlamış olduk.
+Şimdi biz eğer 2'ye tam bölünenleri istiyoruz o halde DivPred(2) veya 5'e tam bölünenleri istiyoruz DivPred(5) gibi gibi istediğimiz şekilde böyle esnek bir kullanım sağlamış 
+olduk.
 
 	find_if(ivec.begin(), ivec.end(), DivPred(3));	// 3'e bölünen ilk öğe
 
@@ -681,9 +714,11 @@ Her ifadenin bir value kategorisi var. Lambda expression'un da pr value.
 
 derleyicinin oluşturduğu yani tanımını yaptığı sınıfa teknik olarak "closure type" deniyor.
 
-derleyici sadece bir sınıf türü oluşturmacayak aynı zamanda ifadeyi de olşturduğu sınıf türünden bir pr value expression'a dönüştürecek. işte orada derleyicinin oluşturduğu sınıf nesnesine de "closure object" deniyor.
+derleyici sadece bir sınıf türü oluşturmacayak aynı zamanda ifadeyi de olşturduğu sınıf türünden bir pr value expression'a dönüştürecek. işte orada derleyicinin oluşturduğu 
+sınıf nesnesine de "closure object" deniyor.
 
-Derleyicinin oluşturduğu sınıfın türü derleyici tarafından biliniyor ve distinct bir type. Yani o ifade karşılığı oluşturulan tür, bütün türlerin dışında farklı bir tür fakat onun id'si derleyici tarafından biliniyor.
+Derleyicinin oluşturduğu sınıfın türü derleyici tarafından biliniyor ve distinct bir type. Yani o ifade karşılığı oluşturulan tür, bütün türlerin dışında farklı bir tür fakat 
+onun id'si derleyici tarafından biliniyor.
 
 Bir lambda ifadesinin olmazsa olmaz sentaks bileşeni : []
 buna teknik olarak "lambda introducer" deniyor.
@@ -697,7 +732,8 @@ parantez ile küme parantezi arasına bazı specifier'ları yazabiliyoruz.
 []()mutable{}
 []()->int{}
 
-aslında buraya koyduğumuz parantez, derleyiciye yazdırdığımız sınıfın function call operator function'unun parametre parantezi. dolayısıyla eğer o fonksiyonun int parametreli bir fonksiyon olmasını istiyorsak;
+aslında buraya koyduğumuz parantez, derleyiciye yazdırdığımız sınıfın function call operator function'unun parametre parantezi. dolayısıyla eğer o fonksiyonun int parametreli 
+bir fonksiyon olmasını istiyorsak;
 
 	[](int x)constexpr{}
 
@@ -742,5 +778,6 @@ fonksiyonun geri dönüş değeri deduction mekanızması ile elde edilecek.
 	}
 
  
-böylece local düzeyde hiç namespace içinde bir fonksiyon tanımlama ihtiyacı olmadan çağrılabilecek fonksiyonu böyle bir ifade ile oluşturabiliyoruz ve böyle bir ifadeyi fonksiyon şablonunun uygun bir parametresine argüman olarak gönderebiliyoruz.
+böylece local düzeyde hiç namespace içinde bir fonksiyon tanımlama ihtiyacı olmadan çağrılabilecek fonksiyonu böyle bir ifade ile oluşturabiliyoruz ve böyle bir ifadeyi 
+fonksiyon şablonunun uygun bir parametresine argüman olarak gönderebiliyoruz.
 
