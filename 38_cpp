@@ -1,0 +1,855 @@
+
+Lambda Expression -devam-
+
+Bir lambda ifadesi öyle bir ifade ki derelyiciye bir sınıfın tanımını yaptırtıyor. Derleyici de o ifadeyi tanımladığı sınıf türünden geçici bir nesne oluşturma ifadesine 
+dönüştürüyor.
+
+Bu ifadenin value kategorisi -> PR Value expression
+Data Type -> derleyicinin oluşturduğu closure type
+
+
+Local Class
+-----------
+Bir fonksiyon içinde bir sınıf tanımı yapabiliriz. Böyle sınıflara "Local Class" deniyor. Böyle sınıflar diğer sınıflar gibi kullanılabiliyor.
+
+Fakat bazı farklılıklar var.
+
+	int g = 10;
+	int main()
+	{
+
+		//local class
+		int x = 5;
+
+		static int ival = 7;
+
+		class Nec {
+			void foo()
+			{
+				//
+				std::cout << ival;
+			}
+
+		};
+
+	}
+
+
+(1) x değişkenini üye fonksiyon içinde kullanabilir miyim?
+-Hayır.
+
+(2) g ismini kullanabilir miyim?
+-Evet.
+
+(3) ival'i kullanabilir miyim?
+-Evet.
+
+Özetle;
+Local sınıf olabilir mi? 
+-Evet.
+
+Local sınıfın üye fonksiyonlarını inline olarak sınıf içinde tanımlayabilir miyim? 
+-Evet.
+
+Böyle üye fonksiyonlar içinde global isimleri, başka namespace'de ki global değişkenleri ve statik locak değişkenleri kullanabilir miyim?
+-Evet
+
+Otomatik ömürlü yerel değişkenleri kullanabilir miyim?
+-Hayır.
+
+Hatta otomatik ömürlü parametre değişkenini de kullanamayız.(main içinde değil de parametreli bir fonksiyon içinde olduğunu düşünelim.)
+
+
+** Önemli Olan Kısım **
+-----------------------
+Eğer biz lambda ifadesini yerel bir fonksiyonun içinde kullanıyorsak derleyicinin oluşturduğu sınıf da böyle bir local class.
+-----------------------
+
+Modern C++'dan önce local class türünden nesneler template'lere argüman olarak gönderilemiyordu.
+
+	template <typename T>
+	void foo(T x)
+	{
+		
+	}
+
+	foo(Nec{});		// günümüzde bu legal, ama eski C++'da legal değildi.
+
+
+Neden legal yapıldı?
+
+Çünkü madem lambda ifadeleri karşılığı derleyici böyle bir local class olarak closure type oluşturuyor, lambda ifadelerinin de en büyük varlık sebebi fonksiyon 
+şablonlarına(özellikle STL algoritmalarına) argüman olarak lambda ifadelerini geçmek.
+
+
+----------------------------------------------------------
+
+[](){}
+
+[] : lambda introducer, olmazsa olmaz.
+
+() : buradaki fonksiyon parantezi, derleyiciye yazdırdığımız class'ın fonksiyon çağrı operatör fonksiyonu. işte bu o fonksiyonun parametre parantezi.
+
+{} : fonksiyonun ana bloğu. derleyiciye yazdıracağımız fonksiyon çağrı operatör fonksiyonunun kodunu bu küme parantezi içinde yazıyoruz.
+
+fonksiyonun parametre parantezi ile fonksiyonun opening brace'i arasına belirli specifier'lar gelebiliyor.
+
+Eğer derleyiciye yazdırdığımız sınıfın fonksiyon çağrı operatör fonksiyonunun parametre değişkeni yoksa, bunu da yazmayabiliyoruz. Fakat C++ 23 ile burada bazı değişiklikler 
+oldu.
+
+	class mrt_15_xy< {
+	public:
+		auto operator()(int x) { return x * x };
+
+	};
+
+	int main()
+	{
+		[](int x) {return x * x;}(5)	// sanki bu ifade yokmuş da, aşağıdaki ifade varmış gibi
+		// bu şekilde kullanılan lambda ifadelerine idiomatic bir yapı olarak "Immidiately Involved Function Expression" yani IIFE idiom denir.
+		mrt_15_xy<{}(5);
+	}
+
+
+Fonksiyonun geri dönüş değeri türünü derleyici return ifadesinden çıkarım yoluyla elde ediyor.
+
+***
+Derleyicinin yazdığı fonksiyon çağrı operator fonksiyonu default olarak const üye fonksiyon. sınıfın const üye fonksiyonu.
+
+
+
+
+En tipik, en sık kullanımı lambda ifadesini bir fonksiyon şablonuna argüman olarak göndermek. Derleyici template argument deduction yapacak. Fonksiyonun buna ilişkin template 
+parametresinin çıkarımını yapacak ve fonksiyonun parametre değişkeni bu durumda closure type türünden olacak.
+
+
+Unary Predicate isteyen algoritmalara unary predicate olarak bir closure object geçebilirim.
+
+find_if algoritması üzerinde gösterelim.
+
+// bunlar ileride de sürekli kullanılacak olan custom fonksiyonlar. yani standard değil ama kullanıcaz sürekli olarak.
+//random_name = rastgele isim oluşturan fonksiyon
+//cprint() = bir container nesnesi alırsa bu container'da ki öğeleri std output a yazdırır, ikinci parametresi default argument alır. aldığı default argument öğeleri yazarken 
+araya koyulacak olan seperator. 3.parametresi de bir stream nesnesini referans olarak alıyor ve default olarak cout nesnesini alıyor. bu fonksiyonun bir overload'U daha var o 
+da range üzerinde çalışıyor. cprint(svec.begin(), svec.end(), "\n", ofs);
+
+
+	int main()
+	{
+		std::vector<std::string> svec;
+
+		rfill(svec, 100, random_name)
+	}
+
+
+----------------------------------------
+
+	int main()
+	{
+		using namespace std;
+
+		list<string> slist;
+
+		rfill(slist, 100, []{ return random_name() + ' ' + random_surname(); });
+		if(auto iter = find_if(slist.begin(),slist.end(), [](const string& s){return s.length() == 13;}); iter != slist.end()) {
+			std::cout << "bulundu" << *iter << "\n";
+		}
+
+		else{
+			std::cout << "bulunamadi\n";
+		}
+	}
+
+
+
+----------------------------------------------------
+
+	int main()
+	{
+		using namespace std;
+
+		vector<int> ivec;
+
+		rfill(ivec, 20, Irand{-999, 999});
+
+		sort(ivec.begin(), ivec.end(), [](int a, int b){ return abs(a) > abs(b);})
+		}
+	}
+
+
+----------------------------------------------------
+
+***
+Görüldüğü üzere lambda ifadelerinin en sık kullanıldığı yer STL algoritmalarına argüman olarak gönderilmesi.
+
+Bazen doğrudan fonksiyona argüman olarak göndermek yerine bunu isimlendirilmiş bir nesneye dönüştürebiliriz.
+
+	class Myclass {};
+
+	int main()
+	{
+		auto f = [](int x) {return x * x + 5; };
+		// f'nin türü closure type
+	}
+
+Bunu doğrudan kullanmak varken neden böyle yapayım?
+
+(1) Bu fonksiyonu birden fazla kaynak kod noktasında çağırabilirim.
+
+	auto f = [](int x){return x * x;};
+
+	auto i1 = f(123);
+
+	auto i2 = f(4);
+
+(2) Kodun görsel karmaşıklığını azaltmak için. Kodun daha kolay okunmasını sağlamak.
+
+
+----------------------------------------------------
+
+Lambda İfadeleri İle İlgili Saptamalar
+--------------------------------------
+
+(1) Closure Type'ın copy constructor'u var.
+	
+	auto f = [](int x){return x * x;};
+
+	auto f1 = f;
+
+(2) Özdeş lambda ifadelerinden oluşturulacak closure type'lar birbirinden farklı. 
+	
+	yani her yeni lambda ifadesi daha önceki lambda ifadesine özdeş olsa da ayrı bir tür oluşturuyor.
+
+	auto f1 = [](int x) {return x * x + 5;};
+	auto f2 = [](int x) {return x * x + 5;};
+
+(3) C++ 20 standardınad stateless lambda'ların default ctor'u ve copy assignment'ı delete edilmiş değil. (sadece stateless lambdalar için)
+
+	auto f1 = [](int x) {return x * x + 5;};
+	decltype(f1) f2;		// default ctor deleted diyecek ve sentaks hatası olacak
+	f1 = f2;				// copy assignment deleted, sentaks hatası
+
+		NOT: C++ 17'de closure type'ların
+			(a) default ctor'u
+			(b) copy assignment'ları 
+				delete edilmiş durumda.
+
+		fakat C++ 20 ve sonrasında böyle değil.
+
+(4) Fonksiyonların geri dönüş değeri türü closure type olabilir. 
+
+	bunun için iki farklı araç var;
+
+		auto foo(int x)
+		{
+			return [](int a) {return a * a;};
+		}
+
+	fonksiyonun geri dönüş değeri herhangi bir callable'ı sarmalayan std::function türünden de olabilir.
+
+		std::function<int(int)> foo(int x)
+		{
+			return [](int a) {return a * a;};
+		}
+
+
+(5) Closure Type'lar kalıtımda base class olarak kullanılabilir.
+
+	auto f1 = [](int x) {return x * x};
+	auto f2 = [](int x) {return x + x};
+
+	class Myclass : public decltype(f1), public decltype(f2) {
+
+	};
+
+(6) [] içine yazdığımız ifadeler ve bunların anlamları.
+
+	Öyle bir fonksiyon yazmak istiyorum ki fonksiyonun yaptığı iş parametre değişkenine gelen argüman ile x'in çarpımının oluşturduğu değeri döndürmek.
+		
+		int main()
+		{
+			int x = 5;
+
+			[](int a) {return x * a;}; // local class olduğu için x burada görünür durumda değil. sentaks hatası
+		}
+
+	O zaman şöyle bir sınıf yazsaydık;
+		
+		class nec_26_54{
+		public:
+			nec_26_54(int x) : mx{};
+			auto operator()(int x) const {
+				return mx * x;
+			}
+		private:
+			int mx;
+		};
+
+		int main()
+		{
+			int x = 5;
+
+			nec_26_54{x}(45);
+		}
+
+	Derleyiciye böyle bir kod yazdırmak mümkün lambda expression ile.
+	Buna "Copy Capture" deniyor.
+
+		int main()
+		{
+			int x = 5;
+
+			[x](int a) {return x * a; }
+		}
+
+	[] içine x'i yazdığımız zaman aslında derleyiciye, derleyici closure type'ı oluştururken sınıfa bir veri elemanı koy, o veri elemanı ilk değerini bu x'ten alsın. ben aslında 
+fonksiyonun kodunda artık bu ismi kullandığım zaman sınıfın veri elemanını kullanmış olacağım.
+
+	Bunu yapmak için tek yapmamız gereken [] içine local(otomatik ömürlü) değişkenin ismini yazmak. Buna capture deniyor, kopyalama yoluyla yapıldığı için copy capture deniyor.
+
+	Peki ya birden fazla değişkeni kullanmak isteseydim? O halde comma seperated list ile hepsinin ismini yazaibiliriz.
+
+		int main()
+		{
+			int x = 5;
+			int y = 7;
+
+			[x, y](int a) {return x * y;}
+		}
+
+	ÖNEMLİ KISIM
+
+		int main()
+		{
+			int x = 5;
+			int y = 7;
+			int ar[25]{};
+
+			auto f1 = [](int a) {return a * a;};
+			auto f2 = [x](int a) {return x * a;};
+			auto f3 = [x, y](int a) {return x * a + y;};
+			auto f4 = [ar](int a) {return a + ar[0];};
+
+			std::cout << sizeof f1 << "\n";	// 1
+			std::cout << sizeof f2 << "\n";	// 4
+			std::cout << sizeof f3 << "\n"; // 8
+			std::cout << sizeof f4 << "\n"; // 100
+		}
+
+	Neden sizeof arttı? Çünkü sınıfların veri elemanları var. 
+	
+	***
+	Capture'da ki type deduction da Array-Decay olmuyor.
+
+
+	Fakat bunu yazmanın bir kolay yolu daha var. Eğer köşeli parantez içine = yazarsak aslında bunun anlamı şu: "capture all visible local variables by value"  
+
+	[=]
+
+	Yani ben tek tek o değişkenlerin ismini yazmak istemiyorum, görünür herşeyi lambda fonksiyonu içinde kullanmak istiyorsak burada = yazarak yapabiliriz.
+
+	Fakat çok ihtiyaç yoksa kullanmamak daha iyi. Çünkü yanlışlıkla bir ismi kullandığımız zaman bir sentaks hatası almayacağız.
+
+		void func(int a, int b)
+		{
+			auto f = [=](int x) {return x + a * b;};
+		}
+
+	***
+	Burada tehlikeli durumlardan bir tanesi de; statik ömürlü değişkenlerin capture edilmesi diye birşey yok.
+
+		int g = 5;
+		int foo(int);
+
+		int main()
+		{
+			auto f = [](){return foo(g);}
+		}
+
+	Bunları capture etmesek de olur anlamında değil, capture etmek sentaks hatası zaten.
+
+	Bazen programcılar [=] yapıyorlar ve global isimleri kullandıkları zaman sanki onları capture ettikleri için kullandıklarını zannediyorlar. Bu da çok tehlikeli.
+
+	Yani diyoruz ki: global değişkenlerin, statik ömürlü değişkenlerin, ya da statik yerel değişkenlerin capture edilmesi diye birşey yok. Bunların capture edilmesi doğrudan 
+diagnostic gerektiriyor.
+
+	01.10
+
+***
+
+	int main()
+	{
+		std::string name{"hasan"};
+		int x = 7;
+
+		auto f = [x](int val) {
+			x += val;		// ERROR
+			name += "can";	// ERROR
+		}
+	}
+Derleyicinin ürettiği kodda, derleyicinin oluşturduğu fonksiyon çağrı operatör fonksiyonunu const member function. Const üye fonksiyon, sınıfın veri elemanlarını değiştiremez.
+
+
+
+Lambda İfadelerinde "mutable" Keyword Anlamı ve Kullanımı
+---------------------------------------------------------
+C++'ı zorlaştıran etkenlerden birisi de anahtar sözcüklerin overload edilmesi. Örneğin  normalde kullandığımız mutable anahtar sözcüğünün lambda expression'da şu şekilde 
+kullanması aynı değil;
+
+	int main()
+	{
+		std::string name{ "hasan" };
+		int x = 7;
+
+		auto f = [x](int val)mutable {
+			x += val;
+		}
+	}
+
+	burada kullanılan mutable keyword'u bildiğimiz anlamında kullanılmıyor.
+
+	buradaki mutable'ın anlamı : const üye fonksiyon artık non-const üye fonksiyon olacak. yani normalde default olarak const fonksiyon yapıyordu ya, eğer non-const member 
+function yapmak istiyorsak mutable keyword kullanırız.
+
+Kullanım Örneği:
+
+	class Gen {
+	public:
+		int generate();
+	};
+
+	int main()
+	{
+		Gen f;
+		[f]{f.generate();}	//Error, çünkü bu generate() fonksiyonu non-const fakat bizim memebr function const. yani bunu çağıramaz..
+		[f]()mutable{f.generate();}	// şimdi oldu.
+	}
+
+Özetle sınıfın veri elemanını eğer üye fonksiyon içinde değiştirmek gerekiyorsa, o zaman mutable yapacağız. ( yani non-const olarak tanımlanacak )
+
+
+
+
+----------------------------------------------------
+
+Özetle derleyici function call operator fonksiyonunu const olarak tanımlıyor ve biz eğer bu fonksiyon içinde non-const bir fonksiyon çağırırsak sentaks hatası oluyor. 
+
+Bunu düzeltmek için lambda expression'da mutable keyword kullanıyoruz ve derleyici function call operator fonksiyonunu non-const olarak tanımlıyor ve bu şekilde sentaks 
+hatası olmuyor.
+
+----------------------------------------------------
+
+
+	int main()
+	{
+		int x = 5;
+
+		auto f = [x](int a)mutable {
+			x += a;
+		}; 
+
+		f(12);
+
+		std::cout << "x = " << x;
+	}
+
+x'in değeri değişmez. Çünkü lambda ifadesine kopyalama yoluyla geçti.
+
+eğer gerçekten x'in değerini değiştirmek istersek, burada kopyalama ile capture etmek yerine referans yoluyla capture et anlamında & deklaratörü kullanırız.
+
+	int main()
+	{
+		int x = 5;
+
+		auto f = [&x](int a){
+			x += a;
+		};	
+
+		f(12);	// fonksiyonu çağırdığımızda x'in değerine a eklenecek. ve x arttırılacak. bu x referans, yukarıda gördüğümüz x.
+	}
+
+Bunun anlamı : "Sevgili derleyici, aman bana öyle bir sınıf kodu yaz ki, sınıfın veri elemanı bu nesnenin yerine geçecek bir referans olsun."
+
+dolayısıyla biz artık burda x'i kullandığımızda bir referans değişkeni kullanmış oluyoruz ve o da x'e bağlanmış oluyor.
+
+burada mutable kullanmamıza gerek yok. çünkü;
+
+	int g = 5;
+
+	class Nec{
+		void foo()const
+		{
+			*p = 567;	// legal
+			p = &g;		// illegal
+		}
+
+		int* p;
+	};
+
+	referans olması da zaten aslında assembly düzeyinde pointer demek;
+
+	int g = 5;
+
+	class Nec{
+		void foo()const
+		{
+			r = 567;	// legal
+		}
+
+		int& r;
+	};
+
+
+
+--------------------------------------------
+ÖZET TABLO
+
+[a, b, c]	copy capture
+[=]			ne varsa kopyalama yoluyla
+[&x]		x'i referans yoluyla
+[&x, y]		x'i referans yoluyla, y'yi kopyalama yoluyla
+[&]			görünür bütün varlıkları referans yoluyla
+[=, &a]		hepsini kopyalama yoluyla, ama a'yı referans yoluyla
+[&, x]		hepsini referans yoluyla ama x'i kopyalama yoluyla
+
+
+--------------------------------------------
+
+Not: parametre paketini de capture edebiliriz.
+
+	template <typename ...Ts>
+	auto func(Ts ...args)
+	{
+		auto f = [args...]()
+		{
+			return (... + args);
+		}
+
+		auto val = f()
+	}
+
+
+farklı farklı şekillerde yapabiliriz, yani parametre paketini capture ifadesi içinde kullanmamızda hiçbir engel yok.
+
+--------------------------------------------
+
+stateless lambda : hiçbir şeyi capture etmeyecek
+stateful lambda  : bir ya da birden fazla varlığı capture eden lambda
+
+C++20'de lambda ifadelerinden oluşturulan closure type'lar default constructible ve copy assignable ama stateless olması durumunda.
+
+	int main()
+	{
+		int x = 5;
+		auto f = [x](int a) {return a*x;}
+
+		decltype(f) f2; // sentaks hatası, c++20 olmasına rağmen. çünkü default constructible olması için lambda'nın stateless olması gerekiyor.
+	}
+
+
+--------------------------------------------
+
+01.45
+
+eğer lambda stateless ise derleyici oluşturduğu closure type için bir type-cast operator function yazıyor.
+
+nasıl bir tür dönüştürme operatör fonksiyonu?
+lambda'nın kendi türünden bir fonksiyon adresi türüne
+
+nasıl bir fonksiyon adresi türüne?
+parametresi int olan, geri dönüş değeri int olan bir fonksiyon adresi türüne
+
+	// int (*)int
+
+	int main()
+	{
+		int (*fp)(int) = [](int a) {return a * a;};	 //legal	
+
+		auto val = fp(12);
+
+		int x = 5;
+
+		int (*fp)(int) = [x](int a) {return a * x;};	// bu stateless lambda olmadığı için sentaks hatası.
+	}
+
+stateless lambda ise default ctor'u artık deleted değil, copy assignment'i deleted değil. ama stateless lambda değilse onlar deleted.
+
+lambda ifadesinden function pointer türüne implicit conversion olması için lambda'nın stateless olması gerekiyor.
+
+--------------------------------------------
+cppinsights.io 		=> derleyicinin nasıl kod ürettiğini gösteren faydalı bir araç
+--------------------------------------------
+
+Positive Lambda Idiom
+---------------------
+-
+01.50
+
+
+
+
+
+----------------------------------------------
+
+
+
+Lambda Init Capture
+-------------------
+C++ 14'de eklendi.
+
+
+	int main()
+	{
+		int x = 5;
+
+		auto f = [a = 6](int x) mutable{
+			a // burada a yı kullandığım zaman, sınıfın non-static veri elemanını kullanmış olacağız.
+			++a;	// mutable keyword koymasak bu illegal olur
+			return a + x;
+		}
+	}
+
+
+Derleyiciye şöyle bir talimat vermiş oluyoruz: "Derleyici, sınıfa bir veri elemanı koy ve ismi a olsun. Ben onu a ismi ile kullanabileyim ama bu veri elemanını da eşittirin 
+sağ tarafındaki değer ile initialize et."
+
+
+Bu sentaksın eklenmesinin birkaç tane önemli nedeni var.
+
+(1) Move Semantics(Taşıma Semantiği)
+Diyelim ki move-only türden bir değişkenimiz var. Bu bir yerel değişken olsun. İşte unique_ptr böyle.
+
+	int main()
+	{
+		using namespace std;
+
+		unique_ptr<string> uptr(new string {"onur cepni"});	// uptr kopyalamaya karşı kapalı, sadece taşımaya açık. yani move-only
+
+		[uptr](){	// #
+
+		}
+	}
+
+# : Sentaks hatası olacak. Çünkü burada copy capture yapıyor fakat kopyalanabilir bir nesne değil. Kopyalamaya karşı kapatılmış, yani delete edilmiş copy ctor'a yapılacak 
+olan çağrıdan dolayı sentaks hatası oluşur.
+
+Burada referans semantiği kullansak bir sentaks hatası olmazdı, çünkü burada bir kopyalama yok referans değişkeni initialize etmiş oluyoruz.
+
+Peki şunu yapmak istesek : Bunu taşıyarak sınıfın veri elemanı yapmak istesek. Bu sınıfı biz yazsaydık bunu yapabilirdik fakat derleyici yazdı bu sınıfı. Ancak bunu yapmanın 
+artık bir yolu var;
+
+	int main()
+	{
+		using namespace std;
+
+		unique_ptr<string> uptr(new string{"onur cepni"});
+
+		auto f = [uptr = move(uptr)]() {  // bu şekilde
+			cout << *uptr << "\n";
+		};
+
+		f();
+
+		if(uptr) {
+			cout << "dolu\n";
+		}
+		else {
+			cout << "bos\n";
+		}
+	}
+
+
+////////////////////////////////////////////
+
+	int main()
+	{
+		using namespace std;
+
+		int a[10]{};
+
+		[a] {		// #
+			cout << "sizeof(a) = " << sizeof(a);
+		}();
+
+		[a = a] {	// ##
+			std::cout << "sizeof(a) = " << sizeof(a); 
+		}();
+	}
+
+
+#  : Burada array decay yok. Sınıfın veri elemanı 10 elemanlı bir dizi, yani pointer değil.
+
+## : Auto type deduction'da ki kurallar geçerli. Dolayısıyla burada decay olacak. Yani bunun sizeof'u bir ptr'ın sizeof'u kadar.
+
+
+
+---------------------------------------------------------------
+
+Dangling Reference
+------------------
+
+***
+Referans yoluyla capture ettiğinizde dangling referans oluşmadığından emin olmalısınız!
+
+Dikkat!
+Referans yoluyla capture yapıldığında dangling referans oluşturmak çok tipik bir kodlama hatasıdır.
+
+	auto foo(int x)
+	{
+		return [x](int a) {return a * x; };
+	}
+
+Bu fonksiyonun geri dönüş değeri bir closure object. Böyle yaparsak hiçbir problem yok, çünkü kopyalama yoluyla capture ediyoruz.
+
+Ama programcı burada referans yoluyla capture yaparsa, örneğin bu fonksiyonu başka bir yerde çağırdığımda 
+
+	auto foo(int x)
+	{
+		return [&x](int a) { return a * x; };
+	}
+	
+	int main()
+	{
+		auto f = foo(10);	// #
+	}
+
+# : Derleyici bir sınıf kodu yazacak, derleyicinin yazdığı sınıf kodunun referans veri elemanı fonksiyonun otomatik ömürlü parametre değişkeni olan x'e bağlanacak. Ama ben bu 
+fonksiyonu çağırdığım zaman artık parametre değişkeninin ömrü bitti. Yani dangling referans oluşur.
+
+
+---------------------------------------------------
+
+	int main()
+	{
+		[](int x) {
+			return x * 5;
+		}
+	}
+
+
+Burada fonksiyonun geri dönüş değeri türü çıkarım yoluyla belirlenir. Fakat eğer istersek kendimiz de belirleyebiliriz. Bunun için de trailing return type sentaksını 
+kullanırız.
+
+	int main()
+	{
+		[](int x) -> double {
+			return x * 5;
+		}
+	}
+
+Artık bu fonksiyonun geri dönüş değeri türü double.
+
+Dikkat!
+Fonksiyonun geri dönüş değeri türü auto type deduction ile belirlendiği için eğer trailing return type kullanmazsak o zaman zaten fonksiyonun geri dönüş değeri türü referans
+türü olamaz.
+
+Fonksiyonun geri dönüş değerinin referans türü olmasını sağlamak için trailing return type türü kullanabiliriz.
+
+
+	[](int x) {
+		if(x > 10) {
+			return 8;
+		}
+		else {
+			return 3.4;
+		}
+	}
+
+
+Örneğin burada sentaks hatası var çünkü return ifadelerinin türü aynı değil. Bunun yerine trailing return type ile int veya double yapsak sentaks hatası ortadan kalkar.
+
+-----------------------------------------------------
+
+	int main()
+	{
+		[](auto x) {
+			return x * x;
+		}
+
+		auto i = f(12);
+	}
+
+Böyle bir lambda ifadesi oluşturarak(parametreyi auto keyword ile bildirerek), derleyicinin fonksiyon çağrı operatör fonksiyonunu bir member template olarak yazmasını sağlıyor.
+
+Derleyicinin template olarak yazacağı üye operatör fonksiyonunda template argument deduction ile fonksiyonun parametresi int olacak. Dolayısıyla geri dönüş değeri int olacak,
+i'nin türü int olur.
+
+	int main()
+	{
+		auto f = [](auto x) {
+			return x * x;
+		};
+
+		auto i = f(12);
+		auto d = f(1.2);
+		auto x = f(2.4L);
+	}
+
+Yani derleyicinin operator fonksiyonunu bir member template olarak yazmasını sağlamak için tek yapmamız gereken auto keywordünü koymak.
+
+Ve buradaki yaklaşım C++ 20 standardıyla, abbreviated template syntax ismiyle normal fonksiyon şablonlarına da getirildi.
+
+Yani C++20'den önce şöyle bir fonksiyon yazmak mümkün değildi;
+
+	void foo(auto x)
+	{
+
+	}
+
+	Fakat C++20'den sonra bu fonksiyonu yazmak aslında şunu yazmak gibi;
+
+		template <typename T>
+		void foo(T x)
+		{
+
+		}
+
+
+Fakat Lambda fonksiyonları için C++14'den beri var.
+
+
+
+
+-------------------------------------------------------------------
+
+	int main()
+	{
+		auto f = [](auto&& x) {
+
+		};
+
+		int x = 465;
+		int cx = 231;
+		f(12);
+		f(x);
+		f(cx);
+	}
+
+hepsiyle çağırabilirim çünkü bu universal reference.
+
+
+------------------------------------------------------
+
+Amaç üye operatör fonksiyonunun template olarak yazılmasını sağlamaksa böyle lambda ifadelerine "Generalized Lambda Expressions" deniyor.
+
+------------------------------------------------------
+
+Nasıl bir fonksiyonun expcetion throw etmeyeceği garantisini göstermek için noexcept specifier'i kullanıyorsak, lambda ifadelerinde de derleyicinin yazdığı closure type'ın 
+fonksiyon çağrı operatör fonksiyonunun exception throw etmeme garantisini göstermek için noexcept keyword koyuyoruz.
+
+	int main()
+	{
+		auto f = [](int a) noexcept{
+			return a * a;
+		};
+	}
+
+------------------------------------------------------
+
+[]()mutable { }
+[]()->double { }
+[]()constexpr { }
+[]()noexcept { }
+
+------------------------------------------------------
+
