@@ -669,8 +669,10 @@ Bir fonksiyon şablonunun kodunun derleyici yazarken derleyicinin yazdığı kod
 
 
 ---------------------------------------
+Default Argument in Function Templates
+---------------------------------------
 
-Fonksiyon şablonlarının fonksiyon parametreleri de default argument alabilir.
+Fonksiyon şablonlarının fonksiyon parametreleri de default argument alabilir. Ama dikkat, aşağıdaki gibi bir kullanım yaparsak sentaks hatası kaçınılmaz olur.
 
 
 	template <typename T>
@@ -715,7 +717,8 @@ Fonksiyonun bütün parametrelerinin template parametresi ile ilgili olması ger
 	int main()
 	{
 		std::make_unique<
-	// örneğin make_unique fonksiyonu, bir fabrika fonksiyonu. Fonksiyonun birinci template parametresi sadece fonksiyonun geri dönüş değeri türünde kullanılıyor. Dolayısıyla fonksiyon şablonunun 1.template parametresinin çıkarımını yaptırmak mümkün değil.
+	// örneğin make_unique fonksiyonu, bir fabrika fonksiyonu. Fonksiyonun birinci template parametresi sadece fonksiyonun geri dönüş değeri türünde kullanılıyor.
+	 Dolayısıyla fonksiyon şablonunun 1.template parametresinin çıkarımını yaptırmak mümkün değil.
 	}
 
 
@@ -1001,8 +1004,10 @@ STL'de de bu yoğun olarak kullanılıyor.
 
 
 
-----------------------------
-//partial ordering rules
+--------------------------------------
+	Partial Ordering Rules
+--------------------------------------
+
 
 Burada uygulanan kurallara "Partial Ordering Rules" deniyor.
 Parametresi en spesifik olan, en fazla nitelenmiş olan seçilecek.
