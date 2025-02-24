@@ -467,8 +467,28 @@ x bir int türündedir, dolayısıyla &x kullanarak bir int* işaretçi elde edi
 
 	}
 
-Fakat dikkat edelim eğer fonksiyonda void func(T *) olsaydı, func(&x) int* gönderdiğimiz için T türü int olacaktı. func(&ptr) de int** gönderdiğimiz için T türü int** olacaktı.
+*** ÇOK ÖNEMLİ ***
+Fakat dikkat edelim eğer fonksiyonda void func(T *) olsaydı, func(&x) int* gönderdiğimiz için T türü int olacaktı. 
+func(&ptr) de int** gönderdiğimiz için T türü int** olacaktı.
 
+yani örneğin aşağıdaki kod örneğinde T'nin türü int. Ama foo'nun aldığı parametre türü T*. yani buraya biz int* gönderirsek T int olacak, fakat ptr olmayan herhangi bir
+tür gönderirsek sentaks hatası olacak. yani int gönderirsek sentaks hatası.
+	
+	template <typename T>
+	void foo(T*)
+	{
+	   std::cout <<  typeid(T).name();
+	}
+	int main() {
+	    int a = 10;
+	    int* b = &a;
+	    
+	    foo(b);
+	
+	    return 0;
+	}
+
+***********************
 
 ///////////////
 ZOR
