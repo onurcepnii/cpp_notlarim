@@ -435,6 +435,16 @@ base doğrudan sarmaladığı iteratörü döndürüyor.
 	// peki hangi değerde? end konumunu tutuyor. yani vektördeki son öğeden sonraki konum. 
 
 	*riter yazmak aslında *(riter.base() - 1) yazmaya eşdeğer.
+#### gpt ####
+
+rbegin(), son elemanı işaret eden bir reverse_iterator döndürür.
+
+rend(), ilk elemandan öncesini işaret eden bir reverse_iterator döndürür.
+
+.base(), ters iterator'ün normal iterator karşılığını döndürür.
+
+#############
+
 ----
 anlatım kolaylığı açısından şöyle düşünelim;
 
