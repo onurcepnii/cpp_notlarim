@@ -3,7 +3,8 @@ Neden Template kullanıyoruz? Neden böyle bir generic yapıya ihtiyacımız var
 Örneğin algoritmalar. Algoritmaların çoğu türden bağımsız. Fakat C++ kodu ve statik tür sistemine sahip kodlar türlere bağlı. 
 
 
-C++'da ki generiklik gerçek bir C++ kodunun bütün türlere hizmet vermesi değil, derleyicinin derleme zamanında belirli bir tür veya türler için tam onlara uygun kod yazmasını sağlıyor.
+C++'da ki generiklik gerçek bir C++ kodunun bütün türlere hizmet vermesi değil, derleyicinin derleme zamanında belirli bir tür veya türler için tam onlara uygun kod yazmasını
+sağlıyor.
 
 Eğer hazırladığımız kod kalıbı bir fonksiyon yazımına yönelikse işte ona function template diyoruz.
 
@@ -11,7 +12,8 @@ Bir sınıf kodu yazımına yönelikse ona class template diyoruz.
 
 Class template neden ihtiyacımız olsun? 
 
-	-En basitinden data structures için. Linked List düşünelim. ama biz bu linked list'de double mı tutucaz, int mi tutucaz? onlara göre ayrı ayrı implementasyon yapmak zorunda kalırız. oysa türden bağımsız şekilde bir template oluşturabiliriz.
+	-En basitinden data structures için. Linked List düşünelim. ama biz bu linked list'de double mı tutucaz, int mi tutucaz? onlara göre ayrı ayrı implementasyon yapmak 
+	zorunda kalırız. oysa türden bağımsız şekilde bir template oluşturabiliriz.
 
  
 (1) Farklı farklı türler için ayrı ayrı kod yazmamız gerekmiyor, derleyici hallediyor.
@@ -20,7 +22,8 @@ Class template neden ihtiyacımız olsun?
 
 (3) Aynı kodu örneğin 10 farklı tür için ayrı ayrı yazsak ve değişiklik yapmak istesek hepsi için tek tek uğraşmamız gerekecek.
 
-(4) kod ekonomisi. sınıfların çok fazla üye fonksiyonu ve free function'U olabilir. fakat bu fonksiyonlar generic olarak ifade edildiğinde derleyici çağırılmayan fonksiyonun kodunu yazmayacak. sadece hangi fonksiyonlar çağırıldıysa o fonksiyonların kodunu yazacak.
+(4) kod ekonomisi. sınıfların çok fazla üye fonksiyonu ve free function'U olabilir. fakat bu fonksiyonlar generic olarak ifade edildiğinde derleyici çağırılmayan fonksiyonun 
+kodunu yazmayacak. sadece hangi fonksiyonlar çağırıldıysa o fonksiyonların kodunu yazacak.
 
 ... daha bir çok faydası var.
 
@@ -34,7 +37,8 @@ NOT: template <typename T>	// buradaki T'ye "template parameter" diyoruz.
 
 
 1) Deduction ( Template Argument Deduction )
-	Modern Cpp'den önce sadece function templates için geçerliydi. Fakat Cpp 17 ile bu konuda çok radikal bir gelişme yaşandı ve artık sınıflar için de belirli kapsamda CTAD gerçekleşiyor.
+	Modern Cpp'den önce sadece function templates için geçerliydi. Fakat Cpp 17 ile bu konuda çok radikal bir gelişme yaşandı ve artık sınıflar için de belirli kapsamda 
+	CTAD gerçekleşiyor.
 
 	std::vector<int> ivec{ 1, 4, 5, 6 };
 
@@ -61,7 +65,8 @@ Derleyiciler template koda ilişkin sentaks kontrolünü  birkaç farklı aşama
 
 	bu birinci aşamada yapılan sentaks kontrolü.
 
-2) ikinci aşama = eğer template argument deduction söz konusu ise bu deduction'un yapılamaması ihtimali var. bu durumda template argümanının ne olduğu anlaşılamazsa yine derleyici durumu sentaks hatası olarak değerlendirecek.
+2) ikinci aşama = eğer template argument deduction söz konusu ise bu deduction'un yapılamaması ihtimali var. bu durumda template argümanının ne olduğu anlaşılamazsa yine 
+derleyici durumu sentaks hatası olarak değerlendirecek.
 	
 	template <typename T>
 	T func();
@@ -83,7 +88,8 @@ Derleyiciler template koda ilişkin sentaks kontrolünü  birkaç farklı aşama
 
 	int main()
 	{
-		func(10, 2.0); // çelişki var, birinci parametreye gönderilen argümandan dilin kurallarına göre T türünün int olması gerekirken, ikinci parametre için double olması gerekiyor. T türü hem int hem double olamaz. dolayısıyla sentaks hatasına yol açıyor. 
+		func(10, 2.0); // çelişki var, birinci parametreye gönderilen argümandan dilin kurallarına göre T türünün int olması gerekirken, ikinci parametre için 
+				double olması gerekiyor. T türü hem int hem double olamaz. dolayısıyla sentaks hatasına yol açıyor. 
 		// derleyicinin verdiği hata mesajında T türünün nambigious olduğu belirtilmiş.
 	}
 
@@ -154,7 +160,8 @@ az önce neden sentaks hatası olduysa şimdi de o nedenle sentaks hatası olaca
 
 /////////////
 
-eğer siz fonksiyonda yukarıdaki typeteller sınıfının template argümanı olarak bu fonksiyonun parametresi olan yani template'in template parametresini kullanırsanız, derleyici sentaks hatasını anlatırken T nin ne olması gerektiğini bize söyleyecek.
+eğer siz fonksiyonda yukarıdaki typeteller sınıfının template argümanı olarak bu fonksiyonun parametresi olan yani template'in template parametresini kullanırsanız, derleyici 
+sentaks hatasını anlatırken T nin ne olması gerektiğini bize söyleyecek.
 
 	template <typename T>
 	class TypeTeller;
@@ -299,7 +306,8 @@ Gelelim referans deklaratörü olmasına..
 
 //////////////////
 
-NOT: Önünde const, volatile herhangi bir niteleyici olmadan doğrudan template parametresini && token'ı izliyorsa bu bir sağ taraf referansı değil. Bunu auto konusunda görmüştük.
+NOT: Önünde const, volatile herhangi bir niteleyici olmadan doğrudan template parametresini && token'ı izliyorsa bu bir sağ taraf referansı değil. Bunu auto konusunda 
+görmüştük.
 
 Bu durumda böyle referans parametreye => forwarding reference (standard'ın kullandığı terim)
 
@@ -371,11 +379,13 @@ diğeri Scott Meyers'in uydurduğu => universal referance
 	}
 
 
-Fonksiyona gönderilen ifade L value expression ise fonksiyonun parametre değişkeni L  value reference, fonksiyona gönderilen argüman R value expression ise fonksiyonun parametresi R value reference.
+Fonksiyona gönderilen ifade L value expression ise fonksiyonun parametre değişkeni L  value reference, fonksiyona gönderilen argüman R value expression ise fonksiyonun 
+parametresi R value reference.
 
 Fonksiyona gönderilen argüman L value ise T türü L val. reference türü, fonksiyona gönderilen argüman R value ise T türü bir referans türü değil. 
 
-foo() fonksiyonuna ne gönderirsem göndereyim göndereyim (R value, L value, Const, Non-Const) sentaks hatası olmaz. İşte bu yüzden zaten Scott Meyers böyle parametrelere "Universal Reference" diyor.
+foo() fonksiyonuna ne gönderirsem göndereyim göndereyim (R value, L value, Const, Non-Const) sentaks hatası olmaz. İşte bu yüzden zaten Scott Meyers böyle parametrelere 
+"Universal Reference" diyor.
 
 
 	template<typename T>
@@ -567,7 +577,8 @@ Farklı farklı aşamalarda sentaks kontrolü yapılıyor demiştik.
 Derleyici T türünün ne olduğunu anlayıp da bu template'den bir specialization oluşturduğunda (buna template'in instantiate[Template Instantiation] edilmesi deniyor) sizin
 yazdığınız bir kod nasıl bir sentaks kontrolüne tabi tutuluyorsa o kod da sentaks kontrolüne tabi tutulacak.
 
-Burada derleyicinin yazacağı kodda sentaks hatası var. int türden bir değişken . operatörünün operandı olamaz. Dolayısıyla burada dilin kuralları çiğnenmiş olacak. Buradaki sentaks hatasının nedeni derleyicinin yazdığı kod sentaks hatası oluşturuyor.
+Burada derleyicinin yazacağı kodda sentaks hatası var. int türden bir değişken . operatörünün operandı olamaz. Dolayısıyla burada dilin kuralları çiğnenmiş olacak. Buradaki 
+sentaks hatasının nedeni derleyicinin yazdığı kod sentaks hatası oluşturuyor.
 
 	template <typename T>
 	void foo(T x)
@@ -613,15 +624,18 @@ Oysa ki aşağıdaki gibi göndersek burada sentaks hatası olmayacaktı.
 		}
 	}
 
-Bu kadar basit bir kodun bile legal olması için T türünün copy constructible olması gerekiyor. Çünkü buna T türden argümanlar geçtiğimde fonksiyonun parametre değişkenleri için copy ctor çağırılacak.
+Bu kadar basit bir kodun bile legal olması için T türünün copy constructible olması gerekiyor. Çünkü buna T türden argümanlar geçtiğimde fonksiyonun parametre değişkenleri 
+için copy ctor çağırılacak.
 Aynı zamanda equality comparable olması gerekiyor.1
 
-Biz bunları gizli bir constraint olarak bırakmak yerine dile C++20 ile eklenen araçlarla bunu açık açık interface'de gösterme imkanına sahibiz. Yani template'e bakar bakmaz çağıran kodun o template'in constraintlerinin nele olduğu konusunda bilgi edinmesi ve derleyicinin de çok daha açık bir hata mesajı vermesi .
+Biz bunları gizli bir constraint olarak bırakmak yerine dile C++20 ile eklenen araçlarla bunu açık açık interface'de gösterme imkanına sahibiz. Yani template'e bakar bakmaz 
+çağıran kodun o template'in constraintlerinin nele olduğu konusunda bilgi edinmesi ve derleyicinin de çok daha açık bir hata mesajı vermesi .
 
 Template'lerin dezavantajları da var.
  Bunlardan biri:
 
- Template'ler ile ilgili verilen hata mesajlarında, hata mesajlarının 200-300-400 satır olabilmesi. C++20 ile gelen conceptlerin getirdiği en önemli özelliklerden biri de hata mesajlarının çok daha yalın hale gelmesi.
+ Template'ler ile ilgili verilen hata mesajlarında, hata mesajlarının 200-300-400 satır olabilmesi. C++20 ile gelen conceptlerin getirdiği en önemli özelliklerden biri de 
+ hata mesajlarının çok daha yalın hale gelmesi.
 
 ----------------------------
 
@@ -712,7 +726,8 @@ Fonksiyonun bütün parametrelerinin template parametresi ile ilgili olması ger
 
 ----------------------------------------
 
-Öyle fonksiyon şablonları var ki, çıkarım yapmak mümkün olmadığı için bir ya da birden fazla template parametresi için explicit template argümanı kullanmak durumunda kalabiliyoruz.
+Öyle fonksiyon şablonları var ki, çıkarım yapmak mümkün olmadığı için bir ya da birden fazla template parametresi için explicit template argümanı kullanmak durumunda 
+kalabiliyoruz.
 
 	int main()
 	{
@@ -748,11 +763,13 @@ böyle durumlarda template argümanını explicit olarak belirtmek zorundayız.
 		foo(2, 5); // bu fonksiyonu böyle çağırmak demek, aslında şöyle çağırmaya karşılık:
 		// foo<int, int>(2, 5);
 
-		foo<int>('A', 5); // birinci parametreye char türü göndermeme rağmen, birinci template parametresi karşılığı kullanılacak template argümanının int olduğunu söylediğim için bir çıkarım yapılmayacak. Fakat 2.parametre için explicit template argument kullanmadığım için burada çıkarım yapılacak.
+		foo<int>('A', 5); // birinci parametreye char türü göndermeme rağmen, birinci template parametresi karşılığı kullanılacak template argümanının int olduğunu 
+				  söylediğim için bir çıkarım yapılmayacak. Fakat 2.parametre için explicit template argument kullanmadığım için burada çıkarım yapılacak.
 	}
 
 
-Özellikle standard kütüphanede ve 3rd party kütüphanelerde çok sık rastlanılan senaryolardan biri: Fonksiyon şablonu kodu içinde fonksiyon parametresinin fonksiyon çağrı operatörünün operandı olması.
+Özellikle standard kütüphanede ve 3rd party kütüphanelerde çok sık rastlanılan senaryolardan biri: Fonksiyon şablonu kodu içinde fonksiyon parametresinin fonksiyon çağrı 
+operatörünün operandı olması.
 	
 	template <typename T>
 	void foo(T f)
@@ -791,7 +808,9 @@ Bir örnek daha:
 
 -----------------------------------------
 
-Sınıfların karşılaştırma operatör fonksiyonlarının özellikle önemi  generic programlama tarafında net olarak ortaya çıkacak. Çünkü bazı fonksiyon şablonlarında biz fonksiyon şablonunun parametre değişkenlerini ya da o türden değişkenleri ==,!=, >=, <= gibi operatörlerin operandı yaptığımızda bu durumda orada bir sentaks hatası olmaması için ilgili sınıfın bu operatörleri overload etmesi gerekiyor.
+Sınıfların karşılaştırma operatör fonksiyonlarının özellikle önemi  generic programlama tarafında net olarak ortaya çıkacak. Çünkü bazı fonksiyon şablonlarında biz fonksiyon 
+şablonunun parametre değişkenlerini ya da o türden değişkenleri ==,!=, >=, <= gibi operatörlerin operandı yaptığımızda bu durumda orada bir sentaks hatası olmaması için 
+ilgili sınıfın bu operatörleri overload etmesi gerekiyor.
 
 
 -----------------------------------------
@@ -1066,7 +1085,8 @@ Bir örnek daha:
 T*** template'den bir specilialization oluşturulacak çünkü diğerlerinden daha spesifik.
 
 ***
-Eğer template'lerden biri diğerinin kabul ettiği bütün argümanları kabul ediyorsa fakat diğerinin kabul etmediği argümanları da kabul ediyorsa o zaman daha az spesifik. Örneğin bu örnek:
+Eğer template'lerden biri diğerinin kabul ettiği bütün argümanları kabul ediyorsa fakat diğerinin kabul etmediği argümanları da kabul ediyorsa o zaman daha az spesifik. 
+Örneğin bu örnek:
 
 	template <typename T>
 	void foo(T)
