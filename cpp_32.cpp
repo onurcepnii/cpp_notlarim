@@ -11,7 +11,8 @@
 
 	int main()
 	{
-		Myclass<Nec<int>> mx;	// Modern Cpp'den önce böyle bir bildirim maximal munch'a takılıyordu. Hatta bazı eski kaynaklarda maximal munch'tan kaçınmak için >> arasına bir boşluk koymak gerektiğinden bahsedilir. Fakat o eskide kaldı.
+		Myclass<Nec<int>> mx;	// Modern Cpp'den önce böyle bir bildirim maximal munch'a takılıyordu. 
+		// Hatta bazı eski kaynaklarda maximal munch'tan kaçınmak için z>> arasına bir boşluk koymak gerektiğinden bahsedilir. Fakat o eskide kaldı.
 
 		// Derleyici artık tokenizingi ona göre yapıyor, boşluk karakteri vermek zorunda değiliz.
 	}
@@ -39,7 +40,8 @@ Soru: Aşağıdaki Myint bir sınıf mı?
 	}
 
 # işaretli yerde T yerine U kullansaydık aynı anlama mı gelirdi yoksa farklı mı olurdu?
--Aynı anlama gelirdi. Bir problem olmazdı. Zaten yukarıda olan template'de ki ismin scope'u template kodun tamamlandığı yere kadar. Yani fonksiyonun tanımını yaparken aynı template parametresine verdiğimiz isimle aynı ismi kullanmak zorunda değiliz.
+-Aynı anlama gelirdi. Bir problem olmazdı. Zaten yukarıda olan template'de ki ismin scope'u template kodun tamamlandığı yere kadar. Yani fonksiyonun tanımını yaparken aynı 
+template parametresine verdiğimiz isimle aynı ismi kullanmak zorunda değiliz.
 
 
 
@@ -69,7 +71,9 @@ Soru: Aşağıdaki Myint bir sınıf mı?
 
 Benzer şekilde fonksiyonun tanımını class dışında yaptığımız zaman
 
-## : scope resolution operatörden sonra artık doğrudan class scope'dayız. Yani gerek parametreyi yazdığımız yer gerek fonksiyonun ana bloğu içinde Myint<T> demek ile Myint yazmak arasında bir fark yok. Ama fonksiyonun geri dönüş değerini yazdığımız yerde burası doğrudan class scope'da olmadığı için sınıfın kendisinden bahsederken Myint<T> yazmak zorundayız.
+## : scope resolution operatörden sonra artık doğrudan class scope'dayız. Yani gerek parametreyi yazdığımız yer gerek fonksiyonun ana bloğu içinde Myint<T> demek ile Myint 
+	yazmak arasında bir fark yok. Ama fonksiyonun geri dönüş değerini yazdığımız yerde burası doğrudan class scope'da olmadığı için sınıfın kendisinden bahsederken 
+	Myint<T> yazmak zorundayız.
 
 
 Burada belki şöyle bir istisna olabilir; Constructor
@@ -196,7 +200,8 @@ Fakat eğer şöyle yaparsak;
 		}
 	};
 
-Böyle bir durumda foo ismini niteleyerek kullanmak zorundayız. Nitelemeden kullandığımızda derleyici bu foo'yu taban sınıfında aramayacak. Örneğin this->foo() veya Base::foo() yazsaydık sentaks hatası olmazdı.
+Böyle bir durumda foo ismini niteleyerek kullanmak zorundayız. Nitelemeden kullandığımızda derleyici bu foo'yu taban sınıfında aramayacak. Örneğin this->foo() veya 
+Base::foo() yazsaydık sentaks hatası olmazdı.
 
 
 
@@ -325,7 +330,8 @@ Fakat şuan C++20 öncesinden bahsedeceğiz.
 *	template <int* p>
 	class Myclass{};
 
-template argümanı olarak bizim bir int nesne adresi vermemiz lazım. Ama özellikle pointer olması durumunda o pointera karşılık gelecek template argümanı olan adresin statik ömürlü bir nesne adresi olması gerekiyor.
+template argümanı olarak bizim bir int nesne adresi vermemiz lazım. Ama özellikle pointer olması durumunda o pointera karşılık gelecek template argümanı olan adresin 
+statik ömürlü bir nesne adresi olması gerekiyor.
 
 Örneğin;
 	
@@ -379,7 +385,8 @@ template argümanı olarak bizim bir int nesne adresi vermemiz lazım. Ama özel
 -------------------------------------
 İlerde ayrıntılı göreceğiz;
 
-Sınıfların statik üye fonksiyonlarının this pointeri yok. O yüzden sınıfların statik üye fonksiyonlarını gösterecek function pointer türleri bildiğimiz C'den gelen function pointer türleri.
+Sınıfların statik üye fonksiyonlarının this pointeri yok. O yüzden sınıfların statik üye fonksiyonlarını gösterecek function pointer türleri bildiğimiz C'den gelen function 
+pointer türleri.
 
 	class Myclass {
 	public:
@@ -454,7 +461,8 @@ MADEM BUNLARI ŞİMDİ TAM OLARAK GÖRMEYECEĞİZ NEDEN ARAYA SOKTUK?
 
 Bir template'in argümanını bir yazı yapmak istiyoruz diyelim.
 
-Öyle bir sınıf şablonu olsun ki biz sınıf şablonunda bu yazıyı non-type parametreye karşılık gelen argüman yapalım ve böylece bu sınıfın kodu içinde bizde bir veya birden fazla yerde bu yazıyı kullanabilelim.
+Öyle bir sınıf şablonu olsun ki biz sınıf şablonunda bu yazıyı non-type parametreye karşılık gelen argüman yapalım ve böylece bu sınıfın kodu içinde bizde bir veya birden 
+fazla yerde bu yazıyı kullanabilelim.
 
 	template <const char* p>
 	class Nec {
@@ -503,7 +511,8 @@ Bir template'in argümanını bir yazı yapmak istiyoruz diyelim.
 
 		Myclass<sizeof(int), sizeof(int) == 4> mx; // derleyiciye göre değişiyor açılım. Yani 4, false açılımı da olabilir vs. vs.
 
-		Myclass<sizeof(int), sizeof(int) > 2 > mx;	// sentaks hatası. aslında biz ikinci argümanda büyüktür operatörü kullandık fakat onu template in parantezi ile karıştırdı derleyici. bu durumlarda parantez içine alarak bu sorunun üzerinden gelebiliriz.
+		Myclass<sizeof(int), sizeof(int) > 2 > mx;	// sentaks hatası. aslında biz ikinci argümanda büyüktür operatörü kullandık fakat onu template in parantezi 
+		ile karıştırdı derleyici. bu durumlarda parantez içine alarak bu sorunun üzerinden gelebiliriz.
 
 		Myclass<sizeof(int), (sizeof(int) > 2)> mx;	// legal
 	}
@@ -576,7 +585,8 @@ Bir template'in bir specialization'u template argümanlarının yerine konulmas�
 		Swap<int>;	// explicit specialization
 	}
 
-Normalde specialization için derleyici bizim template'imizi kullanıyor. Oradan instantiation yapıyor. Fakat şimdi biz derleyiciye diyoruz ki falanca tür için specialization oluşturduğunda benim sana verdiğim alternatif kodu kullanacaksın.
+Normalde specialization için derleyici bizim template'imizi kullanıyor. Oradan instantiation yapıyor. Fakat şimdi biz derleyiciye diyoruz ki falanca tür için specialization 
+oluşturduğunda benim sana verdiğim alternatif kodu kullanacaksın.
 
 Yani primary template'den instantiation yapmak yerine instantiation zaten benim sana verdiğim kod olacak.
 
@@ -620,7 +630,8 @@ ama şimdi kodun şöyle olduğunu düşünelim;
 Çünkü derleyicinin oluşturduğu kodda burada fonksiyonun parametre değişkenleri pointer değişkenler olacak, biz yazıları değil pointerları karşılaştırmış olacağız.
 
 
-O zaman şimdi biz şunu istiyor olalım: hey derleyici eğer burada T türü const char* ise primary template'den bir instantiation yapmak yerine benim verdiğim specialization'u kullanacaksın. işte buna explicit specialization ya da full specialization deniyor.
+O zaman şimdi biz şunu istiyor olalım: hey derleyici eğer burada T türü const char* ise primary template'den bir instantiation yapmak yerine benim verdiğim specialization'u 
+kullanacaksın. işte buna explicit specialization ya da full specialization deniyor.
 
 
 Sentaks şöyle:
@@ -638,7 +649,8 @@ const char* türü için getmax'ın explicit specialization'u.
 		return std::strcmp(p1, p2) > 0 ? p1 : p2;
 	}
 
-# : Aslında burada açısal parantez de mecburi değil. Zaten parametrelereden deduction yapılabildiği için const char* getmax(const char* p1, const char* p2) şeklinde de yazabiliyoruz.
+# : Aslında burada açısal parantez de mecburi değil. Zaten parametrelereden deduction yapılabildiği için const char* getmax(const char* p1, const char* p2) şeklinde de 
+yazabiliyoruz.
 
 
 NOT: Derleyicinin instantiation yapacağı ana template'den oluşturacağı specialization'dan bahsediyorsanız o template'e "Primary Template" deniyor yaygın olarak.
@@ -909,10 +921,12 @@ Programcıların anlaması gereken çok önemli bir nokta: Function Overload Res
 
 Bu örnekte de primary template function overload resolution'a giriyor.
 
-Eğer function overload resolution'da primary template function seçilirse ve derleyici int* için bir spec oluştururken primary template'i değil explicit spec. i kullanarak oluşturacak.
+Eğer function overload resolution'da primary template function seçilirse ve derleyici int* için bir spec oluştururken primary template'i değil explicit spec. i kullanarak 
+oluşturacak.
 
 
-Cevap neden 3? Function overload resolution'a 2 olan template girmiyor. 1 ve 3 arasında oluyor. Burada geçerli olan kural "Partial Ordering Rules". Hangisi daha spesifik: 3. o halde bu çağırılacak.
+Cevap neden 3? Function overload resolution'a 2 olan template girmiyor. 1 ve 3 arasında oluyor. Burada geçerli olan kural "Partial Ordering Rules". 
+Hangisi daha spesifik: 3. o halde bu çağırılacak.
 
 
 Sorunun ikinci şıkkı: Kodda küçük bir değişiklik yapıyoruz.
@@ -953,7 +967,8 @@ Peki bir fark var mı? -VAR.
 
 	Ama şimdi her iki template de göründüğü için daha spesifik olan ortadaki template'in explicit specialization'u.
 
-Bu sefer function overload resolution üstteki iki template arasında yapılacak. 2.fonksiyon daha spesifik olduğu için o kazanacak. Ama eğer burada T int ise int* olan explicit spec. kullanılacak. Yani yine 3 yazdırılacak.
+Bu sefer function overload resolution üstteki iki template arasında yapılacak. 2.fonksiyon daha spesifik olduğu için o kazanacak. Ama eğer burada T int ise int* olan 
+explicit spec. kullanılacak. Yani yine 3 yazdırılacak.
 
 
 Sorunun üçüncü şıkkı:
@@ -990,7 +1005,7 @@ Sorunun üçüncü şıkkı:
 
 Cevap : 4
 
-Zaten 2 ve 4 üstündeki templatelerin (1 ve 3) explicit spec.'i. Function overload resolution'a girecek olanlar 1 ve 3. 3 kazanacak ve onun explicit spec'i kullanılacak. Yani 4.
+Zaten 2 ve 4 üstündeki templatelerin (1 ve 3) explicit spec.'i. Function overload resolution'a girecek olanlar 1 ve 3. 3 kazanacak ve onun explicit spec'i kullanılacak.Yani 4
 
 
 ----------------------------------------------
@@ -1062,7 +1077,8 @@ Sadece sınıf ve değişken şablonlarında var.
 m1 ve m2 ptr türü değil o yüzden onlar için primary template, m3 -m4 -m5 için partial spec. kullanıldı.
 
 
-Sanki partial specialization'da o hangi primary template'e ilişkin ise onun template parametreleri ile aynı sayıda parametre olacakmış zannediliyor fakat böyle olabilir ya da olmayabilir. Böyle bir zorunluluk yok yani.
+Sanki partial specialization'da o hangi primary template'e ilişkin ise onun template parametreleri ile aynı sayıda parametre olacakmış zannediliyor fakat böyle olabilir 
+ya da olmayabilir. Böyle bir zorunluluk yok yani.
 
 # : Template argümanının bir pointer türü olması durumunda bu partial specialization kullanılacak.
 
