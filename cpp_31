@@ -31,7 +31,8 @@ Template'i Instantiate etmek 2 farklı biçimde olabiliyor:
 			getMax(20, 10);
 		}
 
-	//Derleyici burada bu fonksiyona çağrı yapıldığı için, bu da bir fonksiyon şablonu olduğu için önce argument deduction yapacak. Sonra substituon denilen süreci yönetecek.
+	//Derleyici burada bu fonksiyona çağrı yapıldığı için, bu da bir fonksiyon şablonu olduğu için önce argument deduction yapacak. Sonra substituon denilen süreci 
+yönetecek.
 Yani template parametresine karşılık gelen template argümanını fonksiyon içinde yerine koyacak. 
 ( ki burada bir hata oluşması durumu ile kullanılan tekniklere: SFINAE(Substition Failure Is Not An Error) deniyor. ) Nihayetinde derleyici burada template'i instantiate 
 ediyor. Derleyicinin template'i burada instantiate etmesi için bir talimat vermiyoruz.
@@ -153,8 +154,8 @@ Fonksiyon şablonlarında fonksiyonun geri dönüş değeri türünü
 
 	Hem generic kodda, hem de generic olmayan kodda kullanılabiliyor.
 
-	Bunu görmüştük, generic olmayan kodlarda eğer fonksiyon geri dönüş değeri bir function pointer ise veya pointer to array ise olası karışıklıkların önüne geçmek, okunurluğu 
-  arttırmak ve basitleştirmek için trailing return type kullanabiliriz.
+	Bunu görmüştük, generic olmayan kodlarda eğer fonksiyon geri dönüş değeri bir function pointer ise veya pointer to array ise olası karışıklıkların önüne geçmek, 
+	okunurluğu arttırmak ve basitleştirmek için trailing return type kullanabiliriz.
 
 	Bir örnek daha:
 
@@ -362,8 +363,8 @@ Fakat bunu bir sınıf şablonu olarak oluşturup veri yapılarına daha uygun s
 	};
 
 ***
-	String sınıfının kendisi de bir sınıf şablonu. Biz sanki std::string doğrudan bir sınıfmış gibi kullandık. Aslında std::string bir tür eş ismi. eğer biz o tür eş ismini 
-  kullanmasaydık ;
+	String sınıfının kendisi de bir sınıf şablonu. Biz sanki std::string doğrudan bir sınıfmış gibi kullandık. Aslında std::string bir tür eş ismi. eğer biz o tür eş 
+	ismini kullanmasaydık ;
 	
 	std::basic_string<char, std::char_traits<char>, std::allocator<char>>
 
@@ -468,7 +469,8 @@ Ya da class definition dışında tanımlayabiliriz.
 
 		Myclass bar(Myclass)
 		{
-			Myclass m; // myclass'ın int açılımı için bu yerel değişkenin türü Myclass'ın int specializationu, double açılımı için Myclass'ın double specializationu vs.
+			Myclass m; // myclass'ın int açılımı için bu yerel değişkenin türü Myclass'ın int specializationu, double açılımı için Myclass'ın double 
+					specializationu vs.
 			//Myclass<T> m; ile aynı yani
 		}
 	};
@@ -539,8 +541,8 @@ Bir başka örnek, operator fonksiyonları ile;
 
 	int main()
 	{
-		Myclass<Nec>	// template argümanı olan tür yani Nec henüz bir in-complete type. Bunun complete type olmasını gerektiren bir senaryo olmadığı sürece herhangi bir problem 
-                      olmayacak.
+		Myclass<Nec>	// template argümanı olan tür yani Nec henüz bir in-complete type. Bunun complete type olmasını gerektiren bir senaryo olmadığı sürece 
+				herhangi bir problem olmayacak.
 	}
 
 
@@ -590,14 +592,14 @@ String sınıfı için düşünelim.
 
 	int main()
 	{
-		std::string str(10, 'a'); // derleyici class definition yapacak ama hangi fonksiyonların kodunu yazacak? data memberlar için değil çünkü onlar class definition da. 
+	std::string str(10, 'a'); //derleyici class definition yapacak ama hangi fonksiyonların kodunu yazacak? data memberlar için değil çünkü onlar class definitionda 
                               // constructor ve destructor'un kodunu yazacak.
 
-		ama şimdi biz size() fonksiyonunu çağırdığımızda derleyici size fonksiyonun kodunu yazacak.
+	ama şimdi biz size() fonksiyonunu çağırdığımızda derleyici size fonksiyonun kodunu yazacak.
 
-		str.size();	// şimdi size fonksiyonunun kodunu yazar.
+	str.size();	// şimdi size fonksiyonunun kodunu yazar.
 
-		// onlarca daha string sınıfının üye fonksiyonu var. onların kodu yazılmak zorunda değil.
+	// onlarca daha string sınıfının üye fonksiyonu var. onların kodu yazılmak zorunda değil.
 	}
 
 Sınıf şablonlarının önemli bir faydası da bu.
