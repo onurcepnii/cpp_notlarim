@@ -5,8 +5,8 @@ gibi internal linkage'da olur.
 
 * C dilinde main fonksiyonunun geri dönüş değeri int olmak zorunda değil. Örneğin geri dönüş değeri olmayan void olarak da tanımlayabiliriz. Fakat C++' da int olmak zorunda.
 
-* C'de geri dönüş değeri olan bir fonksiyona return statement koyulmazsa bu bir hata olmaz fakat fonksiyon garbage value döndürür. C++'da ise geri dönüş değeri olan bir fonksiyonun
-return statement'a sahip olmaması doğrudan dilin kurallarına aykırı.
+* C'de geri dönüş değeri olan bir fonksiyona return statement koyulmazsa bu bir hata olmaz fakat fonksiyon garbage value döndürür. C++'da ise geri dönüş değeri olan bir 
+fonksiyonun return statement'a sahip olmaması doğrudan dilin kurallarına aykırı.
 
 * C'de main fonksiyonunun recursive (özyinelemeli) olarak çağırılması legal, C++'da bu durum sentaks hatası.
 
@@ -26,7 +26,8 @@ T x;	==>	default init.
 
 C'de olduğu gibi otomatik ömürlü değişkenler default init. ile declare edildiklerinde indetermined value ile hayatlarına başlarlar.
 
-* İkna edici bir neden olmadığı sürece aritmetik türden değişkenleri, pointer değişkenleri bu şekilde init. etmemek lazım. Undefined Behaviour oluşturur. (Bu şekilde init. edilen değişkenlerin kullanımı)
+* İkna edici bir neden olmadığı sürece aritmetik türden değişkenleri, pointer değişkenleri bu şekilde init. etmemek lazım. Undefined Behaviour oluşturur. 
+(Bu şekilde init. edilen değişkenlerin kullanımı)
 
 
 Copy Initialization
@@ -61,7 +62,8 @@ Uniform Initialization ile ilk değer verdiğimizde eğer Narrowing Conversion (
 Yani ilk değer verirken narrowing conversion'a karşı ir koruma sağlar. Adı üzerinde uniform olması her yerde aynı sentaksı kullanır.
 
 Dilin kurallarına göre bazı bildirimler 2 anlama gelebiliyor. Hem bir fonksiyon bildirimi (function prototype) hem de aynı zamanda değişken tanımı.(variable definition)
-Eğer bir bildirim hem fonksiyon hem de bir değişken tanımlaması anlamına gelebiliyorsa burada fonksiyon bildiriminin önceliği vardır. O, fonksiyon bildirimi olarak kabul ediliyor.
+Eğer bir bildirim hem fonksiyon hem de bir değişken tanımlaması anlamına gelebiliyorsa burada fonksiyon bildiriminin önceliği vardır. O, fonksiyon bildirimi olarak kabul 
+ediliyor.
 Bu kuralı işaretlemek için Scott Meyers'in uydurduğu terim ==> "Most Vexing Parse"
 
 Bazı durumlarda uniform init. moxt vexing parse oluşturmaz.
@@ -74,7 +76,8 @@ int x{};
 
 int y;
 
-Burada x 0 ile initialize edilir, y ise indetermined value ile. Value initialization'un diğer ilk değer verme biçimlerinden farkı bunda ilk basamak olarak zero-init kullanılır.
+Burada x 0 ile initialize edilir, y ise indetermined value ile. Value initialization'un diğer ilk değer verme biçimlerinden farkı bunda ilk basamak olarak zero-init 
+kullanılır.
 
 
 
@@ -329,8 +332,8 @@ C'de yok fakat C++'da var. Örneğin 3 tane parametresi olan bir fonksiyona 3'te
 
 Bir fonksiyonun birden fazla parametresi için default argument kullanabiliriz. Fakat dikkat etmemiz gereken bazı kurallar var.
 
-	-Bir fonksiyonun herhangi bir parametresi varsayılan argüman alıyorsa sağındaki tüm parametrelerin de varsayılan argüman alması gerekiyor.(Wrapper function yazarak bunun
-	önüne geçebiliyoruz.)
+	-Bir fonksiyonun herhangi bir parametresi varsayılan argüman alıyorsa sağındaki tüm parametrelerin de varsayılan argüman alması gerekiyor.(Wrapper function yazarak 
+	bunun önüne geçebiliyoruz.)
 	
 		int foo(int, int=20, int) => sentaks hatası
 		int foo(int, int=10, int=2) => valid
@@ -936,8 +939,8 @@ mülakat/örnek
 				
 int x(int);			Örneğin burada sentaks hatası verir fakat neden? Çünkü burada derleyici 2 numaralı ifadeye geldiğinde önce x ismin aramaya 
 				name lookup kurallarına göre başlar. Yani kendi bulunduğu scope içinde aramaya başlar, bulursa name lookup sonlandırılır, bulunamazsa bir üst
-				blokta arama devam eder. Burada aynı blokta bulunan x isminin definition'unu bulur( int x = 5 ) ve name lookup sonlandırılır. Context check aşamasına
-				geçilir fakat x(12) bir fonksiyon çağrı ifadesidir ve bu yüzden context check aşaması sonlandırılır ve hata verir.
+				blokta arama devam eder. Burada aynı blokta bulunan x isminin definition'unu bulur( int x = 5 ) ve name lookup sonlandırılır. Context check 
+				aşamasına geçilir fakat x(12) bir fonksiyon çağrı ifadesidir ve bu yüzden context check aşaması sonlandırılır ve hata verir.
 int main()
 {
 	int x = 5;	// 1
