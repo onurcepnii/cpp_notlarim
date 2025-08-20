@@ -682,6 +682,9 @@ yazmasan dahi implicitly inline.
 - Inline expansion yapmasını istiyorsak ve fayda sağlamayı umuyorsak zaten inline olmak zorunda.
 
 
+YANİ SINIFIN İÇİNDE MEMBER FUNCTİON TANIMI YAPARSAK ZATEN IMPLICITLY INLINE. FAKAT EĞER CLASS DIŞINDA TANIMLAMAYA ÇALIŞIRSAK BUNU BİZ KENDİMİZ INLINE KEYWORD
+KOYARAK INLINE YAPMALIYIZ KI ODR'I İHLAL ETMEYELİM.
+
 
 ---------------------------------------------------------------
 
@@ -726,6 +729,7 @@ Sınıf nesnesinin hayatının bitmesini sağlayan fonksiyon ise ==> destructor
 * Sınıfın constructorları sınıfın public fonksiyonu olmak zorunda değil, private fonksiyonu da olabilir.
 
 * Constructor sınıfın üye fonksiyonu, dolayısıyla tanımı diğer üye fonksiyonlarda olduğu gibi .cpp dosyasında ya da başlık dosyasında inline olarak yapılabilir.
+
 
 
 
