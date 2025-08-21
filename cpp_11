@@ -42,6 +42,13 @@ Rule Of Zero Ne Demek?
 Herhangi bir sorun çıkarmıyorsa special member fonksiyonlarının derleyici tarafından yazılması. Derleyicinin yazdığı fonksiyonların
 işimizi gördüğü noktada tercihimiz hep o yönde olmalı.
 
+-----
+-gpt-
+Eğer sınıfın hiçbir kaynak yönetimi (dynamic memory, file handle vs.) yoksa, special member function’ları kendin yazmana gerek yok.
+
+Derleyici tarafından otomatik üretilen default ctor, copy ctor, move ctor, copy/move assignment, destructor yeterli olur.
+-----
+
 
 Derleyicinin implicitly declare edilen ve default edilen copy constructor şöyle bir parametrik yapıya sahip;
 -public, non static, inline üye fonksiyonu
