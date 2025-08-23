@@ -149,6 +149,72 @@ Base sınıfından da Der sınıfını kalıtım yoluyle elde etmiş olalım. Ne
 
 Bu bazen bir ihtiyaç haline geliyor fakat bunu gerçekleştiren doğrudan bir araç yok. Fakat bazı idiomatic yapılar ile bunu gerçekleştirmek mümkün. Attorney - Client Idiomu.
 
+Attorney-Client Idiom
+---------------------
+Problem: friend'lik çok güçlüdür. Sınıftaki private elemanların tümüne erişir. Fakat bazen hepsine erişmesini istemeyiz, bu bazen fazla olabilir.
+
+Örneğin elimizde data isimli bir sınıf var. Bu sınıfın da private bölümünde foo() isimli fonksiyona bizim client fonksiyonumuzun erişmesini istiyoruz. Fakat bu fonksiyon
+member function değil, sınıf dışı bir fonksiyon. Bu fonksiyona friend'lik versek sadece foo fonksiyonu ile kalmayıp tüm private bölümüne erişim sağlayacak. 
+Bunu aşmak için direk friendlik vermek yerine araya bir sınıf sokuyoruz. 
+
+#include <iostream>
+
+class data {
+    friend class attorney;
+    int value{ 123 };
+    void foo() {
+        std::cout << "[data class] foo function called.\n";
+    }
+    void bar() {
+        std::cout << "[data class] bar function called.\n";
+    }
+};
+
+class attorney {
+public:
+    static int get_value(const data& d) {
+        std::cout << "[attorney class] get_value function called.\n";
+        return d.value;
+    }
+
+    static void call_foo(data& d) {
+        std::cout << "[attorney class] call_foo function called.\n";
+        d.foo();
+    }
+
+    static void call_bar(data& d) {
+        std::cout << "[attorney class] call_bar function called.\n";
+        d.bar();
+    }
+};
+
+class client {
+public:
+    void access_data_value(const data& d) {
+        std::cout << attorney::get_value(d) << "\n";
+    }
+
+    void access_foo(data& d) {
+        attorney::call_foo(d);
+    }
+
+    void access_bar(data& d) {
+        attorney::call_bar(d);
+    }
+};
+
+int main() {
+    data d;
+    client c;
+
+    c.access_data_value(d);
+    c.access_foo(d);
+    c.access_bar(d);
+}
+
+
+
+---------------------
 
 ______________________________________
 
