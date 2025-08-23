@@ -59,6 +59,24 @@ int main()
 	foo(baz());	// R value expr. argüman vermiş olduk, 2.foo
 
 }
+-gpt-
+-----
+bar() → her çağrıda yeni bir Nec nesnesi oluşturur.
+
+baz() → halihazırda bir yerde var olan nesneyi rvalue olarak ileri gönderir (forward eder). Yani kendisi yeni nesne yaratmaz.
+
+--
+
+bar() çağrıldığında yepyeni bir Nec nesnesi üretirsin.
+
+baz() çağrıldığında ise g nesnesi taşınmak üzere geri döndürülür.
+
+👉 Kısaca:
+
+bar() prvalue döndürür (tamamen yeni geçici nesne).
+
+baz() xvalue döndürür (zaten var olan nesneyi “ölmeye hazır” şekilde geri verir).
+-----
 
 
 * 2.foo'yu silersek kodda sentaks hatası olmaz, hepsi 1.foo'ya bağlanır. Çünkü const l value referans hem l value'ya
