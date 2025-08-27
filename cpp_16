@@ -24,6 +24,18 @@ DİKKAT
 		void foo()&;	// burada overload olmaz, hata verir!
 	};
 
+-gpt-
+class Nec {
+public:
+    void process() && { std::cout << "geçici obje işleniyor\n"; }
+    void process() &  { std::cout << "kalıcı obje işleniyor\n"; }
+};
+
+Nec n;
+n.process();        // & versiyonu
+Nec{}.process();    // && versiyonu
+Bu sayede çağrının anlamı çok net: elimde kalıcı bir obje mi var, yoksa tek kullanımlık geçici mi?
+-------
 
 
 
