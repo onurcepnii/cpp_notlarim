@@ -23,7 +23,7 @@
 
 * ÖNEMLİ *
 using bildirimi ile using namespace direktifi birbirinden bir fark ile ayrılır. using bildirimi bir namespace içine bulunan tek bir ismi inject etmeyi sağlar fakat
-using namespace direktifi bütün namespace'i kullanıldığı scope'da görünür hale getirir, inject eder.
+using namespace direktifi bütün namespace'i kullanıldığı scope'da görünür hale getirir.
 ********
 
 ___________________________________
@@ -919,6 +919,7 @@ Nested Type oluşturmanın 3 tane biçimi var.
 - Birincisi bunun bir sınıf olabilir
 - İkincisi bir enumaration type olabilir. 
 - Tür eş isim bildirimi olabilir.
+
 
 
 
