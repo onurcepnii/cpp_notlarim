@@ -33,7 +33,8 @@ ___________________________________
 	using namespace nec::erg::pro;
 
 
-Direktifin kendisi doğrudan global namespace'de veya bir namespace'in içinde yapılabilir ya da bir fonksiyon tanımlamasında fonksiyon bloğu içinde de yapılabilir. Ancak bir class definition içinde kullanımı sentaks hatası.
+Direktifin kendisi doğrudan global namespace'de veya bir namespace'in içinde yapılabilir ya da bir fonksiyon tanımlamasında fonksiyon bloğu içinde de yapılabilir.
+Ancak bir class definition içinde kullanımı sentaks hatası.
 
 * Sınıf içinde using namespace direktifini kullanamayız sentaks hatası fakat örneğin o sınıfın member fonksiyonu içinde 
 kullanabiliriz.
@@ -915,6 +916,7 @@ Nested Type oluşturmanın 3 tane biçimi var.
 - Birincisi bunun bir sınıf olabilir
 - İkincisi bir enumaration type olabilir. 
 - Tür eş isim bildirimi olabilir.
+
 
 
 
