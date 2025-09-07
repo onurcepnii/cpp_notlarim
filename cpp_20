@@ -312,6 +312,14 @@ Nesne yönelimli programlamada sınıflar arasındaki ilişkiyi betimleyen bazı
 
 Her composition bir aggregation, her aggregation bir association.
 
+-------------------------------------------------
+
+“Is-a relationship” → Kalıtım (Inheritance)
+
+“Has-a relationship” → Composition/Aggregation
+
+-------------------------------------------------
+
 
 Örneğin aşağıda her Car nesnesi hayata geldiğinde onun Engine türünden m_eng veri elemanı da hayata gelecek. Car için dtor 
 çağırıldığında Engine için de çağırılacak.
@@ -652,6 +660,7 @@ bu parametrik yapıya
 .(const string &, size_t idx)	// substring - bu string nesnesinin tuttuğu yazının bu indeksi karakterinden başlayarak geriye 									   kalan bütün karakterlerinin oluşturduğu substring üzerinde işlem yapacak demek.
 
 .(const string&, size_t idx, size_t n) // substring - bu da substring fakat bu stringin bu indexinden başlayarak bu kadar tane 												karaketri üzerinde işlem yapacak demek
+
 
 
 
