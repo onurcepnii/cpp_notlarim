@@ -31,11 +31,13 @@ int main()
 }
 
 ############
-terminate çağrılı ve program sonlandırılır. çünkü foo fonksiyonu nofail garantili fakat içerisinde çağırdığı bar fonksiyonu exception throw ediyor, bu durumda terminate çağırılır.
+terminate çağrılı ve program sonlandırılır. çünkü foo fonksiyonu nofail garantili fakat içerisinde çağırdığı bar fonksiyonu exception throw ediyor, 
+bu durumda terminate çağırılır.
 
 
 
-Bazı fonksiyonlar onlara duyulan güven gereği noexcept yapılmak zorunda. Fakat destructor konusunda şöyle bir istisna var: bir sınıfın destructorunu nofail garanti vermenize gerek yok, default olarak zaten noexcept garantisi veriyor.
+Bazı fonksiyonlar onlara duyulan güven gereği noexcept yapılmak zorunda. Fakat destructor konusunda şöyle bir istisna var: bir sınıfın destructorunu 
+nofail garanti vermenize gerek yok, default olarak zaten noexcept garantisi veriyor.
 
 
 	class Nec{
@@ -61,28 +63,36 @@ Bazı fonksiyonlar onlara duyulan güven gereği noexcept yapılmak zorunda. Fak
 
 
 
-Destructor exception throw etmemeli, daha doğrusu ederse dışarı sızmamalı. Şu kabul edilebilir dtor exception throw eder ama yakalar ve normal şekilde sonlanır. Ama programın akışı dtor'dan çıkmamalı.
+Destructor exception throw etmemeli, daha doğrusu ederse dışarı sızmamalı. Şu kabul edilebilir dtor exception throw eder ama yakalar ve normal şekilde sonlanır. 
+Ama programın akışı dtor'dan çıkmamalı.
 
 
 Destructor Neden Exception Throw Etmemeli?
 
-Aslında kural şu; bir exception handling edildiğinde stack unwinding süreci içinde yine herhangi bir kod exception throw ederse terminate çağırılıyor. Eğer buna müsade edilseydi zaten, exception throw edildiğinde exception yakalandığında stack unwinding sırasında nesnelerin dtoru çağırılıyor ya o zaman yine terminate fonksiyonu çağırılacaktı.
+Aslında kural şu; bir exception handling edildiğinde stack unwinding süreci içinde yine herhangi bir kod exception throw ederse terminate çağırılıyor. 
+Eğer buna müsade edilseydi zaten, exception throw edildiğinde exception yakalandığında stack unwinding sırasında nesnelerin dtoru çağırılıyor ya o zaman yine 
+terminate fonksiyonu çağırılacaktı.
 
 ---
 (chatgpt-düzenlediği hali)
 
 Destructor Neden Exception Throw Etmemeli?
 
-Destructorlarda exception throw edilmemesi gerekir çünkü C++ dilinde bir exception handling sürecinde stack unwinding (yani çağrı yığınının geri sarılması) gerçekleşirken, destructorlar otomatik olarak çağrılır. Eğer bir destructor exception throw ederse, şu iki durum meydana gelebilir:
+Destructorlarda exception throw edilmemesi gerekir çünkü C++ dilinde bir exception handling sürecinde stack unwinding (yani çağrı yığınının geri sarılması) gerçekleşirken, 
+destructorlar otomatik olarak çağrılır. Eğer bir destructor exception throw ederse, şu iki durum meydana gelebilir:
 
-Halihazırda bir exception throw edilmişse (örneğin, try-catch bloğu içindeyken), ikinci bir exception ortaya çıkar. Bu durumda C++ standardına göre program std::terminate fonksiyonunu çağırır ve program sonlanır.
-Destructor exception throw etmese bile, bir önceki exception güvenli bir şekilde handle edilebilir. Ancak destructor içinde exception throw edilmesine izin verilseydi, bu durum exception handling sürecini bozabilir ve kontrolsüz hatalara neden olabilirdi.
-Bu nedenle destructorların hiçbir durumda exception throw etmemesi, kodun kararlılığı ve güvenliği için önemlidir. Eğer bir destructor içinde hata oluşması olasıysa, bu hata bir loglama mekanizmasıyla kaydedilmeli veya güvenli bir şekilde handle edilmelidir.
+Halihazırda bir exception throw edilmişse (örneğin, try-catch bloğu içindeyken), ikinci bir exception ortaya çıkar. Bu durumda C++ standardına göre program 
+std::terminate fonksiyonunu çağırır ve program sonlanır.
+Destructor exception throw etmese bile, bir önceki exception güvenli bir şekilde handle edilebilir. 
+Ancak destructor içinde exception throw edilmesine izin verilseydi, bu durum exception handling sürecini bozabilir ve kontrolsüz hatalara neden olabilirdi.
+Bu nedenle destructorların hiçbir durumda exception throw etmemesi, kodun kararlılığı ve güvenliği için önemlidir. Eğer bir destructor içinde hata oluşması olasıysa, 
+bu hata bir loglama mekanizmasıyla kaydedilmeli veya güvenli bir şekilde handle edilmelidir.
 ---
 
 
 ***
-  Move ctor'Un özellikle noexcept olması gerekiyor. Ama move ctor veya move assignment default olarak noexcept değil. Bir sınıfın move ctor'unun noexcept olmasından biz sorumluyuz.
+  Move ctor'Un özellikle noexcept olması gerekiyor. Ama move ctor veya move assignment default olarak noexcept değil. Bir sınıfın move ctor'unun noexcept olmasından 
+  biz sorumluyuz.
 
   Aynı şekilde move assignment fonksiyonundan beklenen tipik olarak noexcept olması.
 
@@ -122,7 +132,8 @@ kast ettiği şu: türemiş sınıflar, client sınıfların talep ettiğinden d
 Tersi olsaydı bunda bir sorun olmazdı. Yani türemiş sınıfın foo fonksiyonu noexcept olsaydı da taban sınıfın ki böyle olmasaydı bir problem olmaz.
 Yani garantiyi kısıtlamıyor, daha fazla garanti veriyor.
 
-Exception sınıfının what fonksiyonu aslında noexcept. Fakat türemiş sınıfta biz bunu override ederken derleyiciler genelde noexcept olarak override etmemizi görmezden geliyor fakat bazı derleyiciler hata verebiliyor.
+Exception sınıfının what fonksiyonu aslında noexcept. Fakat türemiş sınıfta biz bunu override ederken derleyiciler genelde noexcept olarak override etmemizi görmezden 
+geliyor fakat bazı derleyiciler hata verebiliyor.
 
 	class DateException : public std::exception {
 	public:
@@ -180,12 +191,14 @@ public:
 };
 
 
-Derived class'ta override edilen func fonksiyonu Base class'tan daha az garanti verdiği için bu sentaks hatası. Örneğin sizeof(int) = 4 olursa Derived class için noexcept false olur fakat taban sınıf için true olur. 
+Derived class'ta override edilen func fonksiyonu Base class'tan daha az garanti verdiği için bu sentaks hatası. Örneğin sizeof(int) = 4 olursa Derived class için noexcept 
+false olur fakat taban sınıf için true olur. 
 
 
 Generic progralama tarafında bu noexcept garantisi verip vermediğini sınamaya yarayan çok sayıda meta function var.
 
-Meta function: compile time'da hesaplama yapan, bu hesaplanan bir değer olabilir ya da mesela hesaplanan bir tür olabilir, yapılara meta function deniyor. Burada kullanılan function kelimesi bildiğimiz function değil. Zaten çoğunlukla Meta Function'lar sınıf olarak temsil ediliyorlar.
+Meta function: compile time'da hesaplama yapan, bu hesaplanan bir değer olabilir ya da mesela hesaplanan bir tür olabilir, yapılara meta function deniyor. 
+Burada kullanılan function kelimesi bildiğimiz function değil. Zaten çoğunlukla Meta Function'lar sınıf olarak temsil ediliyorlar.
 
 
 	#include <iostream>
@@ -213,7 +226,8 @@ Eğer ctor user declared olsaydı false olurdu, çünkü bu sefer noexcept keywo
 
 	}
 
-bu fonksiyon eğer T türünün copy ctor'u exception throw etmeme garantisi veriyorsa, buradaki compile time ifadesi true değere sahip olacak o zaman bu fonksiyon da noexcept olacak.
+bu fonksiyon eğer T türünün copy ctor'u exception throw etmeme garantisi veriyorsa, buradaki compile time ifadesi true değere sahip olacak o zaman bu fonksiyon da 
+noexcept olacak.
 
 ----------------------------
 
@@ -275,7 +289,8 @@ bu şekilde yazabiliyoruz;
 (?)move ctor noexcept olmadığı için onun yerine copy ctor kullanır. bu da büyük maliyet.
 
 (chat-gpt)
-Eğer move constructor noexcept ile işaretlenmemişse, std::vector copy constructor'ı çağırır çünkü taşıma işleminin istisna fırlatmayacağını garanti edemez. Bu, std::vector gibi kapsayıcıların istisna güvenliğini sağlamak için uyguladığı bir tasarım kararından kaynaklanır.
+Eğer move constructor noexcept ile işaretlenmemişse, std::vector copy constructor'ı çağırır çünkü taşıma işleminin istisna fırlatmayacağını garanti edemez. 
+Bu, std::vector gibi kapsayıcıların istisna güvenliğini sağlamak için uyguladığı bir tasarım kararından kaynaklanır.
 
 Bu nedenle, move constructor'lar her zaman noexcept olarak işaretlenmelidir, aksi takdirde performans kaybına neden olabilir.
 
@@ -297,7 +312,8 @@ Standard Kütüphanenin Exception Hiyerarşisi
 
 En tepede std::exception isimli bir sınıf var. Diğer sınıflar bu sınıftan kalıtım yoluyla elde ediliyor.
 
-Biz de sınıfları kullanabileceğimiz gibi, kendi oluşturduğumuz custom exception sınıflarını standard kütüphanenin exception hiyerarşisi içindeki sınıflardan birinden kalıtım yoluyla elde edebiliriz.
+Biz de sınıfları kullanabileceğimiz gibi, kendi oluşturduğumuz custom exception sınıflarını standard kütüphanenin exception hiyerarşisi içindeki sınıflardan birinden 
+kalıtım yoluyla elde edebiliriz.
 
 Bu sınıflar farklı farklı başlık dosyalarında bulunuyor.
 
@@ -401,7 +417,9 @@ Polimorfik bir pointer gibi davranıyor. Yani exception_ptr sınıfı türünden
 
 Yani exception'u yakalayıp dinamik türü de koruyabiliyoruz aynı zamanda.
 
-Her zaman olduğu gibi hata gönderme potansiyelinde olan kodu bir try bloğu içerisine alıyoruz. Hatayı yakalıyoruz ve yakaladığımız hata nesnesini bir exception_ptr' ye bağlıyoruz. Yani exception_ptr nesnesinin onu göstermesini sağlıyoruz. Sonra o exception_ptr nesnesini başka bir koda göndererek onun tuttuğu exceptionu tekrar göndermesini sağlayıp orada o exceptionu handle edebiliyoruz.
+Her zaman olduğu gibi hata gönderme potansiyelinde olan kodu bir try bloğu içerisine alıyoruz. Hatayı yakalıyoruz ve yakaladığımız hata nesnesini bir exception_ptr' ye 
+bağlıyoruz. Yani exception_ptr nesnesinin onu göstermesini sağlıyoruz. Sonra o exception_ptr nesnesini başka bir koda göndererek onun tuttuğu exceptionu tekrar 
+göndermesini sağlayıp orada o exceptionu handle edebiliyoruz.
 
 
 	void handle_exception(std::exception_ptr eptr)
@@ -432,7 +450,8 @@ Her zaman olduğu gibi hata gönderme potansiyelinde olan kodu bir try bloğu i�
 		}
 	}
 
-Not : exception_ptr nesnesi nullptr değerinde de olabilir. nullable type. Bir exceptionu store etmiş yani taşıyor olabilir ya da boş durumda da olabilir. O yüzden yukarda "handle_exception" fonksiyonunda yaptığmız gibi dolu mu boş mu diye kontrol ederiz.
+Not : exception_ptr nesnesi nullptr değerinde de olabilir. nullable type. Bir exceptionu store etmiş yani taşıyor olabilir ya da boş durumda da olabilir. 
+O yüzden yukarda "handle_exception" fonksiyonunda yaptığmız gibi dolu mu boş mu diye kontrol ederiz.
 
 
 
@@ -530,7 +549,8 @@ Cevap:
 //exception dispatcher
 //önemli bir exception idiomu
 
-bu sınıflar türünden exception gönderildiği zaman aşağıdaki gibi catch bloklarına göre handle edeceğiz. fakat şimdi bunu birden fazla noktada yapmamız gerekiyor. fakat biz bu kodu her defasında tekrar etmeyen bir çözüm arıyoruz.
+bu sınıflar türünden exception gönderildiği zaman aşağıdaki gibi catch bloklarına göre handle edeceğiz. fakat şimdi bunu birden fazla noktada yapmamız gerekiyor. 
+fakat biz bu kodu her defasında tekrar etmeyen bir çözüm arıyoruz.
 
 	class NecException {
 
@@ -615,13 +635,15 @@ bu sınıflar türünden exception gönderildiği zaman aşağıdaki gibi catch 
 Nested Exception 
 ----------------
 
-Bazen şöyle bir ihtiyaç doğuyor: biz bir exception'u yakalıyoruz fakat yakaladığımız exception'un kendisi ile birlikte kendimize ayrı bir exception göndermek istiyoruz. Yani daha yukarıdaki katmanlar bizim yakaladığımız exception'a ve bizim gönderdiğimiz exception'a yani ikisine birden ulaşacaklar, iki hakkında da bilgi edinecekler.
+Bazen şöyle bir ihtiyaç doğuyor: biz bir exception'u yakalıyoruz fakat yakaladığımız exception'un kendisi ile birlikte kendimize ayrı bir exception göndermek istiyoruz. 
+Yani daha yukarıdaki katmanlar bizim yakaladığımız exception'a ve bizim gönderdiğimiz exception'a yani ikisine birden ulaşacaklar, iki hakkında da bilgi edinecekler.
 
 standard kütüphane bunun için nested exception isimli bir araç veriyor.
 
 Standard kütüphanenin bir global fonksiyonu var, bu fonksiyonun ismi throw_with_nested()
 
-Bu fonksiyona normal throw statement'ta olduğu gibi kendimiz kendi exceptionumuzu veriyoruz catch bloğu içinde. Ama yakaladığımız exception ile birlikte bir mixing sınıf oluşturuluyor. Bu mixing sınıf türünden(her iki sınıfa da ulaşım imkanı veren) exception gönderiyor.
+Bu fonksiyona normal throw statement'ta olduğu gibi kendimiz kendi exceptionumuzu veriyoruz catch bloğu içinde. Ama yakaladığımız exception ile birlikte bir mixing sınıf 
+oluşturuluyor. Bu mixing sınıf türünden(her iki sınıfa da ulaşım imkanı veren) exception gönderiyor.
 
 
 	#include <iostream>
@@ -741,7 +763,8 @@ Angular Brackets'in içinde tanıtılan isimlere o template'in parametreleri den
 Temp parametreleri farklı kategorilerde olabiliyor. 3 tane farklı kategori var.
 
 -Type Parameter
-	Type parametre adı üzerinde bir türe karşılık geliyor. Yani derleyici template'imizden faydalanarak bir specialization oluşturduğunda, type parametre yerine bir type kullanıyor. örneğin int, double, char gibi vs.
+	Type parametre adı üzerinde bir türe karşılık geliyor. Yani derleyici template'imizden faydalanarak bir specialization oluşturduğunda, type parametre yerine bir type 
+	kullanıyor. örneğin int, double, char gibi vs.
 
 -Non-Type Parameter
 	Adı üzerinde tür olmayan bir parametre. Bir sabit veya belirli bir türden değer gibi. Kendisi bir tür değil ama bir türden değere karşılık geliyor.
@@ -761,7 +784,9 @@ template <typename T>
 
 class keyword kullanmamız ile typename keyword kullanmamız arasında hiçbir fark yok bu bağlamda.
 
-class keyword'un belki bir dezavantajı şu, sanki bu template parametresi karşılığı derleyicinin kullanacağı türe, ona da template argümanı deniyor, sanki bir class type olma zorunluluğu varmış gibi çağrışım oluşturuyor. Oysa derleyicinin specialization için yazacağı kodda T karşılığı kullanılan template argümanı primitive bir tür olabilir. Örneğin T için int veya double kullanılabilir vs.
+class keyword'un belki bir dezavantajı şu, sanki bu template parametresi karşılığı derleyicinin kullanacağı türe, ona da template argümanı deniyor, sanki bir class type 
+olma zorunluluğu varmış gibi çağrışım oluşturuyor. Oysa derleyicinin specialization için yazacağı kodda T karşılığı kullanılan template argümanı primitive bir tür olabilir. 
+Örneğin T için int veya double kullanılabilir vs.
 
 ***
 typename keyword'un kullanıldığı bir başka bağlam daha var. o bağlamda typename'in yerine class kullanamıyoruz.
@@ -775,7 +800,8 @@ Eğer template içinde parametreleri kullanmayacaksak isim vermek zorunda değil
 	template <typename, typename>
 
 
-Tipik olarak konvensiyonel bazı isimler kullanılıyor: T, U, V, W gibi isimler çok yaygın. Ya da bazı özel template parametreler için, onların hizmet ettiği türlere çağrışım yapsın diye iter, fn gibi isimler de kullanılıyor.
+Tipik olarak konvensiyonel bazı isimler kullanılıyor: T, U, V, W gibi isimler çok yaygın. Ya da bazı özel template parametreler için, onların hizmet ettiği türlere 
+çağrışım yapsın diye iter, fn gibi isimler de kullanılıyor.
 
 
 bu 1.kategoriydi.
@@ -791,7 +817,8 @@ Non-type parametre bir değere karşılık geldiği için, typename ya da class 
 
 	};
 
-Yani bu şu demek, derleyici bizim için bu şablondan bir kod ürettiğinde template non-type parametresi karşılığı bu türden bir değer kullanacak. Örneğin biz 10 değerini seçmiş isek, derleyicinin yazdığı sınıf kodunda benim x'i kullandığım yerde 10 sabiti kullanılacak.
+Yani bu şu demek, derleyici bizim için bu şablondan bir kod ürettiğinde template non-type parametresi karşılığı bu türden bir değer kullanacak. 
+Örneğin biz 10 değerini seçmiş isek, derleyicinin yazdığı sınıf kodunda benim x'i kullandığım yerde 10 sabiti kullanılacak.
 
 Aynı template içide hem type parametre hem non-type parametre olabilir.
 
@@ -810,13 +837,17 @@ Madem derleyici bir template koddan bir spzecialization oluştururken template'i
 
 Kısaca derleyici template parametreleri için kullanılan argümanların neler olacağını nasıl bilecek?
 
-- Bunun için farklı farklı araçlar var. Bu araçlardan biri "deduction". Derleyici koda bakarak siz template parametresi karşılığı hangi argümanın kullanılacağını söylemesek de koda bakarak derleyici bunun çıkarımını yapabiliyor.(deduction)
+- Bunun için farklı farklı araçlar var. Bu araçlardan biri "deduction". Derleyici koda bakarak siz template parametresi karşılığı hangi argümanın kullanılacağını 
+söylemesek de koda bakarak derleyici bunun çıkarımını yapabiliyor.(deduction)
 
-- İkinci yol, template parametreleri karşılığı kullanılacak template argümanlarının explicit olarak derleyiciye bildirilmesi. (Yani belirli bir sentaksla adeta derleyiciye diyeceğiz ki: derleyici ben senin çıkarım yapmanı istemiyorum, template parametreleri karşılığı şu türü ya da şu değeri vs. kullanabilirsin. diyoruz.)
+- İkinci yol, template parametreleri karşılığı kullanılacak template argümanlarının explicit olarak derleyiciye bildirilmesi. (Yani belirli bir sentaksla adeta derleyiciye 
+diyeceğiz ki: derleyici ben senin çıkarım yapmanı istemiyorum, template parametreleri karşılığı şu türü ya da şu değeri vs. kullanabilirsin. diyoruz.)
 
 C++17 den önce deduction mekanizması sadece fonksiyon şablonları için söz konusuydu, yani sınıf şablonları için deduction söz konusu değildi.
 
-CTAD ( Class Template Argument Deduction) belirli sınırlar dahilinde sınıf şablonlarında da template parametrelere karşılık gelen template argümanlarının çıkarımı yapılması olanağı kazandırıldı.
+CTAD ( Class Template Argument Deduction) belirli sınırlar dahilinde sınıf şablonlarında da template parametrelere karşılık gelen template argümanlarının çıkarımı 
+yapılması olanağı kazandırıldı.
+
 
 
 
