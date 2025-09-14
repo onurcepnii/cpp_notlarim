@@ -497,6 +497,20 @@ tür gönderirsek sentaks hatası olacak. yani int gönderirsek sentaks hatası.
 	
 	    return 0;
 	}
+########################
+ASLINDA ÇOK KOLAY - SONRADAN DÜZENLEME
+eğer T* ise:
+1) sadece pointer gönderebiliriz
+2) T için yapılan tür çıkarımı pointerin pointee'si türü yani gösterdiği nesnenin türü olur.
+yani diyelim ki bir int pointer gönderdik T için yapılan tür çıkarımı int olacak, daha sonra yanında bida * var zaten etti sana int*.
+
+eğer T** ise de mantık aynı:
+1) sadece pointer to pointer gönderebiliriz.
+2) T için yapılan çıkarım pointer to pointer'in gösterdiği nesnenin type ı olacak.
+
+########################
+
+
 
 ***********************
 
@@ -1103,5 +1117,6 @@ Eğer template'lerden biri diğerinin kabul ettiği bütün argümanları kabul 
 	örneğin int türden bir argüman için aşağıdaki template'den bir specialization oluşturmak mümnkün mü? hayır. üsttekinde mümkün ama.
 
 	dolayısıyla burada üstteki alttakine göre daha az spesifik.
+
 
 
