@@ -1,0 +1,832 @@
+***
+Eğer noexcept specifier kullanmazsak derleyicinin kullandığı fonksyion default olarak noexcept değil.
+
+***
+Eğer fonksiyonumuz, fonksiyonun constexpr olma koşullarını sağlıyorsa default olarak constexpr. (C++17 sonrası için geçerli)
+
+	int main()
+	{
+		auto f = [](int x) {return x * x;} # bu fonksiyon constexpr çünkü constexpr olma koşullarını sağlıyor.
+
+		constexpr auto val = f(10); # legal
+		int a[f(5)];	# legal çünkü f(5) ifadesi bir constexpr, eğer öyle olmasa sentaks hatası olurdu.
+	}
+
+
+Şimdi constexpr olma koşulunu çiğneyen bir durum oluşturalım..
+
+	int main()
+	{
+		auto f = [](int x){ 
+		static int cnt = 0;
+		return x * x; 	};
+
+		int a[f(5)]; # sentaks hatası, çünkü constexpr değil
+	}
+
+Örneğin yukarıda fonksiyonun constexpr olma koşulunu ihlal ettiğini görüyoruz. Burada bir sentaks hatası yok, sadece artık fonksiyonumuz constexpr function olmaktan çıktı.
+
+
+Peki neden constexpr specifier'ı kullanayım?
+- Çok basit, çünkü eğer specifier varken constexpr olma durumunu ihlal eden bir durum varsa kod geçersiz olacak, yani sentaks hatası olacak.
+
+	int main()
+	{
+		auto f = [](int x) constexpr{
+			static int cnt = 0;		# burada sentaks hatası veriyor.
+			return x * x; };
+		}
+	}
+
+Neden Trailing Return Type Kullanalım?
+--------------------------------------
+1) Mecburiyetten. Örneğin fonksiyonun içinde birden fazla return statement var fakat return statement'ların return expression ları farklı türden. Bu durum sentaks hatası oluşturuyor.
+
+	int main()
+	{
+		[](int x) {
+			if(x>10)
+				return 1;	# int
+			return 3.4;		# float
+		}
+	}
+
+yukarıda sentaks hatası var. işte bunu aşmak için "Trailing Return Type" kullanıyoruz.
+
+	int main()
+		{
+			[](int x) -> double{
+				if(x>10)
+					return 1;	# int
+				return 3.4;		# float
+			}
+		}
+
+
+işte şimdi biz her return ifadesi için geçerli olacak türü dikte etmiş olduk. çıkarımı iptal etmiş olduk. artık bir çıkarım yapılmayacak.
+
+
+Hatta örneğin şöyle bir fonksiyonumuz olsaydı:
+
+	int main()
+	{
+		[](int &x){
+			return x;
+		}
+	}
+
+return ifadesinin türü int olacaktı. Fakat eğer int& olmasını istiyorsak şöyle yapabiliriz;
+
+	[](int &x) -> int& { # veya auto& de kullanabiliriz tabiki.
+		return x;
+	}
+
+yani derleyiciye istediğimizi yaptırmak için trailing return type kullanabiliriz.
+
+
+
+
+Sınıfların üye fonksiyonları içinde kullanılan Lambda İfadeleri
+---------------------------------------------------------------
+Sınıfların üye fonksiyonları içinde kullanılan lambda ifadeleri de normalde bir fonksiyon. Onların da yine yerel değişkenleri kullanabilmesi için capture closure'a sahip olmaları gerekiyor. Fakat burada özel bir durum var: sınıfın veri elemanlarına erişim.
+
+
+	class Point{
+		void foo()
+		{
+			int x;
+			[]() {
+				return x * x; # 
+			}
+		}
+	};
+
+# : normalde böyle yapmak için x'i capture etmek gerekiyor. fakat this pointeri ile mümkün. Bunun için bizim this pointerini capture etmemiz gerekiyor.
+
+this pointerini capture etmek için şu yollar söz konusu olabilir;
+
+1) doğrudan this keywordünü capture closure olarak yazmak. Bu durumda this'i capture etmiş oluyoruz.
+	
+	class Point{
+		void foo()
+		{
+			int x;
+			[this]() {
+				return x * x; 
+			}
+		}
+	};
+
+
+
+DİKKAT:
+
+	class Point {
+	public:
+		void foo()
+		{
+			[self = *this]() {
+				self.mx = 5;	#ERROR
+			}
+		}
+		int mx{}, my{};
+	};
+
+Neden error? çünkü mutable olmadığı için. eğer şöyle yapsaydık;
+	
+	..
+	[self = *this]()mutable{
+		self.mx = 5;
+	};
+	..
+
+Legal olurdu.
+
+Ama C++ 17 ile şöyle bir ekleme getirildi;
+	
+	[*this](){
+
+	};
+
+yazarak doğrudan *this'i capture etmiş oluyoruz.
+
+
+ÖNEMLİ
+------
+
+class Point {
+public:
+	void foo()
+	{
+		[*this]() mutable{
+			mx++;
+			my++;
+		}();
+	}
+
+	int mx{}, my{};
+};
+
+int main()
+{
+	Point pt;
+
+	std::cout << pt.mx << pt.my << "\n"; # OUTPUT : 00
+	pt.foo();
+	std::cout << pt.mx << pt.my << "\n"; # OUTPUT : 00 
+
+}
+
+Neden ikinci output 11 olmadı? Çünkü buradaki mx ve my, Pt nesnesinin mx ve my'si değil. Kopyalama yolu ile capture ettiğimiz *this'in mx ve my'si.
+
+**
+eğer direk this'i capture edersek o zaman olur. [this]
+
+
+*this'i capture etmenin en önemli nedeni lambdanın kullanıldığı bazı durumlarda lambda nesnesinin yani closure object'in capture edilen nesnenin üstünde bir hayata sahip olması. yani böyle bir durumda dangling pointer oluşur.
+
+----------------------------------------------------------------
+
+this'i capture etmeye geri dönelim.
+
+
+	class Point{
+		void foo()
+		{
+			[=](){
+				mx++;
+				my++;
+			}
+		}
+	};
+
+	int main()
+	{
+		Point pt;
+		
+		std::cout << pt.mx << pt.my << "\n";	# 00
+		pt.foo();
+		std::cout << pt.mx << pt.my << "\n"; 	# 11
+	}
+
+burada da yine this'i capture etmiş oluyoruz. ve gördüğümüz üzere bu sayede mx ve my yi de değiştirdik.
+
+Fakat C++ 20 standardıyla bu durum sakıncalı görüldü ve this'in bu şekilde örtülü olarak capture edilmesi DEPRECATED ilan edildi.
+
+Yani artık this'i bu şekilde capture all by copy sentaksı ile capture etmemiz DEPRECATED.
+
+
+Diyelim ki görünen tüm nesneleri capture etmek istiyorum, this'i de capture etmek istiyorum diyoruz, bunun için artık önerilen sentaks da şu:
+
+	[=, *this](){
+
+	};
+
+Yani capture all by copy ama this' i de yine capture et anlamında.
+
+
+----------------------------------------------------------
+
+ÇOK İLGİNÇ BİR IDIOM
+
+Bir fonksiyon var, bu fonksiyon bir free function olabilir, bir sınıfın member function u olabilir static veya non static, fakat biz bu fonksiyonun kodu içinde bir kodun sadece bir kez yürütülmesini istiyoruz.
+
+	void foo()
+	{
+		static bool first_call_flag = true;
+
+		if(first_call_flag) {
+			// bir kez yürütülmesini istediğimiz code here
+			std::cout << "executed only once!\n"
+			first_call_flag = false;
+		}
+	}
+
+	int main()
+	{
+		for (int i = 0; i < 10; ++i) {
+			foo();
+		}
+	}
+
+fakat kod thread-safe değil. Yanlış anlaşılmasın static yerel değişkenlerin initialization'u thread-safe ancak if bloğundaki kod thread-safe değil. 
+
+Yani birden fazla thread bu fonksiyonun kodunu çalıştırdığında bizim istediğimizin olma garantisi yok.
+
+Aşağıda ki koda bakalım;
+
+	void foo()
+	{
+		static int _ { [] {std::cout << "executed only once!\n"; return 0;}()}
+	}
+
+Aslında burada _ isimli statik yerel değişkeni burada çağırdığım fonksiyonun geri dönüş değeri ile initialize ediyorum. 
+
+Yani aslında lambda fonksiyon yazdık ve yazdığımız yerde () ile çağırdık.
+
+iife idiom
+----------
+Zaten lambda function'u bulunduğu yerde çağırmanın başka dillerde de önemli bir idiom olduğunu biliyoruz. bu idioma genel olarak "iife" idiomu denir.
+
+"Immediatly Invoked Function Expression"
+
+
+Init. Assignment Split
+----------------------
+Bir değişken tanımlıyorsunuz. daha sonra buna değer vermek için atama yapıyorsunuz.
+
+	
+	int main()
+	{
+		std::string s;
+
+		s = foo();
+	}
+
+böyle kodlar çok kötü. 
+(1) bi kere okuyanı yanıltıyor.
+(2) eğer siz bu şekilde oluşturup burada kullanıyorsanız, bazı kaynakları boş yere tutuyor olabilirsiniz.
+(3) şüphesiz scope leakage oluşturuyor.
+
+bir de şöyle bir problem var. biz ilk satırda default ctor'u çağırıp, sonrada altında assignment fonksiyonunu çağırıyoruz. Yani iki tane ayrı kodu çalıştırabiliyoruz. Oysa bu doğrudan şu şekilde yazılabilirdi:
+	
+	std::string s = foo();
+
+Init. Assignment Split kötü birşey, bundan kaçınmakta fayda var :)
+
+Ama bazen programcı diyor ki init etmek için bir koşulum var o yüzden böyle yapıyorum. Fakat bunu yapmak yerine;
+
+	T tx = expr ? exp1 : expr3;
+
+Diyor ki fakat sadece koşul değil bazı hesaplamaları da içeriyor.. İşte o zaman imdadımıza "Immediatly Invoked Function Expression".
+
+Hatta zaten const olarak bu init. assignment split yapılamaz. Ama
+
+	{
+		a, b, c
+		const int x = [=](){	# bu değişkenlerin hepsini capture ettik
+			complex calculation
+		}();
+
+	}
+
+
+***
+C++ 20 Lambda ifadeleri için önemli eklemeler getirdi.
+
+	int main()
+	{
+		auto f1 = [](int x){return x*x;};
+		auto f2 = f1;		# Legal
+
+		decltype(f1) f2;	# C++20 öncesi sentaks hatası
+		f1 = f2;			# C++20 öncesi sentaks hatası
+	}
+
+C++20 standardıyla stateless lambdaların artık default ctor'u ve copy assignment'ı deleted değil. 
+
+C++20'den önce stateless lambda olsa da default ctorların ve copy assignment'ın deleted olması.
+
+Not: Bir Lambda ifadesi
+	(a) stateless lambda
+		herhangi bir ifadeyi capture etmeyen, yani bir capture'a sahip olmayan.
+	
+	(b) stateful lambda dır.
+		bir ifadeyi capture eden.
+
+
+
+NOT:
+
+	class A{};
+	class B{};
+	class C{};
+
+	class Der : public A, B, C {};
+
+	burada A,B ve C den public kalıtımı mı var?
+	Hayır sadece A dan public kalıtım, B ve C private kalıtım.
+
+
+---------------------------
+
+	class A{
+	public:
+		void foo(int);
+	};
+
+	class B{
+	public:
+		void foo(double);
+	};
+
+	class C{
+	public:
+		void foo(char);
+	};
+
+	class Der : public A, public B, public C {
+	public:
+
+	};
+
+	int main()
+	{
+		Der myder;
+		myder.foo 	#
+	}
+
+Çoklu taban sınıflar arasında bir öncelik ilişkisi yok, o yüzden ambiguity var.
+
+Peki buradaki isimleri türemiş sınıf scope'una enjekte etmek için using bildiriminden faydalansam?
+
+	class Der : public A, public B, public C{
+	public:
+		using A::foo;
+		using B::foo;
+		using C::foo;
+	};
+
+Artık sentaks hatası olmaz, çünkü artık bu function overloading.
+
+
+-----------------------------------------------
+	
+	class A{
+	public:
+		void foo(int);
+	};
+
+	class B{
+	public:
+		void foo(double);
+	};
+
+	class C{
+	public:
+		void foo(char);
+	};
+
+	template <typename T>
+	class Der : public T {
+		
+	};
+
+yani istediğimiz bir sınıfı Der'in base class'ı yapabiliyoruz.
+
+Der<A>
+
+peki şöyle yapsak..
+
+	class A{
+	public:
+		void foo(int);
+	};
+
+	class B{
+	public:
+		void foo(double);
+	};
+
+	class C{
+	public:
+		void foo(char);
+	};
+
+	template <typename ...Ts>
+	class Der : public Ts... {
+		
+	};
+
+	int main()
+	{
+		Der<A, B, C> myder; # çoklu kalıtım ile A,B,C sınıflarını base class olarak alacak.
+
+		myder.foo(12); # sentaks hatası, o zaman using bildirimini bütün taban sınıflar için yapalım ve overloading olsun.
+	}
+
+
+peki bunu yapalım..
+	
+	template <typename ...Ts>
+	class Der : public Ts... {
+	public:
+		using Ts::foo...;
+	};
+
+
+
+------------------------------------
+
+	template <typename T>
+	class Myclass {
+	public:
+		Myclass(T);
+	};
+
+	int main()
+	{
+		Myclass<int> m1(12); # aşağıdaki kod ile aynı çünkü CITAD
+		Myclass m1(12);
+	}
+
+yani template argümanını yazmadan, sınıfın ctoruna gönderilen argüman ya da argümanlardan hareketle derleyicinin sınıf şablonundaki template parametresine karşılık gelen template argümanı için bir deduction yapmasını sağlayabiliyoruz -> CITAD
+
+------------------------------------
+
+
+	auto f1 = [] {};
+
+	class Myclass : public decltype(f1) { #
+
+	};
+
+	# : burada neden sentaks hatası olmuyor? - f1 de bir sınıf. Lambda closure type'ların taban sınıf olarak kullanılmasını engelleyen herhangi bir sentaks kuralı yok. Yani legal.
+
+
+
+------------------------------------
+
+MultiLambda İdiom
+-----------------
+
+	template <typename ...Ts>
+	class Der : public Ts... {
+	public:
+		using Ts::operator()...;
+	};
+
+	auto f1 = [](){};
+	auto f2 = [](){};
+	auto f3 = [](){};
+
+	int main()
+	{
+		Der<decltype(f1), decltype(f2), decltype(f3) > myder;
+	}
+	
+
+bütün bu sentaks araçlarını birleştirirsek...
+
+	template <typename ...Ts>
+	class MultiLambda : public Ts... {
+	public:
+		using Ts::operator()...;
+	};
+
+
+	int main()
+	{
+		MultiLambda mlx {
+			[](int){std::cout << "int";},
+			[](double){std::cout << "double";},
+			[](char){std::cout << "char";},
+			[](auto){std::cout << "other types:";},
+		};
+
+		mlx(12); 	#int argüman gönderdik, ilk fonksiyon
+		mlx(1.2);	#double argüman gönderdik, ikinci fonksiyon
+		mlx('s');	#char argüman gönderdik, üçüncü fonksiyon
+		mlx(4.5f); 	#other types
+	}
+
+
+------------------------------------------------------------------------
+
+
+	int main()
+	{
+		auto f = [](int x) {return x + 3;};
+
+		f(12);				#böyle yazmak yerine aşağıdaki gibi yazabiliyoruz.
+		f.operator()(5); 	#
+
+		f.operator()<double>(4.5); ##
+	}
+
+## : dikkat burada f.operator<double>()(4.5) yazmak sentaks hatası, çünkü fonksiyonun ismi operator() yani isminden sonra yazmamız lazım.
+
+
+Ara bilgi
+Partition Ne Demek?
+------------------
+bir range'i belirli özelliği sağlayanlar ve sağlamayanlar olarak ikiye ayırmak demek.
+
+örneğin elimizde bi tamsayı vektörü var, çift olanları başa, tek olanları sola almak istiyoruz gibi.
+
+böyle algoritmalar bizden koşulu istiyor.
+
+
+
+Transform Algoritması
+---------------------
+Transform algoritmasının 2 tane önemli overload'u var.
+
+
+
+
+01.46
+
+-------------------------------------
+
+	vector ivec {3,4,5,3,6,2}; // CTAD sayesinde cpp17 sonrası <int> yazmasak da böyle yazabiliyoruz, just reminding
+	
+	list<int> ilist;
+
+	copy(ivec.begin(), ivec.end(), ilist.begin()); // ub
+
+Peki burada neden UB var? Çünkü ilist'de öğe yok ki. dolayısıyla burada tanımsız davranış var.
+
+Neden UB var?
+ilist boş bir liste, yani içinde 0 eleman var.
+ilist.begin() bor bir liste için geçerli bir iteratör döndürür, ancak yine de bu iteratör listenin hiçbir elemanına işaret etmez. sadece listenin başındaki konumu temsil eder.
+
+Ama şimdi burada ilginç birşey yapacağız.
+
+	vector ivec {3,4,5,3,6,2};
+	
+	list<int> ilist;
+
+	copy(ivec.begin(), ivec.end(), back_inserter(ilist)); // ub
+
+burada UB'yi ortadan kaldırmış olduk. Peki nasıl?
+back_inserter kullanarak.
+
+kendimiz de yazabiliriz.
+
+	#include <iostream>
+	#include <string>
+	#include <vector>
+	#include <list>
+
+	template <typename InIter, typename OutIter>
+	OutIter Copy(InIter beg, InIter end, OutIter destbeg)
+	{
+		while (beg != end) {
+			*destbeg++ = *beg++;
+		}
+		return destbeg;
+	}
+
+	template <typename C>
+	class BackInsertIterator {
+	public:
+		BackInsertIterator(C& con) : mr(con) {}
+		BackInstertIterator& operator=(const typename C::value_type& elem)
+		{
+			mr.push_back(elem);
+			return *this;
+		}
+		BackInsertIterator& operator*()
+		{
+			return *this;
+		}
+		BackInsertIterator& operator++()
+		{
+			return *this;
+		}
+		BackInsertIterator& operator++(int)
+		{
+			return *this;
+		}
+	private:
+		C& mr;
+	};
+
+	int main()
+	{
+		using namespace std;
+
+		vector ivec{ 3,4,5,3,6,2 };
+
+		list<int> ilist;
+
+		BackInsertIterator<list<int>> iter(ilist);
+
+		Copy(ivec.begin(), ivec.end(), iter);
+
+	}
+
+back_inserter, front_inserter, inserter
+bu üç fonksiyon da çalışır. back sona ekler, front önden ekler.
+
+back_inserter sizden bir container nesnesini alıp yazma algoritmasında kullandığınız zaman yazma işlemini bağlandığı container'ın push_back() fonksiyonuna 
+front_inserter ise push_front() fonksiyonuna, 
+inserter ile insert() fonksiyonuna yapılan çağrıya dönüştürür.
+
+**
+backinsertiterator, frontinsertiterator, insertiterator sınıflarına iteratör adaptörleri deniyor.
+back_inserter, front_inserter, inserter aslında fabrika fonksiyonları.
+
+
+39.video son kısımları tekrar izle, son 1 saat
+	
+
+BU KOD ÖZELLİKLE ÇOK ÖNEMLİ.
+COPY FONKSİYONU KULLANARAK BİR VECTORU STREAME YAZDIRDIK
+
+	template <typename InIter, typename OutIter>
+	OutIter Copy(InIter beg, InIter end, OutIter destbeg)
+	{
+		while (beg != end) {
+			*destbeg++ = *beg++;
+		}
+		return destbeg;
+	}
+
+	template <typename T>
+	class OstreamIterator {
+	public:
+		OstreamIterator(std::ostream& os, const char* p = " ") : m_os{ os }, msep{ p } {}
+		OstreamIterator& operator++()
+		{
+			return *this;
+		}
+
+		OstreamIterator& operator++(int)
+		{
+			return *this;
+		}
+
+		OstreamIterator& operator*()
+		{
+			return *this;
+		}
+
+		OstreamIterator& operator=(const T& val)
+		{
+			m_os << val << msep;
+			return *this;
+		}
+
+	private:
+		std::ostream& m_os;
+		const char* msep;
+
+	};
+
+
+	int main()
+	{
+		using namespace std;
+
+		vector ivec{ 3,4,5,3,6,2 };
+
+		list<int> ilist;
+
+		Copy(ivec.begin(), ivec.end(), OstreamIterator<int>{cout, "\n"});
+
+
+	}
+
+----------------------------------------------------------
+
+Belirli fonksiyonlar var ki bu fonksiyonlar iteratörler ile  ilgili işlem yapıyorlar.
+
+Yani bu fonksiyonların amacı iteratörleri bir şekilde manipüle etmek.
+
+Bunlarda STL'in öğeleri.
+
+ITERATOR FONKSİYONLARI
+----------------------
+-advance
+-distance
+-iter_swap
+--modern cpp ile eklenenler aşağıdaki iki tane--
+-next
+-prev
+
+
+bunların hepsi fonksiyon şablonları. bunlar iteratörleri argüman olarak alıyorlar.
+
+advance
+-------
+İteratör fonksiyonu. bir iteratörü n pozisyon ileri almak ya da n pozisyon geri almak için kullanırız. tabi geri almak için en az bidirectional iteratör olması lazım.
+
+Elimizde bir iteratör var diyelim ve biz bu iteratörü arttırmak istiyorsak şöyle bir problemimiz var, eğer iteratörümüz random access iteratör ise aslında iter += 3 gibi bir işlemi yapabiliriz. pointer interface ile tamamen aynı. 
+
+ama eğer bu random access iterator değilse, örneğin bidirectional iterator ise o zaman += işlemi yok.
+
+o zaman döngüsel bir yapıda iteratörü arttırmak gerekiyor.
+	
+	while(n--)
+		++iter;
+
+yani toparlayacak olursak algoritmalar generik olduğuna göre bizim bir algoritmada bir iteratörü n pozisyon arttırmamız gerektiğinde eğer kodu iter += 3 şeklinde yazarsak bu sadece random access iteratorler için geçerli olur. eğer while' ile yukarda ki gibi yazarsak hepsi için geçerli olur fakat random access iterator ler için gereksiz bir maliyet söz konusu olur.
+
+Öyle bir implementasyon yapmalıyız ki, compile time'da iteratörün kategorisine bakarak bu yukarıdaki iki koddan birine dönüşümü sağlamalı.
+
+İşte advanced bunu yapıyor!
+
+	using namespace std;
+
+	vector<int> ivec{ 3 ,4 ,2, 6, 7,4, 7,3 };
+	list<int> ilist{ 3 ,4 ,2, 6, 7,4, 7,3 };
+
+	auto veciter = ivec.begin();
+	auto listiter = ilist.begin();
+
+	advance(veciter, 3);
+	advance(listiter, 3);
+
+	cout << *veciter << "\n";
+	cout << *listiter << "\n";
+
+
+hatta -3 bile geçebiliriz argüman olarak.
+
+
+distance
+--------
+iki parametreli bir fonskyion. iki tane iteratörü alıyor. 
+birinci argüman olarak gönderdiğimiz iteratör konumundan ikinciye varmak için kaç arttırmamız gerekiyor aradaki mesafeyi buluyor.
+
+negatif değer söz konusu değil, o yüzden hata olmaması için ilk konumdan ikincisine varılabilmesi gerekiyor.
+
+
+	using namespace std;
+
+	vector<int> ivec{ 3 ,4 ,2, 6, 7,4, 7,3 };
+	list<int> ilist{ 3 ,4 ,2, 6, 7,4, 7,3 };
+
+	auto iter = find(ivec.begin(), ivec.end(), 9);
+
+	cout << distance(ivec.begin(), iter) << "\n";
+
+
+iter_swap
+---------
+iki tane iteratör konumunu alıyor ve bu iteratör konumundaki nesneleri takas ediyor.
+
+next
+----
+advanced iteratörü arttırıyor ama next aldığı iteratör konumundan n uzaklıktaki konumu döndürüyor. yani iteratörün kendisini mutate etmiyor set etmiyor.
+
+	next(ivec.begin(), 3);
+
+bu ifade yine bir iteratör döndürecek ama bu iteratör konumu ivec.begin() yani ilk argümandan 3 uzaklıktaki konum.
+
+bunu yazmak yerine ivec.begin() + 3 de yazabilir miydik? evet ama sadece random access iterator kategorileri için. fakat next ile yapınca bunu generic hale getiriyor.
+
+bu fonksiyonun ikinci parametresi de default argument olarak 1 değerini alıyor.
+
+dolayısıyla sadece next(ilist.begin()) dersek bu konumdan bir sonraki konumu döndürecek.
+
+prev
+----
+next'in tersi. 
+
+	prev(ilist.end(), 3)
+
+ilk argümandan 3 geriye döndürür. default argument olarak o da 1 değeri alıyor.
+
+
+STL kullanımında ciddi bir fayda sağlıyor bu fonksiyonlar.
+mesela bir container'da ki son öğenin konumunu elde etmek içiN;
+
+	prev(ilist.end());
+
+direk listedeki son öğenin konumunu elde etmiş oluyoruz.
+
+ilist.end() yazınca son öğreden bir sonraki konumu alıyor. e öyleyse de -1 yazarım? ama bu sefer de minimum bidirectional iterator kategorisinde olması lazım.  en temizi prev ile yapmak. bunlar zaten generic olduğu için compile time da bu iteratör kategorilerine göre otomatik kendilerini ayarlıyorlar.
+
