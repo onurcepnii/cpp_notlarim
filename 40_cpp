@@ -1,0 +1,554 @@
+Kopyalama Fonksiyonları
+-----------------------
+copy
+copy_n
+copy_if
+
+copy_if
+-------
+	cout << "uzunlugu kac olanlar kopyalansin?";
+	cin >> len;
+
+	copy_if(svec.begin(), svec.end(), back_inserter(destvec), [len](const string& s){return s.length() == len; });
+
+	copy(destvec.begin(), destvec.end(), ostream_iterator<string>{cout, " "});
+
+copy_n fonksiyonu
+-----------------
+birinci parametresi kaynak range in başlangıcı, ikinci parametresi kaç tane öğe kopyalanacağı (n), üçüncü parametre hedef range.
+
+	copy_n(svec.begin(), svec.size(), slist.begin());
+	// svec.size() ile hepsini yazma talimatı verdik
+
+back_inserter, front_inserter veya inserter fonksiyonlarını kullanarak listeye sondan eklemeye dönüştürebilirdik veya baştan eklemeye.
+
+copy_backward
+-------------
+	using namespace std;
+
+	vector<int> ivec{ 1, 3, 5, 7, 9 };
+	vector<int> destvec(7); // 7 tane 0 ile doldurur
+
+	copy_backward(ivec.begin(), ivec.end(), destvec.end());
+
+	//OUTPUT : 0 0 1 3 5 7 9
+
+reverse
+-------
+
+	using namespace std;
+	vector ivec{ 2,3,6,7,8,1,2,9 };
+	list ilist{ 2,3,6,7,8,1,2,9 };
+	string name{ "onur cepni" };
+
+	const auto print = [](const auto& c) {
+		for (const auto& e : c)
+			cout << e << ' ';
+		cout.put('\n');
+		};
+
+	print(ivec);
+	reverse(ivec.begin(), ivec.end());
+	print(ivec);
+	// normalde list için reverse fonksiyonu çağırmazdık. çünkü list in kendi reverse fonksiyonu var. ama örnek için yaptık.
+
+	print(name);
+	reverse(name.begin(), name.end());
+	print(name);
+
+
+reverse_copy
+------------
+
+	using namespace std;
+	vector ivec{ 2,3,6,7,8,1,2,9 };
+	std::deque<int> dq(ivec.size());
+
+	reverse_copy(ivec.begin(), ivec.end(), dq.begin());
+
+	// range'in kendisini değil tersini kopyalar
+
+replace
+-------
+
+	using namespace std;
+	vector<int> ivec{2, 3, 2, 1, 3, 4, 3, 4, 5};
+
+	replace(ivec.begin(), ivec.end(), 3, -1); // tüm 3'lerin yerine -1 koyar
+
+replace_if
+----------
+replace_if ise bir koşulu sağlayanları bir değer ile değiştiriyor, replace ediyor.
+
+	int n = 3;
+	int val = -1;
+	replace_if(ivec.begin(), ivec.end(), [n](int i){return i % n == 0;}, val);
+
+3'e bölünenleri -1 ile replace eder.
+
+
+replace_copy
+------------
+diğer örneklerde olduğu gibi işlemi range'in üzerinde yapmak yerine yapılmış biçimini bir yere kopyalıyor.
+	
+	replace_copy(ivec.begin(), ivec.end(), dvec.begin(), 2, 9);
+
+replace_copy_if
+---------------
+	
+	replace_copy_if(ivec.begin(), ivec.end(), dvec.begin(), [](int x){return x % 3 == 0;}, -1);
+
+
+önemli
+******
+Soru: Herhangi bir algoritma bir range'i alıp o range'in sahibi olan container'a ekleme işlemi yapabilir mi?
+
+Cevap: hayır. çünkü algoritmalar iteratör parametresine sahip.
+Fakat ekleme yapmak için container nesnesinin kendisine ihtiyaç var. 
+
+Ancak bir container'i referans semantiği ile alan bir fonksiyon o container'in ekleme fonksiyonunu çağırabilir.
+
+Aynı şey silme işlemleri için de geçerli. Bir algoritma bir range'den öğe silemez.
+
+
+
+Ama STL'de remove algoritmaları var.
+
+-remove
+-remove_if
+-unique
+
+
+unique
+------
+ardışık eşdeğer öğelerin sayısını 1'e indiriyor.
+
+// 3 3 5 5 7 9 9 9 2 2 2 1 1 6 3 3
+// 3 5 7 9 2 1 6 3
+
+önce sıralayıp sonra unique hale getirseydik her değerden 1 tane kalırdı.
+
+remove
+------
+Yukarda algoritmalar container'ı argüman olarak almadıkları için silme ve ekleme işlemleri yapamaz dedik, peki bu nasıl oluyor?
+lojik silme yapıyor.
+
+// 8 2 4 2 7 5 2 1 2 9 2 1
+// remove(c.begin(), c.end(), 2)
+// 8 4 7 5 1 9 1 * ? ? ? ?
+
+std::remove fonksiyonu, belirttiğin aralıkta (örneğin c.begin() ile c.end() arasında) gezerek, silinmesini istemediğin tüm elemanları aralığın başına doğru kopyalar/taşır.
+
+std::remove fonksiyonu, elemanların yeniden düzenlenmesinden sonra, yeni mantıksal aralığın sonunu işaret eden bir yineleyici (iterator) döndürür.
+
+Bu yineleyici, silinmek istenen elemanların başladığı noktadır. Artık bu noktadan sonraki elemanlar, "silinmiş" kabul edilir (ama fiziksel olarak hala oradadırlar).
+
+	using namespace std;
+	vector ivec{ 2,3,6,7,8,1,2,9, 2, 9, 3, 2, 1,2, 3,5,4,0 };
+	int i;
+	cout << "enter the value to remove: ";
+	cin >> i;
+
+	cout << "size = " << ivec.size() << "\n";
+
+
+	copy(ivec.begin(), ivec.end(), ostream_iterator<int>(cout, " "));
+
+	auto logic_end_iter = remove(ivec.begin(), ivec.end(), i);
+	cout << "size = " << ivec.size() << "\n";
+
+	copy(ivec.begin(), logic_end_iter, ostream_iterator<int>(cout, " "));
+
+
+Silinmemiş ögelerin sayısını bulmak istersek;
+	
+	cout << distance(vec.begin(), logic_end_iter);
+
+Şimdi gerçek silme işlemi yapalım.
+
+
+	ivec.erase(logic_end_iter, ivec.end());
+	cout << "size = " << ivec.size() << "\n";
+
+bu sefer gerçekten sildiğimiz için container'ın size'ı da değişecek, azalacak.
+
+
+erase-remove idiomu ve std::erase() global fonksiyonu
+-----------------------------------------------------
+eğer amacım sadece o değerleri container'dan çıkartmaksa, geri dönüş değerini bir değişkende tutmak ile vs. hiç ilgilenmeden önce remove çağırıp onu da container'in erase fonksiyonuna argüman olarak göndeririz.
+
+	vec.erase(remove(vec.begin(), vec.end(), i), vec.end());
+
+fakat bunu daha da sadeleştirdiler ve direk global erase fonksiyonu eklediler.
+
+	auto n = std::erase(vec, i);
+
+	cout << n << "elems erased.\n";
+
+fonksiyonun geri dönüş değeri de silinen öğe sayısı.
+erase için konuştuğumuz herşey erase_if için de geçerli.
+
+	auto n = erase_if(svec, [c](const string& s){
+		return s.contains(c); //c++23
+	});
+
+
+unique
+------
+aşağıdaki şekilde de yapabiliyoruz, koşulu biz yazdık.
+
+	using namespace std;
+
+	vector<int> ivec{ 2, 3, 5,1 ,2, 1 , 1, 2, 3, 4, 3, 1, 3, 3, 2, 2, 1, 2, 4,2,1,3, 2,1,3,1,2 };
+
+	const auto fpred = [](int x, int y) {
+		return x % 2 == y % 2;
+		};
+	copy(ivec.begin(), ivec.end(), ostream_iterator<int>{cout, " "});
+	ivec.erase(unique(ivec.begin(), ivec.end(), fpred), ivec.end());
+
+	cout << "\n";
+	copy(ivec.begin(), ivec.end(), ostream_iterator<int>{cout, " "});
+
+////////////
+
+	sort(ivec.begin(), ivec.end());
+	ivec.erase(unique(ivec.begin(), ivec.end()),ivec.end());
+
+////////////
+
+Mülakat sorusu:
+
+	using namespace std;
+
+	string s;
+	std::cout << "enter a string: ";
+	getline(cin, s);
+
+	cout << "[" << s << "]\n";
+
+burada fonksiyona input olarak : ______bugun_____hava_____cok____guzel
+
+veriliyor.(_'yi boşluk olarak kabul edelim, gösterebilmek için öyle yazdım.)
+
+bizden istenen ise arka arkaya iki tane boşluk olmayacak. aslında string sorusu gibi gözüksede bunu unique ile çözeriz.
+
+
+Çözümü:
+
+
+	using namespace std;
+
+	string s;
+	std::cout << "enter a string: ";
+	getline(cin, s);
+
+	cout << "[" << s << "]\n";
+
+	s.erase(unique(s.begin(), s.end(), [](char c1, char c2) {
+		return std::isspace(c1) && std::isspace(c2);
+		}), s.end());
+
+	copy(s.begin(), s.end(), ostream_iterator<char>{cout});
+
+
+ardışık 2 tane boşluk olduğunda siliyoruz. bu şekilde bu problemi de çözmüş olduk.
+
+
+
+STL Containers
+--------------
+STL Container'ları veri yapılarını implemente eden sınıflardır.
+
+sequence containers
+-vector
+-deque
+-list
+-forward_list
+-string
+-array
+
+associative containers
+-set
+-multiset
+-map
+-multimap
+
+unordered associative containers
+-unordered_set
+-unordered_multiset
+-unordered_map
+-unordered_multimap
+
+sequence container grubunda öğelerin bir sırası var. yani soyutlanmış bir indeks kavramı var. burada bahsettiğimiz bunların contigious, yani arka arkaya olması değil. lojik olarak bir indeks var. ve ekleme işlemleri istediğimiz bir konuma yapılabiliyor.
+
+associative container'larda ekleme değer ile yapılır. biz sadece değeri veririz container o değerin ekleneceği yeri kendi biliyor. container'ın iç düzeni  karşılaştırmaya dayalı bir sıraya göre.
+
+vector
+------
+vector aslında dinamik dizi türü. dinamik dizide öğeler allocate edilmiş bir bellek bloğunda contigious ve bir kapasite kavramı var. size ve kapasite kavramı var. kapasite allocate edilmiş bellek bloğunda tutulabilecek öğe sayısı, size ise tutulmakta olan öğe sayısı. size kapasiteye eşit olduğunda yeni bir insertion için yer yok, reallocation olmak zorunda. 
+
+index ile erişim constant time'da olur.
+sondan silme işlemleri constant time,
+sondan ekleme işlemleri amortised constant time.
+
+Soru: elinizde bir container var(mycontainer) ve sizden istenen işi aşağıdaki iki şekilde de yapabiliyorsunuz;
+
+	algo(mycontainer.begin(), mycontainer.end());
+	mycontainer.dothis(?????);
+
+ikisi de aynı işi yapıyor. hangisini tercih edersiniz, algoritmayı mı container'ın üye fonksiyonunu mu?
+
+Cevap: tabi ki container'ın üye fonksiyonu.
+
+Nedeni şu: algoritma iteratör ile işlemi yapıyor dolayısıyla container'ın içsel implementasyonuna erişme imkanı yok. ama container'in üye fonksiyonu container'in iç organlarını kullanabiliyor.
+
+üye fonksiyonu çağırmak, eğer çok özel bir durum yoksa, genelde diğer alternatife göre daha iyidir.
+
+
+---------------------
+
+vector
+------
+DİKKAT
+******
+vector<bool> açılımına dikkat. bu içinde bool tutan bir vector değil. bu bir partial specialization. fiilen bool tutmuyor.
+******
+
+template <typename T, typename A = std::allocator<T>> 
+
+////
+
+container sınıfların size fonksiyonu, container'da tutulmakta olan öğe sayısını döndürüyor. 
+
+ve bu fonksiyonun her zaman geri dönüş değeri bir nested type olan size_type. size_type ise vector için string için size_t türünün eş ismi. işaretsiz bir tamsayı türü.
+
+vector<int> vec;
+vec.size()	// container'da tutulmakta olan öğe sayısını döndürür.
+
+vec.capacity() // kapasite değeri döndürür. bunun da geri dönüş değeri türü size_type
+
+vec.empty() // container boş mu sorusuna cevap veriyor.
+
+birçok programlama dilinde empty fonksiyonu make_empty anlamında sıfırlamak üzere fakat bizim STL'de is_empty anlamında empty olup olmadığını sorgulamak üzere.
+
+----------------------------
+
+modern c++ container semantiğinde önemli değişiklikler yaptı. daha önce move semantics yoktu. container'lar kopyalama semantiğine göre çalışıyordu.
+
+artık container'ların ekleme fonksiyonlarının move overloadları var. 
+
+örneğin şöyle gösterebiliriz:
+
+	class SVector {
+	public:
+		void push_back(const std::string&);
+		void push_back(std::string&&);
+	};
+
+bu bütün container'ların bütün insert fonksiyonları için bu şekilde.
+
+r value exp. verirsek taşıma semantiği ile container'a eklenecek, l value exp. verirsek kopyalama semantiğinden faydalanılacak.
+
+//////
+modern c++'ta önemli bir başka yenilik ise container'ların emplace fonksiyonları.
+
+içinde emplace fiili geçen fonksiyonlar container'ın tutacağı nesneyi oluşturmak için ne sınıfın copy ctorunu ne move ctorunu çağırıyorlar. kendilerine gönderilen argümanları perfect forwarding mekanizması ile sınıfın ctoruna geçiyorlar.
+
+artık container'a öğe eklemek için öğelerin copy constructible olması zorunluluğu yok. 
+a) move ctor ile öğeler containerın sağladığı bellek alanında oluşturulabilir
+b) emplace fonksiyonları vasıtası ile doğrudan öğenin ctoruna emplace fonksiyonlarına geçilen argümanlar perfect forward edilebilir.
+
+01.50
+
+constructor grubu
+-----------------
+bu ctor grubu bütün sequence container'lar için nerdeyse ortak.
+
+	vector<int> ivec;
+	vector<int> ivec2{};
+
+iki durumda da default ctor çağırılır. default ctor size'ı 0 olan bir vector oluşturur. 
+
+**
+bir container boşsa, onun iterator veren fonksiyonlarını çağırmakta bir engel yok. hiçbir şekilde UB değil.
+	
+	auto beg = ivec.begin();
+	auto end = ivec.end();
+
+boş bir container'in iteratörünü dereference etmek UB. boş ya da dolu herhangi bir vectorun end() fonksiyonunun verdiği iteratörü dereference etmek her zaman için UB.
+
+Vector'un iteratorleri "random access iterator". ve daha sonra C++ 20 ile "contigious iterator". 
+
+
+	begin()
+	end()		---> normal iterator döndürürler
+
+	cbegin()
+	cend()		---> const iteratör döndürürler
+
+	rbegin()
+	rend()		---> reverse iteratör döndürür. fakat iteratör 
+					 kategorisinin en az bidirectional iteratör kategorisinde olması lazım.
+
+	crbegin()	---> const reverse iteratör döndürürler.
+	crend()
+
+
+constructorlar
+--------------
+	
+	vector<int> ivec(10);
+
+size_t parametreli ctor çağırılır. value initialize edilir.
+
+	int ival = 56;
+
+	vector<int> vec1{10, ival};
+	vector<int> vec2(10, ival);
+
+	cout << "vec1.size() = " << vec1.size() << '\n';
+	cout << "vec2.size() = " << vec2.size() << '\n';
+
+initializer_list parametreli ctor seçiliyor küme parantezi ile yazdığımızda. o yüzden o çağırılıyor.
+
+**
+
+	using namespace std;
+	list<int> mylist;
+	///
+	vector<int> ivec = mylist; // error
+
+böyle bir dönüşüm yok. Ancak range constructor bu işi görüyor.
+
+	using namespace std;
+	list mylist{3, 5, 7, 9, 2};
+	vector<int> ivec{mylist.begin(), mylist.end()};
+
+bu template olduğu için container'da ki öğelerin de aynı türden olması da gerekmiyor. önemli olan birbirine atanabilmesi.
+
+Bir container'i başka bir container'la başlatabiliyor muyum? hayır. ama range ctor kullanarak bunu yapabiliyoruz.
+
+**ÖNEMLİ**
+
+	using namespace std;
+
+	list mylist {3,6,1,2,3,4};
+	vector ivec{mylist.begin(), mylist.end()};
+
+	for(auto x : ivec)
+		std::cout << x << " ";	// ERROR
+
+bu kod hata verecek. çünkü CTAD'dan dolayı. explicit olarak türü yazmadığımız için CTAD burada iteratör olarak çıkarımı yapıyor. 
+
+
+////////////////
+
+vectordeki ilk öğenin adresini kullanmak istiyorum.
+
+	using namespace std;
+
+	vector<int> ivec{3, 6, 9, 1, 6, 6};
+
+	ivec.data(); // vectordeki ilk öğenin adresini verir
+
+	veya şöyle de yapabiliriz;
+
+	&*ivec.begin(); // begin ilk elemanın iteratörünün döndürür. derefence ettiğimde nesneye erişmiş olurum. tekrar adres operatörü ile adresini alabilirim.
+
+
+Sequence containerların front() isimli fonksiyonu container'da tutulan ilk öğeye, back isimli fonksiyonu container'da ki son öğeye referans döndürüyor.
+	
+	&ivec.front(); // ilk öğenin adresi
+
+-------------------------------------------------------
+
+vector member functions
+-----------------------
+
+.append_range()
+STL genelde append fiilini sondan ekleme anlamında kullanıyor. buradaki range, ranges konsepti ile alakalı.
+
+.assign()
+atama fonksiyonu ama özel.
+
+.assign_range()
+range parametreli ama range konsepti anlamında assign fonksiyonu.
+
+.at()
+index/subscript operatör fonksiyonu ile aynı işi yapıyor. tek farkı onlarda index geçersiz olduğunda exception gönderilmemesi fakat .at() fonksiyonunda exception gönderilmesi.
+
+.back()
+container'da ki son öğeye erişim sağlıyor.
+
+.capacity()
+kapasiteyi get eden fonksiyon
+
+.clear()
+array hariç bütün container'larda var. container'da ki tüm öğeyi silen fonksiyon
+
+.data()
+dizinin ilk elemanının adresini döndürür
+
+.emplace()
+insert anlamında. ama insertten farklı olarak(bütün container'lar için geçerli) öğeyi oluşturacak ctor'a gönderilecek argümanları alıp onları perfect forward ederek container'da ki nesneyi oluşturuyor.
+
+.erase()
+container'ların iki tane erase fonksiyonu var. birisi, bir iterator konumunu alıp o iterator konumdaki öğeyi silen. diğeri, iki tane iterator alıp o range'de ki öğeleri silen.
+
+.front()
+ilk öğeye referans döndürür
+
+.get_allocator()
+vector'un kullandığı allocator'u get ediyor. yani geri dönüş değeri ile iletiyor
+
+.insert()
+verilen bir konuma yeni bir öğe ekliyor
+
+.insert_range()
+verilen bir konuma bir range'i ekliyor
+
+.max_size()
+container'da tutulabilecek max öğe sayısını döndürür
+
+.pop_back()
+son öğeyi silmek için
+
+.push_back()
+sondan ekleme yapmak için
+
+.reserve()
+kapasiteyi rezerve eden fonksiyon
+
+.resize()
+container'in size'ını değiştiren fonksiyon
+
+.shrink_to_fit()
+fazladan kullanılmayan kapasiteyi geri vermek için çağırılır
+
+.size()
+container'da ki öğe sayısını döndürür
+
+.swap()
+iki container'i swap eden fonksiyon. container'ların hem kendi swap fonksiyonu var hemde generic swap fonksiyonu ile container ları swap edebiliriz. ikisi de container'ın implementasyonundaki pointerları kullanarak swap yapıyor.
+
+------------------------------------
+
+using namespace std;
+
+vector<string> svec{"onur","ahmet","mehmet"};
+
+auto iter = svec.end();
+
+cout << *(iter + 2) << "\n";
+cout << *next(iter) << "\n";
+cout << *next(iter + 3) << "\n";
+
+cout << *prev(iter) << "\n";
+
+svec.front() += "naz";
+svec.back()  += "gul";
+
+
+
+
