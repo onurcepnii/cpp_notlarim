@@ -8,7 +8,8 @@ Contigious memory gerektiriyor.
 Kapasite kavramı var.
 
 
-Size, Capacity'e eşit olduğu zaman bir insertion talebi geldiğinde insertion ne noktadan yapılırsa yapılsın yer yok ve kapasite artacak. Vector bunu kendisi sağlıyor. Büyüme gerektiği anda reallocation olacak.
+Size, Capacity'e eşit olduğu zaman bir insertion talebi geldiğinde insertion ne noktadan yapılırsa yapılsın yer yok ve kapasite artacak. Vector bunu kendisi sağlıyor. 
+Büyüme gerektiği anda reallocation olacak.
 Reallocation yapılınca size kaç katına çıkacak bunu standard belirtmiyor, derleyiciden derleyiciye değişiyor.
 
 Reserve fonksiyonu ile kapasiteyi rezerve edebiliriz.
@@ -56,15 +57,18 @@ Ama bunu yapabilmek için sınıfın assign isimli fonksiyonunun bir overloadunu
 
 operator= (Atama Operatörü): Bir konteyneri, aynı türden başka bir konteynerin kopyası veya bir initializer list ile eşitlemek için kullanılır.
 
-assign() (Üye Fonksiyon): Bir konteynerin içeriğini çok daha esnek veri kaynaklarıyla (belirli sayıda aynı eleman, farklı türdeki bir konteynerin bir bölümü vb.) tamamen değiştirmek için kullanılır.
+assign() (Üye Fonksiyon): Bir konteynerin içeriğini çok daha esnek veri kaynaklarıyla (belirli sayıda aynı eleman, farklı türdeki bir konteynerin bir bölümü vb.) 
+tamamen değiştirmek için kullanılır.
 
 assign() Üye Fonksiyonu
 -----------------------
-Bu bir operatör değil, konteynerin bir üye fonksiyonudur ve bu yüzden çok daha esnek (daha fazla overload) olacak şekilde tasarlanmıştır. assign(), var olan tüm içeriği siler ve yerine tamamen yeni bir içerik atar.
+Bu bir operatör değil, konteynerin bir üye fonksiyonudur ve bu yüzden çok daha esnek (daha fazla overload) olacak şekilde tasarlanmıştır. assign(), var olan tüm içeriği siler 
+ve yerine tamamen yeni bir içerik atar.
 
 assign()'in en güçlü iki kullanımı şunlardır:
 
-Range (Menzil) Ataması: Konteynerin içeriğini, herhangi bir başlangıç ve bitiş iteratörü (iterator) arasındaki elemanlarla doldurur. Bu iteratörler farklı bir konteyner türünden veya bir C dizisinden gelebilir.
+Range (Menzil) Ataması: Konteynerin içeriğini, herhangi bir başlangıç ve bitiş iteratörü (iterator) arasındaki elemanlarla doldurur. Bu iteratörler farklı bir konteyner 
+türünden veya bir C dizisinden gelebilir.
 
 ////////////////////
 
@@ -93,7 +97,8 @@ resize() fonksiyonu
 sequence container'larda olan bir fonksiyon.
 container'in size'ını değiştiriyor. 
 
-fakat resize fonksiyonu container'da ki öğe sayısını arttıracak şekilde de çağırılabilir (yani bir insertion fonksiyonu gibi), ya da container'da ki öğe sayısını azaltacak şekilde çağırılabilir.
+fakat resize fonksiyonu container'da ki öğe sayısını arttıracak şekilde de çağırılabilir (yani bir insertion fonksiyonu gibi), ya da container'da ki öğe sayısını azaltacak 
+şekilde çağırılabilir.
 dk 24
 
 	vector<int> ivec{ 1, 3, 5, 7, 9 };
@@ -194,7 +199,8 @@ ilk parametre her zaman insert edilecek konumdur, bir iteratör.
 
 con.insert(con.begin(),)
 
-Not: bir container'da insert fonksiyonu ile en sona ekleme yapmak istiyorsak, son öğenin konumunu değil end() konumunu vermeliyiz. son öğenin konumunu verirsek son öğe ile geri kalan öğeler arasına insert etmiş olur.
+Not: bir container'da insert fonksiyonu ile en sona ekleme yapmak istiyorsak, son öğenin konumunu değil end() konumunu vermeliyiz. son öğenin konumunu verirsek son öğe ile 
+geri kalan öğeler arasına insert etmiş olur.
 
 dk42
 
@@ -226,13 +232,15 @@ Temsili olarak tanımını şöyle gösterebiliriz;
 		}
 	};
 
-peki napıyor bu? vektörün oluşturduğu yerde T türünden nesneyi T türünün ctor'una aldığı argümanları perfect-forward ederek vektördeki öğeyi doğrudan T türünden nesnenin ilgili ctor'unu çağırarak ekliyor.
+peki napıyor bu? vektörün oluşturduğu yerde T türünden nesneyi T türünün ctor'una aldığı argümanları perfect-forward ederek vektördeki öğeyi doğrudan T türünden nesnenin 
+ilgili ctor'unu çağırarak ekliyor.
 
 
 **
 emplace_back'in asıl amacı, gereksiz geçici nesne oluşturma ve kopyalama/taşıma işlemlerini ortadan kaldırmaktır.
 
-Yani push_back gibi nesneyi oluşturup daha sonra copy ctor ile kopyalamak veya move ile taşımak maliyeti yerine direk olarak aldığı argümanları perfect-forward mekanizması ile(const, non-const, l val, r val korur) container'da ki çağırılacağı yerde oluşturur.
+Yani push_back gibi nesneyi oluşturup daha sonra copy ctor ile kopyalamak veya move ile taşımak maliyeti yerine direk olarak aldığı argümanları perfect-forward mekanizması 
+ile(const, non-const, l val, r val korur) container'da ki çağırılacağı yerde oluşturur.
 
 
 ** Gemini **
@@ -300,7 +308,8 @@ svec = {}; // yukarıdakini yazmanın biraz daha idiomatic yolu
 
 Vektör kapasite yeterli olmadığı zaman reallocation ile kapasiteyi büyütüyor. Ama kapasiteyi otomatik olarak büzmüyor. Bazen kötü kod örneği olarak karşımıza çıkıyor.
 
-Diyelim ki vektörü 100 bin tane öğeyi doldurmuş ama ondan sonra öğelerin çoğunu silmiş ama çok az öğe ile programın sonuna kadar o vektörü kullanacak. bu kapasite hala allocate edilmiş durumda, yani vektörde öğeler silindiği için kapasite otomatik olarak düşmüyor.
+Diyelim ki vektörü 100 bin tane öğeyi doldurmuş ama ondan sonra öğelerin çoğunu silmiş ama çok az öğe ile programın sonuna kadar o vektörü kullanacak. bu kapasite hala 
+allocate edilmiş durumda, yani vektörde öğeler silindiği için kapasite otomatik olarak düşmüyor.
 
 shrink_to_fit fonksiyonunu çağırıp kapasiteyi düşürmemiz lazım. ama shrink_to_fit modern cpp ile eklendi. önceden "swap trick" denen bir idiom kullanılıyordu.
 
@@ -373,6 +382,7 @@ is_sorted_until()
 sıralamanın bozulduğu konumu geri dönüş değeri olarak döndürür.
 
 	auto iter = is_sorted_until(vec.begin(), vec.end());
+
 
 
 
