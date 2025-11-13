@@ -1,0 +1,385 @@
+Vector
+------
+Genelde en sık vector veri yapısı kullanılır.
+Dinamik dizi veri yapısıdır.
+Index ile erişim constant time'da yapılır.
+Sondan ekleme/silme işlemleri amortised constant time'da yapılır.
+Contigious memory gerektiriyor.
+Kapasite kavramı var.
+
+
+Size, Capacity'e eşit olduğu zaman bir insertion talebi geldiğinde insertion ne noktadan yapılırsa yapılsın yer yok ve kapasite artacak. Vector bunu kendisi sağlıyor. Büyüme gerektiği anda reallocation olacak.
+Reallocation yapılınca size kaç katına çıkacak bunu standard belirtmiyor, derleyiciden derleyiciye değişiyor.
+
+Reserve fonksiyonu ile kapasiteyi rezerve edebiliriz.
+
+	ivec.reserve()
+
+Reserve fonksiyonu kapasiteyi tam istediğimiz değere çekmek zorunda değil. Minimum o değer olacak şekilde ayarlıyor.
+
+
+Eğer container boşsa, front ve end fonksiyonlarını çağırmak UB. [] ile erişmek UB. fakat at() exception throw ediyor, out of range sınıfı türünden.
+
+
+
+Mutating/Modifying Operations
+-----------------------------
+
+	vector<int> ivec{ 3, 6, 8, 9 };
+	vector x = { 2, 5, 7, 9 };
+
+	x = ivec;			// copy assignment
+	ivec = move(x);		// move assignment
+
+
+NOT: tuttukları öğeler birbirine assignable olsa dahi farklı specializationlar arasında bir dönüşüm ilişkisi yok.
+
+	vector<int> ivec { 3, 2 };
+	vector<double> dvec;
+
+	dvec = ivec;	// sentaks hatası
+
+Farklı container'lar için de bu mümkün değil.
+
+	vector<int> ivec;
+	list<int> ilist;
+
+	ivec = ilist;	// bu mümkün değil, sentaks hatası
+
+Ama bunu yapabilmek için sınıfın assign isimli fonksiyonunun bir overloadunu kullanabiliriz.
+
+	ivec = { 2, 3, 5, 6 }; // legal, burada çağırılan operator assignment fonksiyonunun initializer_list'in int açılımı parametreli overloadu olması.
+
+
+////////////////////
+~gemini~
+
+operator= (Atama Operatörü): Bir konteyneri, aynı türden başka bir konteynerin kopyası veya bir initializer list ile eşitlemek için kullanılır.
+
+assign() (Üye Fonksiyon): Bir konteynerin içeriğini çok daha esnek veri kaynaklarıyla (belirli sayıda aynı eleman, farklı türdeki bir konteynerin bir bölümü vb.) tamamen değiştirmek için kullanılır.
+
+assign() Üye Fonksiyonu
+-----------------------
+Bu bir operatör değil, konteynerin bir üye fonksiyonudur ve bu yüzden çok daha esnek (daha fazla overload) olacak şekilde tasarlanmıştır. assign(), var olan tüm içeriği siler ve yerine tamamen yeni bir içerik atar.
+
+assign()'in en güçlü iki kullanımı şunlardır:
+
+Range (Menzil) Ataması: Konteynerin içeriğini, herhangi bir başlangıç ve bitiş iteratörü (iterator) arasındaki elemanlarla doldurur. Bu iteratörler farklı bir konteyner türünden veya bir C dizisinden gelebilir.
+
+////////////////////
+
+bunlar farklı container'ler ama karşılıklı öğeler birbirine assignable olduğu sürece, template olduğu için bir sorun çıkmayaacak.
+
+	vector<int> ivec{ 2, 3, 4, 5 };
+	set<char> myset{ 'a', 'b', 'c' };
+
+	ivec.assign(myset.begin(), myset.end());
+
+Not: atama operatör fonksiyonları olsaydı vector nesnesine referans döndürecekti. ama dikkat, bunlar assign() fonksiyonları.
+
+özellikle c dizilerinde tutulan değerler için bunu sıklıkla yapmak isteyebiliriz.
+
+	int ar[] = { 2, 5, 3, 1 };
+
+	vector<int> ivec{ 2, 1, 4, 6 };
+	set<char> myset{ 'a', 'b', 'c' };
+
+	ivec.assign(10, 99)
+
+///////////////////////////
+
+resize() fonksiyonu
+-------------------
+sequence container'larda olan bir fonksiyon.
+container'in size'ını değiştiriyor. 
+
+fakat resize fonksiyonu container'da ki öğe sayısını arttıracak şekilde de çağırılabilir (yani bir insertion fonksiyonu gibi), ya da container'da ki öğe sayısını azaltacak şekilde çağırılabilir.
+dk 24
+
+	vector<int> ivec{ 1, 3, 5, 7, 9 };
+	cout << "ivec.size() =" << ivec.size() << '\n';
+
+	ivec.resize(18);
+	cout << "ivec.size() =" << ivec.size() << '\n';
+
+resize'ın bu overload'u, sondan eklenecek öğelerin default ctor ile oluşturulmasını sağlıyor. primitive öğeler için 0 değeri yani value initialize edilmesini sağlıyor.
+
+vectordeki öğeleri yazdırdığımızda çıktı şöyle olacak:
+//
+//	ivec.size() = 6
+//	1 3 5 7 9
+//	ivec.size() = 18
+// 	1 3 5 7 9 0 0 0 0 0 0 0 0 0 0 0 0 0
+
+mesela string olsaydı default construct edilmiş string olacaktı. int value init. edildiği için 0 olarak yazdı.
+
+resize()'ın ikinci overloadu
+----------------------------
+bu overload bizden ikinci argüman olarak eklenen öğelerin alacağı değeri istiyor.
+
+örneğin: 	
+
+	ivec.resize(18, 5);
+
+-----------------------------
+
+**
+resize()'ı silme amaçlı olarak da kullanabiliriz.
+
+	vector<int> ivec{ 1, 3, 5, 7, 9 };
+	ivec.resize(4);
+
+baştaki 4 öğe hariç hepsi silinecek.
+
+hatta resize() fonksiyonunu çağırıp 0 değeri geçersek vektördeki tüm öğeleri silmek de mümkün. vektörü clear etmiş oluruz.
+
+-----------------------------
+
+Ekleme(Insertion) İşlemleri
+---------------------------
+Vektörün temel avantajı sondan ekleme işlemlerinin constant time'da olmasıdır.
+
+Vektöre sondan ekleme yapmak için ilk fonksiyonumuz push_back fonksiyonudur.
+
+push_back fonksiyonu move overload edilmiş. yani iki tane push_back overload'u var: birinin parametresi const T&, diğerinin parametresi  T&&.
+L value'ları biri alıyor copy ctor ile oluşturuyor, R value'ları biri alıyor move ctor ile oluşturuyor.
+
+	class Myclass{
+	public:
+		Myclass() = default;
+		Myclass(const Myclass&)
+		{
+			std::cout << "copy ctor\n";
+		}
+		Myclass(Myclass&&)
+		{
+			std::cout << "move ctor\n";
+		}
+	};
+
+	int main()
+	{
+		using namespace std;
+		vector<Myclass< vec;
+		vec.reserve(20);
+		Myclass m;
+
+		vec.push_back(m); 	// copy ctor çağırılacak
+	}
+
+
+burada copy ctor çağırılacak. 
+peki copy ctor'u çağıran kim?
+-push_back fonksiyonu
+
+çünkü push_back fonksiyonu vektörde nesneyi oluşturmak için vektöre koyacağı nesneyi copy ctor ile oluşturuyor.
+
+r value olsaydı diğer push_back çağırılacaktı:
+	
+	vec.push_back(move(m)); // move ctor
+
+
+**
+Sadece sondan ekleme constant time'da. eklemeyi baştan veya ortadan(burada ortadan kasıt baş olmayan son olmayan herhangi bir nokta) yaparsak linear complexity.
+
+Eklemeyi herhangi bir noktadan yapmak için:
+
+a)insert()
+b)emplace()
+
+
+insert() fonksiyonu
+-------------------
+ilk parametre her zaman insert edilecek konumdur, bir iteratör.
+
+con.insert(con.begin(),)
+
+Not: bir container'da insert fonksiyonu ile en sona ekleme yapmak istiyorsak, son öğenin konumunu değil end() konumunu vermeliyiz. son öğenin konumunu verirsek son öğe ile geri kalan öğeler arasına insert etmiş olur.
+
+dk42
+
+con.insert(iter,)
+
+insert()' in de overload'ları var ama overload'larında değişen konum dğeil, insert edilecek nesne ya da nesnelerin ne olduğu.
+
+ÖNEMLİ
+insert() fonksiyonları void fonksiyonlar değil. bir geri dönüş değerleri var ve bu oldukça önemli.
+
+**
+Geri dönüş değeri;
+-Eğer bir tane nesne insert ediliyorsa, insert edilmiş öğenin konumu
+-Eğer insert edilmiş öğe sayısı birden fazlasa, insert edilmiş ilk öğenin konumu
+
+emplace fonksiyonları:
+
+Modern C++ ile container'lara  eklenen emplace fonksiyonları var.
+
+Temsili olarak tanımını şöyle gösterebiliriz;
+
+	template <typename T>
+	class Vector{
+	public:
+		template <typename ...Args>
+		void emplace_back(Args && ...args) // perfect-forwarding
+		{
+			code // 
+		}
+	};
+
+peki napıyor bu? vektörün oluşturduğu yerde T türünden nesneyi T türünün ctor'una aldığı argümanları perfect-forward ederek vektördeki öğeyi doğrudan T türünden nesnenin ilgili ctor'unu çağırarak ekliyor.
+
+
+**
+emplace_back'in asıl amacı, gereksiz geçici nesne oluşturma ve kopyalama/taşıma işlemlerini ortadan kaldırmaktır.
+
+Yani push_back gibi nesneyi oluşturup daha sonra copy ctor ile kopyalamak veya move ile taşımak maliyeti yerine direk olarak aldığı argümanları perfect-forward mekanizması ile(const, non-const, l val, r val korur) container'da ki çağırılacağı yerde oluşturur.
+
+
+** Gemini **
+
+push_back: Önce nesne oluşturulur, sonra (taşıma veya kopyalama ile) container'a aktarılır.
+
+emplace_back: Nesne, argümanlar container'a iletildikten sonra doğrudan container'ın içinde oluşturulur.
+
+************
+
+Her insert'e karşılık bir emplace var. eğer insert fonksiyonunun ismi insert değil de push_back ise onun karşılığı emplace_back.
+
+Vektöre baştan eklemek için push_front fonksiyonu yok.
+
+-----------------------------------------------------
+
+Erase Operations
+----------------
+Erase fonksiyonlarının bir özelliği de geri dönüş değerlerinin olması. Geri döndürdüğü değer de en son silinen öğeden sonraki silinmemiş ilk öğenin konumunu döndürür.
+
+resize fonksiyonuna size'dan daha küçük bir değer vererek silme işlemi yapabiliriz. veya pop_back fonksiyonuna çağrı yaparak son öğeyi silebiliriz.
+
+Vektörde doğrudan değer ile silme yok. belirli bir değere sahip ilk öğeyi silmek için.
+
+Vektörde silme işlemlerini yapmak için şu fonksiyonlar var:
+
+-erase(iter)
+-erase(iterbegin, iter end)
+-
+
+örnek:
+	using namespace std;
+
+	vector<int> ivec{ 1, 3, 5, 7, 9 };
+
+	copy(ivec.begin(), ivec.end(), std::ostream_iterator<int>{cout, " "});
+
+	cout << "\n";
+
+	ivec.erase(ivec.end() - 1);
+
+	copy(ivec.begin(), ivec.end(), std::ostream_iterator<int>{cout, " "});
+
+	ivec.pop_back();
+
+	cout << "\n";
+
+
+	copy(ivec.begin(), ivec.end(), std::ostream_iterator<int>{cout, " "});
+
+
+deck ve list'te pop_front() fonksiyonları da var. ama vektörde sadece pop_back fonksiyonu isimlendirilmiş. diğerleri için erase fonksiyonunu çağırıyoruz.
+
+Iterator Invalidation konusu önemli, araştır
+
+
+Tüm öğeleri silmek
+------------------
+svec.clear()
+svec.resize(0)
+svec.erase(svec.begin(), svec.end())
+svec = vector<string>{};
+svec = {}; // yukarıdakini yazmanın biraz daha idiomatic yolu
+
+
+Vektör kapasite yeterli olmadığı zaman reallocation ile kapasiteyi büyütüyor. Ama kapasiteyi otomatik olarak büzmüyor. Bazen kötü kod örneği olarak karşımıza çıkıyor.
+
+Diyelim ki vektörü 100 bin tane öğeyi doldurmuş ama ondan sonra öğelerin çoğunu silmiş ama çok az öğe ile programın sonuna kadar o vektörü kullanacak. bu kapasite hala allocate edilmiş durumda, yani vektörde öğeler silindiği için kapasite otomatik olarak düşmüyor.
+
+shrink_to_fit fonksiyonunu çağırıp kapasiteyi düşürmemiz lazım. ama shrink_to_fit modern cpp ile eklendi. önceden "swap trick" denen bir idiom kullanılıyordu.
+
+1.43dk
+
+get_allocator() fonksiyonu
+--------------------------
+sınıfın kullandığı allocator'u geri dönüş değeri olarak veren fonksiyon.
+
+	vector<int> ivec;
+
+	auto a = ivec.get_allocator();
+
+	cout << typeid(a).name() << "\n";
+
+max_size() fonksiyonu
+---------------------
+container'in tutabileceği en büyük öğe sayısını döndürüyor. staitk bir üye fonksiyon değil.
+
+	cout << ivec.max_size();
+
+
+Algoritmalara geri dönüyoruz...
+
+SORT()
+------
+sort()
+stable_sort()
+is_sorted()
+is_sorted_until()
+partial_sort()
+
+sort() algoritmasının iki tane overload'u var. birisi less'i  kullanıyor diğeri ise karşılaştırma kriterini fonksiyonun parametresinde istiyor. 
+
+sort random access iterator istiyor ve karşılaştırma olarak less kullanıyor ona göre aldığı nesneleri sıralıyor.
+
+
+	sort(ivec.rbegin(), ivec.rend());
+
+	sort(ivec.rbegin(), ivec.rend(), less{});
+
+bu ikisi arasında fark yok.
+
+	sort(ivec.begin(), ivec.end(), greater{});
+
+tabi bunların çalışabilmesi için vektörün öğelerinin less ve greater ile karşılaştırılabiliyor olması gerekiyor.
+
+tabi standard olmayan başka bir karşılaştırma kriterini de kullanabiliriz.
+
+	sort(ivec.begin(), ivec.end(), [](const int& i1, const string& i2){return s1 > s2; })
+
+	bu mesela less gibi çalışıyor fakat tabi less yazmak ve okumak çok daha kolay.
+
+
+**
+Bir sort algoritmasının stable olup olmaması önemli.
+
+buna çalış araştır
+
+
+bazen bir range'in sıralı olup olmadığını sort etmemiz gerekiyor. onun için de kullanacağımız algoritma ise is_sorted()
+
+	vector vec { 2, 5, 7, 9, 17 };
+
+	cout << boolalpha << is_sorted(vec.begin(), vec.end()) << "\n";
+
+
+is_sorted_until()
+-----------------
+sıralamanın bozulduğu konumu geri dönüş değeri olarak döndürür.
+
+	auto iter = is_sorted_until(vec.begin(), vec.end());
+
+
+
+
+
+
+
+
+
+
